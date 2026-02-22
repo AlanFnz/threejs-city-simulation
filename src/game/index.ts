@@ -33,7 +33,6 @@ export class Game implements IGame {
   });
 
   constructor() {
-    this.sceneManager.start();
     createUi();
 
     this.selectedControl = document.getElementById(TOOLBAR_BUTTONS.SELECT.id);
@@ -44,7 +43,6 @@ export class Game implements IGame {
       this.onMouseMove.bind(this),
       this.onMouseScroll.bind(this)
     );
-    setInterval(() => this.step(), 1000);
   }
 
   step(): void {

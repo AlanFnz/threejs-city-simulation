@@ -60,8 +60,6 @@ export class SceneManager implements ISceneManager {
     this.mouse = new THREE.Vector2();
     this.activeObject = null;
     this.hoverObject = null;
-
-    this.initialize(city);
   }
 
   private initialize(city: ICity): void {
@@ -230,4 +228,3 @@ export class SceneManager implements ISceneManager {
     );
   }
 }
-
