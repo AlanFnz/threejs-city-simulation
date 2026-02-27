@@ -88,7 +88,7 @@ export class Citizen implements ICitizen {
     const workerIndex = this.workplace?.jobs.workers.indexOf(this);
 
     if (workerIndex !== undefined && workerIndex > -1 && this.workplace) {
-      this.workplace.jobs.workers.splice(workerIndex);
+      this.workplace.jobs.workers.splice(workerIndex, 1);
     }
   }
 
