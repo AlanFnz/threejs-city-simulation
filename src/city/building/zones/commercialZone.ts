@@ -9,11 +9,9 @@ export class CommercialZone extends Zone implements ICommercialZone {
   jobs: JobsAttribute;
 
   constructor(x: number, y: number) {
-    super(x, y);
+    super(x, y, 3);
     this.name = generateCommericalBuildingName();
     this.type = BUILDING_TYPE.COMMERCIAL;
-    this.level = 1;
-    this.maxLevel = 3;
     this.jobs = new JobsAttribute(this);
   }
 

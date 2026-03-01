@@ -8,11 +8,9 @@ export class ResidentialZone extends Zone implements IResidentialZone {
   residents: ResidentsAttribute;
 
   constructor(x: number, y: number) {
-    super(x, y);
+    super(x, y, 3);
     this.type = BUILDING_TYPE.RESIDENTIAL;
     this.residents = new ResidentsAttribute(this);
-    this.level = 1;
-    this.maxLevel = 3;
   }
 
   simulate(city: ICity): void {

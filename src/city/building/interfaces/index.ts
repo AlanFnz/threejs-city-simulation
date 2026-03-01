@@ -1,5 +1,4 @@
 import { ICity } from '../..';
-import { ICitizen } from '../../citizen';
 import { DevelopmentAttribute } from '../attributes/development';
 import { JobsAttribute } from '../attributes/jobs';
 import { ResidentsAttribute } from '../attributes/residents';
@@ -21,13 +20,9 @@ interface IBuilding {
 
 interface IZone extends IBuilding {
   style: string;
-  abandoned: boolean;
   development: DevelopmentAttribute;
   hasRoadAccess: boolean;
-  level: number;
   rotation?: { x: number; y: number };
-  maxLevel: number;
-  abandonmentCounter: number;
 }
 
 interface IResidentialZone extends IZone {

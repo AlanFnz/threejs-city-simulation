@@ -13,7 +13,7 @@ export class DevelopmentAttribute {
   private zone: Zone;
   private _state: DevelopmentState = DevelopmentState.UNDEVELOPED;
   private _level: number = 1;
-  maxLevel: number = 3;
+  maxLevel: number;
 
   /**
    * number of simulation steps that building has met abandonment criteria
@@ -24,8 +24,9 @@ export class DevelopmentAttribute {
   // counter for days under construction
   private constructionCounter: number = 0;
 
-  constructor(zone: Zone) {
+  constructor(zone: Zone, maxLevel: number = 3) {
     this.zone = zone;
+    this.maxLevel = maxLevel;
   }
 
   get level(): number {
