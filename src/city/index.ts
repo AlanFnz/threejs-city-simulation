@@ -10,7 +10,7 @@ export interface ICity {
   size: number;
   tiles: ITile[][];
   getTile(x: number, y: number): ITile | null;
-  getPopulation(): string;
+  readonly population: number;
   simulate(): void;
   getTileByCoordinate(coordinate: ICoordinate): ITile | null;
   findTile(
@@ -51,7 +51,7 @@ export class City implements ICity {
     }
   }
 
-  getPopulation() {
+  get population(): number {
     let population = 0;
     for (let x = 0; x < this.size; x++) {
       for (let y = 0; y < this.size; y++) {
@@ -63,7 +63,7 @@ export class City implements ICity {
           population += tile.building?.residents?.count ?? 0;
       }
     }
-    return population.toString();
+    return population;
   }
 
   simulate(): void {
@@ -148,4 +148,3 @@ export class City implements ICity {
     return neighbors.filter((t) => t !== undefined);
   }
 }
-

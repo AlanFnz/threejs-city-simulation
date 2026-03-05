@@ -149,7 +149,7 @@ export class Game implements IGame {
   private updateTitleBar(): void {
     const populationCounter = document.getElementById("population-counter");
     if (populationCounter)
-      populationCounter.textContent = this.city.getPopulation();
+      populationCounter.textContent = this.city.population.toString();
   }
 
   private isEventFromUiElement(event: Event): boolean {

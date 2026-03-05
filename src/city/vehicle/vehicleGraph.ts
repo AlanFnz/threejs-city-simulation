@@ -44,11 +44,6 @@ export class VehicleGraph extends THREE.Group {
     setInterval(this.spawnVehicle.bind(this), CONFIG.VEHICLE.SPAWN_INTERVAL);
   }
 
-  private getValidPopulation(): number {
-    const population = parseInt(this.city.getPopulation());
-    return isNaN(population) ? 0 : population;
-  }
-
   private calculateMaxVehicles(population: number): number {
     return Math.floor((population / 4) * 2);
   }
@@ -145,7 +140,7 @@ export class VehicleGraph extends THREE.Group {
   }
 
   spawnVehicle() {
-    const population = this.getValidPopulation();
+    const population = this.city.population;
     if (population < 1) return;
 
     const maxVehicles = this.calculateMaxVehicles(population);
