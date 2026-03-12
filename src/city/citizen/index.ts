@@ -3,13 +3,12 @@ import CONFIG from '../../config';
 import { CommercialZone } from '../building/zones/commercialZone';
 import { IndustrialZone } from '../building/zones/industrialZone';
 import { ResidentialZone } from '../building/zones/residentialZone';
-import { checkIsWorkplace } from '../building/utils';
 import { ITile } from '../tile';
 import { CITIZEN_STATE, CitizenState } from './constants';
 import { getRandomFirstName, getRandomSurname } from './utils';
 
-import calendarIcon from '../../assetManager/icons/person.png';
-import jobIcon from '../../assetManager/icons/person.png';
+import calendarIcon from '../../assetManager/icons/calendar.png';
+import jobIcon from '../../assetManager/icons/job.png';
 
 export interface ICitizen {
   id: string;

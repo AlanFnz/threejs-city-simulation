@@ -23,13 +23,13 @@ export class Road extends Building implements IRoad {
 
   simulate(city: ICity): void {
     const top =
-      city.getTile(this.x, this.y - 1)?.building?.type === this.type ?? false;
+      city.getTile(this.x, this.y - 1)?.building?.type === this.type;
     const bottom =
-      city.getTile(this.x, this.y + 1)?.building?.type === this.type ?? false;
+      city.getTile(this.x, this.y + 1)?.building?.type === this.type;
     const left =
-      city.getTile(this.x - 1, this.y)?.building?.type === this.type ?? false;
+      city.getTile(this.x - 1, this.y)?.building?.type === this.type;
     const right =
-      city.getTile(this.x + 1, this.y)?.building?.type === this.type ?? false;
+      city.getTile(this.x + 1, this.y)?.building?.type === this.type;
 
     if (top && bottom && left && right) {
       this.style = ROAD_TYPE.FOUR_WAY;

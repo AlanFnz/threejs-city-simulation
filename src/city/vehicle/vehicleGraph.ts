@@ -45,7 +45,10 @@ export class VehicleGraph extends THREE.Group {
   }
 
   private calculateMaxVehicles(population: number): number {
-    return Math.floor((population / 4) * 2);
+    return Math.min(
+      Math.floor((population / 4) * 2),
+      CONFIG.VEHICLE.MAX_VEHICLE_COUNT
+    );
   }
 
   private spawnVehicleInstance(
