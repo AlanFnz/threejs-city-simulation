@@ -63,7 +63,8 @@ export class SceneManager implements ISceneManager {
   }
 
   private initialize(city: ICity): void {
-    this.scene.clear();
+    this.disposeMeshMaterials(this.root);
+    this.scene.remove(this.root);
     this.root = new THREE.Group();
     this.scene.add(this.root);
 
@@ -80,7 +81,7 @@ export class SceneManager implements ISceneManager {
         if (tile) {
           const mesh = this.assetManager.createGroundMesh(tile);
           if (!mesh) return
-          this.scene.add(mesh);
+          this.root.add(mesh);
           column.push(mesh);
         }
       }
@@ -90,6 +91,24 @@ export class SceneManager implements ISceneManager {
 
     this.setupLights();
     this.setupGrid(city);
+  }
+
+  /**
+   * Disposes cloned per-instance materials under an object.
+   * Never disposes geometry: building/vehicle geometries are shared references
+   * back to AssetManager's cached loaded models, so disposing one instance's
+   * geometry would break every other instance of that model still in the scene.
+   */
+  private disposeMeshMaterials(object: THREE.Object3D): void {
+    object.traverse((child) => {
+      if (!(child as THREE.Mesh).isMesh) return;
+      const material = (child as THREE.Mesh).material;
+      if (Array.isArray(material)) {
+        material.forEach((m) => m.dispose());
+      } else {
+        material?.dispose();
+      }
+    });
   }
 
   private setupLights(): void {
@@ -129,7 +148,7 @@ export class SceneManager implements ISceneManager {
     );
     grid.position.set(city.size / 2 - 0.5, -0.04, city.size / 2 - 0.5);
     grid.userData.nonInteractive = true;
-    this.scene.add(grid);
+    this.root.add(grid);
   }
 
   update(city: ICity): void {
@@ -142,13 +161,17 @@ export class SceneManager implements ISceneManager {
           this.terrain[x][y].visible = !tile.building?.hideTerrain ?? true;
 
           if (!tile.building && existingBuildingMesh) {
+            this.disposeMeshMaterials(existingBuildingMesh);
             this.root.remove(existingBuildingMesh);
             this.buildings[x][y] = null;
             this.vehicleGraph.updateTile(x, y, null);
           }
 
           if (tile.building && tile.building.isMeshOutOfDate) {
-            if (existingBuildingMesh) this.root.remove(existingBuildingMesh);
+            if (existingBuildingMesh) {
+              this.disposeMeshMaterials(existingBuildingMesh);
+              this.root.remove(existingBuildingMesh);
+            }
             this.buildings[x][y] = this.assetManager.createBuildingMesh(tile);
             if (this.buildings[x][y] !== null)
               this.root.add(this.buildings[x][y] as THREE.Object3D);
