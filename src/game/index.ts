@@ -140,10 +140,12 @@ export class Game implements IGame {
   }
 
   private updateInfoOverlay(clear?: boolean): void {
+    const infoPanel = document.getElementById("info-panel");
     const infoOverlayDetails = document.getElementById("info-overlay-details");
     const tile = clear ? null : this.focusedObject || null;
     if (infoOverlayDetails)
       infoOverlayDetails.innerHTML = tile ? tile.toHTML() : "";
+    infoPanel?.classList.toggle("visible", !!tile);
   }
 
   private updateTitleBar(): void {

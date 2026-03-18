@@ -161,11 +161,15 @@ h1 {
   position: fixed;
   top: 64px;
   right: 0px;
-  padding: 0; 
+  padding: 0;
   padding-bottom: 16px;
   width: 300px;
 
   background-color: #00000048;
+}
+
+#info-panel.visible {
+  visibility: visible;
 }
 
 .info-heading {
