@@ -26,6 +26,8 @@ export class Game implements IGame {
   isPaused: boolean = false;
   focusedObject: BuildingEntity | ITile | null = null;
   lastMove: number = Date.now();
+  private tickCount: number = 0;
+  private startTime: number = Date.now();
   private city: ICity = new City(CONFIG.CITY.SIZE);
   private sceneManager: ISceneManager = new SceneManager(this.city, () => {
     this.sceneManager.start();
@@ -46,6 +48,8 @@ export class Game implements IGame {
   }
 
   step(): void {
+    this.tickCount++;
+    this.updateDebugOverlay();
     if (this.isPaused) return;
     this.city.simulate();
     this.sceneManager.update(this.city);
@@ -152,6 +156,21 @@ export class Game implements IGame {
     const populationCounter = document.getElementById("population-counter");
     if (populationCounter)
       populationCounter.textContent = this.city.population.toString();
+  }
+
+  /**
+   * Ticks and elapsed real seconds should stay in lockstep (1 tick/sec).
+   * If the rate drifts from ~1.00/s, the tick loop is firing more than once
+   * per second (e.g. a duplicated setInterval).
+   */
+  private updateDebugOverlay(): void {
+    const debugTick = document.getElementById("debug-tick");
+    if (!debugTick) return;
+    const elapsedSeconds = (Date.now() - this.startTime) / 1000;
+    const rate = elapsedSeconds > 0 ? this.tickCount / elapsedSeconds : 0;
+    debugTick.textContent = `tick ${this.tickCount} · ${elapsedSeconds.toFixed(
+      1
+    )}s elapsed · ${rate.toFixed(2)} ticks/s`;
   }
 
   private isEventFromUiElement(event: Event): boolean {

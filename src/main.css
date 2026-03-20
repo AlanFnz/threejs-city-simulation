@@ -44,6 +44,16 @@ h1 {
   margin: 8px;
 }
 
+#debug-tick {
+  position: absolute;
+  color: #7fff7f;
+  right: 0;
+  bottom: 0;
+  margin: 8px;
+  font-family: monospace;
+  font-size: 0.9em;
+}
+
 .text-overlay {
   position: absolute;
   top: 0;
