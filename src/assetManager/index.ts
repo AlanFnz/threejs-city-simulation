@@ -19,7 +19,6 @@ export interface IAssetManager {
 
 export class AssetManager implements IAssetManager {
   private gltfLoader = new GLTFLoader();
-  private cubeGeometry = new THREE.BoxGeometry(1, 1, 1);
   private onLoad: () => void = () => {};
   private modelCount: number = 0;
   private loadedModelCount: number = 0;
@@ -49,7 +48,6 @@ export class AssetManager implements IAssetManager {
   loadModel(
     name: ModelKey,
     {
-      filename,
       file,
       scale = 1,
       rotation = 0,
@@ -61,7 +59,7 @@ export class AssetManager implements IAssetManager {
       file,
       (glb) => {
         console.log(`Loaded file: ${file}`);
-        let mesh: THREE.Object3D = glb.scene;
+        const mesh: THREE.Object3D = glb.scene;
 
         mesh.traverse((obj) => {
           if ((obj as THREE.Mesh).isMesh) {
@@ -171,7 +169,7 @@ export class AssetManager implements IAssetManager {
       throw new Error('Tile does not have a valid building.');
     }
 
-    let modelName = '';
+    let modelName: string;
     switch (zone.development.state) {
       case DevelopmentState.UNDER_CONSTRUCTION:
       case DevelopmentState.UNDEVELOPED:
@@ -182,7 +180,7 @@ export class AssetManager implements IAssetManager {
         break;
     }
 
-    let mesh = this.cloneMesh(modelName as ModelKey);
+    const mesh = this.cloneMesh(modelName as ModelKey);
     if (!mesh) return null;
     mesh.traverse((obj) => (obj.userData = tile));
     mesh.rotation.set(0, (zone.rotation?.y || 0) * DEG2RAD, 0);

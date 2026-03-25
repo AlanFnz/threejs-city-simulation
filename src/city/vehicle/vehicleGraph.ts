@@ -168,7 +168,7 @@ export class VehicleGraph extends THREE.Group {
     const tiles: VehicleGraphTile[] = [];
     for (let x = 0; x < this.size; x++) {
       for (let y = 0; y < this.size; y++) {
-        let tile = this.getTile(x, y);
+        const tile = this.getTile(x, y);
         if (tile) tiles.push(tile);
       }
     }

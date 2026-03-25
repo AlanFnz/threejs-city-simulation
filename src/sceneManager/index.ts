@@ -1,5 +1,4 @@
 import * as THREE from 'three';
-import CONFIG from '../config';
 import { ICity } from '../city';
 import { AssetManager, IAssetManager } from '../assetManager';
 import { ICameraManager, CameraManager } from '../cameraManager';
@@ -158,7 +157,7 @@ export class SceneManager implements ISceneManager {
         const existingBuildingMesh = this.buildings[x][y];
 
         if (tile) {
-          this.terrain[x][y].visible = !tile.building?.hideTerrain ?? true;
+          this.terrain[x][y].visible = !tile.building?.hideTerrain;
 
           if (!tile.building && existingBuildingMesh) {
             this.disposeMeshMaterials(existingBuildingMesh);
@@ -218,7 +217,7 @@ export class SceneManager implements ISceneManager {
     this.mouse.y =
       -(event.clientY / this.renderer.domElement.clientHeight) * 2 + 1;
     this.raycaster.setFromCamera(this.mouse, this.cameraManager.camera);
-    let intersections = this.raycaster.intersectObjects(
+    const intersections = this.raycaster.intersectObjects(
       this.scene.children,
       true
     );

@@ -31,7 +31,7 @@ export class City implements ICity {
   }
 
   private initTiles(size: number): ITile[][] {
-    let tiles = [];
+    const tiles = [];
     for (let x = 0; x < size; x++) {
       const column: ITile[] = [];
       for (let y = 0; y < size; y++) {
@@ -94,8 +94,8 @@ export class City implements ICity {
   }
 
   getTileByBuildingId(tileId: string): ITile | undefined {
-    for (let row of this.tiles) {
-      for (let tile of row) {
+    for (const row of this.tiles) {
+      for (const tile of row) {
         if (tile.building?.id === tileId) {
           return tile;
         }

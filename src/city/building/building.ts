@@ -12,12 +12,12 @@ class Building implements IBuilding {
 
   constructor(public x: number, public y: number) {}
 
-  update(city: ICity): void {}
+  update(_city: ICity): void {}
 
   /**
    * update the state of this building by one simulation step
    */
-  simulate(city: ICity): void {}
+  simulate(_city: ICity): void {}
 
   /**
    * cleanup before building removal
@@ -25,7 +25,7 @@ class Building implements IBuilding {
   dispose(): void {}
 
   toHTML(): string {
-    let html = `
+    const html = `
       <div class="info-heading">Building</div>
       <span class="info-label">Name:</span>
       <span class="info-value">${this.name}</span>

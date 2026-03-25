@@ -19,7 +19,7 @@ function createToolBar() {
 
   toolbar.className = 'container'
 
-  Object.entries(TOOLBAR_BUTTONS).forEach(([key, toolbarButton]) => {
+  Object.values(TOOLBAR_BUTTONS).forEach((toolbarButton) => {
     const button = document.createElement('button');
     button.id = toolbarButton.id;
     button.className = 'ui-button';
