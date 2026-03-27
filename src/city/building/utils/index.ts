@@ -4,9 +4,10 @@ import {
   descriptors,
   industryTypes,
 } from './names';
+import { random } from '../../../utils/rng';
 
 function getRandomElement<T>(array: T[]): T {
-  const randomIndex = Math.floor(Math.random() * array.length);
+  const randomIndex = Math.floor(random() * array.length);
   return array[randomIndex];
 }
 

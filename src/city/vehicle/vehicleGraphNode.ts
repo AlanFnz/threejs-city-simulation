@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { random } from '../../utils/rng';
 
 export class VehicleGraphNode extends THREE.Object3D {
   public next: VehicleGraphNode[];
@@ -26,7 +27,7 @@ export class VehicleGraphNode extends THREE.Object3D {
     if (this.next.length === 0) {
       return null;
     } else {
-      const i = Math.floor(this.next.length * Math.random());
+      const i = Math.floor(this.next.length * random());
       return this.next[i];
     }
   }

@@ -7,6 +7,7 @@ import { IRoad } from '../building/road';
 import { Vehicle } from '.';
 import { ICity } from '..';
 import { VehicleGraphNode } from './vehicleGraphNode';
+import { random } from '../../utils/rng';
 
 export class VehicleGraph extends THREE.Group {
   size: number;
@@ -151,7 +152,7 @@ export class VehicleGraph extends THREE.Group {
 
     if (currentVehicleCount >= maxVehicles) return;
 
-    const spawnChance = Math.random();
+    const spawnChance = random();
     if (spawnChance >= maxVehicles / population) return;
 
     const startingTile = this.getStartingTile();
@@ -176,7 +177,7 @@ export class VehicleGraph extends THREE.Group {
     if (tiles.length === 0) {
       return null;
     } else {
-      const i = Math.floor(tiles.length * Math.random());
+      const i = Math.floor(tiles.length * random());
       return tiles[i];
     }
   }

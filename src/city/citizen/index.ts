@@ -6,6 +6,7 @@ import { ResidentialZone } from '../building/zones/residentialZone';
 import { ITile } from '../tile';
 import { CITIZEN_STATE, CitizenState } from './constants';
 import { getRandomFirstName, getRandomSurname } from './utils';
+import { random } from '../../utils/rng';
 
 import calendarIcon from '../../assetManager/icons/calendar.png';
 import jobIcon from '../../assetManager/icons/job.png';
@@ -39,7 +40,7 @@ export class Citizen implements ICitizen {
     this.id = crypto.randomUUID();
     this.firstName = getRandomFirstName();
     this.surname = getRandomSurname();
-    this.age = 1 + Math.floor(100 * Math.random());
+    this.age = 1 + Math.floor(100 * random());
     this.state = CITIZEN_STATE.IDLE;
     this.stateCounter = 0;
     this.residence = residence;

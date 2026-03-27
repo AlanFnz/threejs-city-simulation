@@ -3,6 +3,7 @@ import CONFIG from '../../../config';
 import { Citizen } from '../../citizen';
 import { ResidentialZone } from '../zones/residentialZone';
 import { Zone } from '../zones/zone';
+import { random } from '../../../utils/rng';
 
 export class ResidentsAttribute {
   private zone: Zone;
@@ -31,7 +32,7 @@ export class ResidentsAttribute {
       // Move in new residents if there is room
       if (
         this.residents.length < this.maximum &&
-        Math.random() < CONFIG.ZONE.RESIDENT_MOVE_IN_CHANCE
+        random() < CONFIG.ZONE.RESIDENT_MOVE_IN_CHANCE
       ) {
         this.residents.push(new Citizen(this.zone as ResidentialZone));
       }

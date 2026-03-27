@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { VehicleGraphNode } from './vehicleGraphNode';
 import { ROAD_TYPE } from '../building/constants';
+import { random } from '../../utils/rng';
 
 const roadOffset = 0.05;
 const tileOffset = 0.25;
@@ -71,7 +72,7 @@ export class VehicleGraphTile extends THREE.Group {
     if (this.bottom.in) nodes.push(this.bottom.in);
 
     if (nodes.length > 0) {
-      const i = Math.floor(nodes.length * Math.random());
+      const i = Math.floor(nodes.length * random());
       return nodes[i];
     } else {
       return null;

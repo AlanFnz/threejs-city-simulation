@@ -1,6 +1,7 @@
 import { ICity } from '../..';
 import CONFIG from '../../../config';
 import { Zone } from '../zones/zone';
+import { random } from '../../../utils/rng';
 
 export enum DevelopmentState {
   UNDEVELOPED = 'undeveloped',
@@ -54,7 +55,7 @@ export class DevelopmentAttribute {
       case DevelopmentState.UNDEVELOPED:
         if (
           this.checkDevelopmentCriteria(city) &&
-          Math.random() < CONFIG.ZONE.REDEVELOP_CHANCE
+          random() < CONFIG.ZONE.REDEVELOP_CHANCE
         ) {
           this.state = DevelopmentState.UNDER_CONSTRUCTION;
           this.constructionCounter = 0;
@@ -69,13 +70,13 @@ export class DevelopmentAttribute {
         break;
       case DevelopmentState.DEVELOPED:
         if (this.abandonmentCounter > CONFIG.ZONE.ABANDONMENT_THRESHOLD) {
-          if (Math.random() < CONFIG.ZONE.ABANDONMENT_CHANCE) {
+          if (random() < CONFIG.ZONE.ABANDONMENT_CHANCE) {
             this.state = DevelopmentState.ABANDONED;
           }
         } else {
           if (
             this.level < this.maxLevel &&
-            Math.random() < CONFIG.ZONE.LEVEL_UP_CHANCE
+            random() < CONFIG.ZONE.LEVEL_UP_CHANCE
           ) {
             this.level++;
           }
@@ -83,7 +84,7 @@ export class DevelopmentAttribute {
         break;
       case DevelopmentState.ABANDONED:
         if (this.abandonmentCounter === 0) {
-          if (Math.random() < CONFIG.ZONE.REDEVELOP_CHANCE) {
+          if (random() < CONFIG.ZONE.REDEVELOP_CHANCE) {
             this.state = DevelopmentState.DEVELOPED;
           }
         }
