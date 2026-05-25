@@ -1,9 +1,10 @@
-import { DEG2RAD } from 'three/src/math/MathUtils';
 import { ICity } from '../..';
 import { DevelopmentAttribute } from '../attributes/development';
 import { Building } from '../building';
 import { IZone } from '../interfaces';
 import { random } from '../../../utils/rng';
+
+const DEG2RAD = Math.PI / 180;
 
 class Zone extends Building implements IZone {
   style: string;

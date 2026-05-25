@@ -9,6 +9,7 @@
     "typeRoots": ["./node_modules/@types", "./src"],
     "types": ["assets"]
   },
-  "include": ["**/*.ts"]
+  "include": ["**/*.ts"],
+  "exclude": ["node_modules", "dist", "vitest.config.ts", "src/**/*.test.ts"]
 }
 
