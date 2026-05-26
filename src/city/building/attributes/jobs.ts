@@ -1,15 +1,20 @@
-
 import CONFIG from '../../../config';
 import { Citizen } from '../../citizen';
 import { Zone } from '../zones/zone';
 import { DevelopmentState } from './development';
+import { cityEvents } from '../../../events';
 
 export class JobsAttribute {
   private zone: Zone;
-  workers: Citizen[] = [];
+  private _workers: Citizen[] = [];
 
   constructor(zone: Zone) {
     this.zone = zone;
+  }
+
+  /** Read-only: hire()/layOff() are the only ways to change the roster. */
+  get workers(): readonly Citizen[] {
+    return this._workers;
   }
 
   get maxWorkers(): number {
@@ -25,11 +30,11 @@ export class JobsAttribute {
   }
 
   get availableJobs(): number {
-    return this.maxWorkers - this.workers.length;
+    return this.maxWorkers - this._workers.length;
   }
 
   get filledJobs(): number {
-    return this.workers.length;
+    return this._workers.length;
   }
 
   update(): void {
@@ -40,11 +45,36 @@ export class JobsAttribute {
     }
   }
 
+  hire(citizen: Citizen): void {
+    this._workers.push(citizen);
+    cityEvents.emit('citizenEmployed', {
+      citizenId: citizen.id,
+      x: this.zone.x,
+      y: this.zone.y,
+    });
+  }
+
+  layOff(citizen: Citizen): void {
+    const index = this._workers.indexOf(citizen);
+    if (index === -1) return;
+    this._workers.splice(index, 1);
+    cityEvents.emit('citizenUnemployed', {
+      citizenId: citizen.id,
+      x: this.zone.x,
+      y: this.zone.y,
+    });
+  }
+
   layOffWorkers(): void {
-    for (const worker of this.workers) {
+    for (const worker of this._workers) {
       worker.setWorkplace(null);
+      cityEvents.emit('citizenUnemployed', {
+        citizenId: worker.id,
+        x: this.zone.x,
+        y: this.zone.y,
+      });
     }
-    this.workers = [];
+    this._workers = [];
   }
 
   dispose(): void {
@@ -55,7 +85,7 @@ export class JobsAttribute {
     let html = `<div class="info-heading">Workers (${this.filledJobs}/${this.maxWorkers})</div>`;
 
     html += '<ul class="info-citizen-list">';
-    for (const worker of this.workers) {
+    for (const worker of this._workers) {
       html += worker.toHTML();
     }
     html += '</ul>';
@@ -63,4 +93,5 @@ export class JobsAttribute {
     return html;
   }
 }
+
 

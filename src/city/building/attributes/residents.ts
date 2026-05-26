@@ -4,6 +4,7 @@ import { Citizen } from '../../citizen';
 import { ResidentialZone } from '../zones/residentialZone';
 import { Zone } from '../zones/zone';
 import { random } from '../../../utils/rng';
+import { cityEvents } from '../../../events';
 
 export class ResidentsAttribute {
   private zone: Zone;
@@ -34,7 +35,13 @@ export class ResidentsAttribute {
         this.residents.length < this.maximum &&
         random() < CONFIG.ZONE.RESIDENT_MOVE_IN_CHANCE
       ) {
-        this.residents.push(new Citizen(this.zone as ResidentialZone));
+        const citizen = new Citizen(this.zone as ResidentialZone);
+        this.residents.push(citizen);
+        cityEvents.emit('citizenMovedIn', {
+          citizenId: citizen.id,
+          x: this.zone.x,
+          y: this.zone.y,
+        });
       }
     }
 
@@ -66,4 +73,3 @@ export class ResidentsAttribute {
     return html;
   }
 }
-

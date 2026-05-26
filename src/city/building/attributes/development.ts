@@ -2,6 +2,7 @@ import { ICity } from '../..';
 import CONFIG from '../../../config';
 import { Zone } from '../zones/zone';
 import { random } from '../../../utils/rng';
+import { cityEvents } from '../../../events';
 
 export enum DevelopmentState {
   UNDEVELOPED = 'undeveloped',
@@ -35,8 +36,17 @@ export class DevelopmentAttribute {
   }
 
   set level(value: number) {
+    const previousLevel = this._level;
     this._level = value;
     this.zone.isMeshOutOfDate = true;
+    if (value !== previousLevel) {
+      cityEvents.emit('levelChanged', {
+        x: this.zone.x,
+        y: this.zone.y,
+        level: value,
+        previousLevel,
+      });
+    }
   }
 
   get state(): DevelopmentState {
@@ -44,8 +54,17 @@ export class DevelopmentAttribute {
   }
 
   set state(value: DevelopmentState) {
+    const previousState = this._state;
     this._state = value;
     this.zone.isMeshOutOfDate = true;
+    if (value !== previousState) {
+      cityEvents.emit('developmentStateChanged', {
+        x: this.zone.x,
+        y: this.zone.y,
+        state: value,
+        previousState,
+      });
+    }
   }
 
   simulate(city: ICity): void {

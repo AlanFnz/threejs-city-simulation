@@ -1,10 +1,11 @@
 import { BuildingEntity, createBuilding } from "../building/buildingCreator";
 import { ICity } from "..";
-import { BuildingType } from "../building/constants";
+import { BUILDING_TYPE, BuildingType } from "../building/constants";
 import {
   IRoadAccessAttribute,
   RoadAccessAttribute,
 } from "../building/attributes/roadAccess";
+import { cityEvents } from "../../events";
 
 export interface RoadAccess {
   value: boolean;
@@ -57,13 +58,26 @@ export class Tile implements ITile {
 
   removeBuilding(): void {
     if (this.building) {
+      const wasRoad = this.building.type === BUILDING_TYPE.ROAD;
       this.building.dispose();
       this.building = null;
+      cityEvents.emit("buildingRemoved", { x: this.x, y: this.y });
+      if (wasRoad) {
+        cityEvents.emit("roadNetworkChanged", { x: this.x, y: this.y });
+      }
     }
   }
 
   placeBuilding(type: BuildingType): void {
     this.building = createBuilding(this.x, this.y, type);
+    cityEvents.emit("buildingPlaced", {
+      x: this.x,
+      y: this.y,
+      buildingType: type,
+    });
+    if (type === BUILDING_TYPE.ROAD) {
+      cityEvents.emit("roadNetworkChanged", { x: this.x, y: this.y });
+    }
   }
 
   toHTML(): string {

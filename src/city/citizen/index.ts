@@ -84,12 +84,7 @@ export class Citizen implements ICitizen {
   }
 
   dispose() {
-    // Remove resident from its  workplace
-    const workerIndex = this.workplace?.jobs.workers.indexOf(this);
-
-    if (workerIndex !== undefined && workerIndex > -1 && this.workplace) {
-      this.workplace.jobs.workers.splice(workerIndex, 1);
-    }
+    this.workplace?.jobs.layOff(this);
   }
 
   private findJob(city: ICity): CommercialZone | IndustrialZone | null {
@@ -115,7 +110,7 @@ export class Citizen implements ICitizen {
 
     if (tile && building) {
       // employ the citizen at the building
-      (building as CommercialZone | IndustrialZone).jobs.workers.push(this);
+      (building as CommercialZone | IndustrialZone).jobs.hire(this);
       return building;
     } else {
       return null;

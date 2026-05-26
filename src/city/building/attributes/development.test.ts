@@ -5,6 +5,7 @@ import { IndustrialZone } from '../zones/industrialZone';
 import { ICity } from '../..';
 import CONFIG from '../../../config';
 import { random } from '../../../utils/rng';
+import { cityEvents } from '../../../events';
 
 vi.mock('../../../utils/rng', () => ({ random: vi.fn() }));
 
@@ -29,6 +30,7 @@ function advanceThroughConstruction(
 describe('DevelopmentAttribute', () => {
   beforeEach(() => {
     mockedRandom.mockReset();
+    cityEvents.clear();
   });
 
   it('stays undeveloped without road access, even on a favorable roll', () => {
@@ -103,5 +105,42 @@ describe('DevelopmentAttribute', () => {
 
     zone.development.simulate(connected);
     expect(zone.development.state).toBe(DevelopmentState.DEVELOPED);
+  });
+
+  it('emits developmentStateChanged only when the state actually changes', () => {
+    const zone = new ResidentialZone(5, 7);
+    const listener = vi.fn();
+    cityEvents.on('developmentStateChanged', listener);
+    mockedRandom.mockReturnValue(CONFIG.ZONE.REDEVELOP_CHANCE + 0.01);
+
+    zone.development.simulate(cityWithRoadAccess(true)); // unfavorable roll, no transition
+    expect(listener).not.toHaveBeenCalled();
+
+    mockedRandom.mockReturnValue(0);
+    zone.development.simulate(cityWithRoadAccess(true)); // UNDEVELOPED -> UNDER_CONSTRUCTION
+
+    expect(listener).toHaveBeenCalledWith({
+      x: 5,
+      y: 7,
+      state: DevelopmentState.UNDER_CONSTRUCTION,
+      previousState: DevelopmentState.UNDEVELOPED,
+    });
+  });
+
+  it('emits levelChanged when the level actually increases', () => {
+    const zone = new ResidentialZone(1, 2);
+    mockedRandom.mockReturnValue(0);
+    advanceThroughConstruction(zone, cityWithRoadAccess(true));
+
+    const listener = vi.fn();
+    cityEvents.on('levelChanged', listener);
+    zone.development.simulate(cityWithRoadAccess(true)); // level 1 -> 2
+
+    expect(listener).toHaveBeenCalledWith({
+      x: 1,
+      y: 2,
+      level: 2,
+      previousLevel: 1,
+    });
   });
 });
