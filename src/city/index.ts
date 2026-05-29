@@ -1,5 +1,7 @@
 import { ResidentialZone } from './building/zones/residentialZone';
 import { ITile, Tile } from './tile';
+import CONFIG from '../config';
+import { cityEvents, Unsubscribe } from '../events';
 
 export interface ICoordinate {
   x: number;
@@ -24,10 +26,39 @@ export interface ICity {
 export class City implements ICity {
   size: number;
   tiles: ITile[][];
+  private unsubscribers: Unsubscribe[];
 
   constructor(size: number) {
     this.size = size;
     this.tiles = this.initTiles(size);
+    this.unsubscribers = [
+      cityEvents.on('roadNetworkChanged', ({ x, y }) =>
+        this.recomputeRoadAccessNear(x, y)
+      ),
+      cityEvents.on('buildingPlaced', ({ x, y }) =>
+        this.getTile(x, y)?.roadAccess?.recompute(this)
+      ),
+    ];
+  }
+
+  /** Unsubscribes from the shared event bus. Call when this City is discarded. */
+  dispose(): void {
+    this.unsubscribers.forEach((unsubscribe) => unsubscribe());
+  }
+
+  /**
+   * A road changed at (x, y): every tile whose own road-access search
+   * (radius SEARCH_DISTANCE) could reach (x, y) needs re-evaluating, which
+   * is exactly the tiles within SEARCH_DISTANCE of (x, y) themselves.
+   */
+  private recomputeRoadAccessNear(x: number, y: number): void {
+    const radius = CONFIG.ATTRIBUTES.ROAD_ACCESS.SEARCH_DISTANCE;
+    for (let dx = -radius; dx <= radius; dx++) {
+      for (let dy = -radius; dy <= radius; dy++) {
+        if (Math.abs(dx) + Math.abs(dy) > radius) continue;
+        this.getTile(x + dx, y + dy)?.roadAccess?.recompute(this);
+      }
+    }
   }
 
   private initTiles(size: number): ITile[][] {

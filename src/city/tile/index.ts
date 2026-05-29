@@ -7,17 +7,13 @@ import {
 } from "../building/attributes/roadAccess";
 import { cityEvents } from "../../events";
 
-export interface RoadAccess {
-  value: boolean;
-}
-
 export interface ITile {
   id: string;
   x: number;
   y: number;
   terrain: string;
   building: BuildingEntity | null | undefined;
-  roadAccess: RoadAccess | null | undefined;
+  roadAccess: IRoadAccessAttribute | null | undefined;
   distanceTo(tile: ITile): number;
   simulate(city: ICity): void;
   refresh(city: ICity): void;
@@ -53,7 +49,6 @@ export class Tile implements ITile {
 
   simulate(city: ICity): void {
     this.building?.simulate(city);
-    this.roadAccess?.simulate(city);
   }
 
   removeBuilding(): void {
