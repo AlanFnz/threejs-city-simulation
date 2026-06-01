@@ -51,10 +51,16 @@ export class ResidentsAttribute {
   }
 
   evictAll(): void {
-    for (const resident of this.residents) {
-      resident.dispose();
-    }
+    const evicted = this.residents;
     this.residents = [];
+    for (const resident of evicted) {
+      resident.dispose();
+      cityEvents.emit('citizenMovedOut', {
+        citizenId: resident.id,
+        x: this.zone.x,
+        y: this.zone.y,
+      });
+    }
   }
 
   dispose(): void {

@@ -51,3 +51,55 @@ describe('ResidentsAttribute move-in', () => {
     });
   });
 });
+
+describe('ResidentsAttribute.evictAll', () => {
+  beforeEach(() => {
+    mockedRandom.mockReset();
+    cityEvents.clear();
+  });
+
+  it('clears the roster before emitting, so listeners see the post-eviction count', () => {
+    const zone = new ResidentialZone(2, 3);
+    zone.development.state = DevelopmentState.DEVELOPED;
+    mockedRandom.mockReturnValue(0); // move-in roll + SCHOOL-age citizen
+    zone.residents.update({} as ICity);
+    expect(zone.residents.count).toBe(1);
+
+    let countDuringEmit = -1;
+    cityEvents.on('citizenMovedOut', () => {
+      countDuringEmit = zone.residents.count;
+    });
+
+    zone.residents.evictAll();
+
+    expect(countDuringEmit).toBe(0);
+  });
+
+  it('emits citizenMovedOut once per evicted resident', () => {
+    const zone = new ResidentialZone(2, 3);
+    zone.development.state = DevelopmentState.DEVELOPED;
+    mockedRandom.mockReturnValue(0);
+    zone.residents.update({} as ICity); // one resident moves in
+    const listener = vi.fn();
+    cityEvents.on('citizenMovedOut', listener);
+
+    zone.residents.evictAll();
+
+    expect(listener).toHaveBeenCalledTimes(1);
+    expect(listener).toHaveBeenCalledWith({
+      citizenId: expect.any(String),
+      x: 2,
+      y: 3,
+    });
+  });
+
+  it('emits nothing when there are no residents to evict', () => {
+    const zone = new ResidentialZone(0, 0);
+    const listener = vi.fn();
+    cityEvents.on('citizenMovedOut', listener);
+
+    zone.residents.evictAll();
+
+    expect(listener).not.toHaveBeenCalled();
+  });
+});

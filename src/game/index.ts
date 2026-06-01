@@ -7,6 +7,7 @@ import { ISceneManager, SceneManager } from "../sceneManager";
 import { createUi } from "../ui";
 import { TOOLBAR_BUTTONS, ToggleButton } from "../ui/constants";
 import { setupEventListeners } from "./utils";
+import { cityEvents, Unsubscribe } from "../events";
 
 export interface IGame {
   selectedControl: HTMLElement | null;
@@ -33,6 +34,7 @@ export class Game implements IGame {
     this.sceneManager.start();
     setInterval(this.step.bind(this), 1000);
   });
+  private unsubscribers: Unsubscribe[] = [];
 
   constructor() {
     createUi();
@@ -45,6 +47,61 @@ export class Game implements IGame {
       this.onMouseMove.bind(this),
       this.onMouseScroll.bind(this)
     );
+    this.subscribeToCityEvents();
+  }
+
+  /**
+   * TopBar and InfoPanel used to be refreshed unconditionally every tick.
+   * They now only re-render when an event says something they show actually
+   * changed, so cost scales with edits/sim activity instead of map size.
+   */
+  private subscribeToCityEvents(): void {
+    this.unsubscribers.push(
+      cityEvents.on("citizenMovedIn", () => this.updateTitleBar()),
+      cityEvents.on("citizenMovedOut", () => this.updateTitleBar()),
+      cityEvents.on("developmentStateChanged", (payload) =>
+        this.refreshInfoOverlayIfFocused(payload)
+      ),
+      cityEvents.on("levelChanged", (payload) =>
+        this.refreshInfoOverlayIfFocused(payload)
+      ),
+      cityEvents.on("citizenMovedIn", (payload) =>
+        this.refreshInfoOverlayIfFocused(payload)
+      ),
+      cityEvents.on("citizenMovedOut", (payload) =>
+        this.refreshInfoOverlayIfFocused(payload)
+      ),
+      cityEvents.on("citizenEmployed", (payload) =>
+        this.refreshInfoOverlayIfFocused(payload)
+      ),
+      cityEvents.on("citizenUnemployed", (payload) =>
+        this.refreshInfoOverlayIfFocused(payload)
+      ),
+      cityEvents.on("buildingPlaced", (payload) =>
+        this.refreshInfoOverlayIfFocused(payload)
+      ),
+      cityEvents.on("buildingRemoved", (payload) =>
+        this.refreshInfoOverlayIfFocused(payload)
+      )
+    );
+  }
+
+  /** Unsubscribes from the shared event bus. Call when this Game is discarded. */
+  dispose(): void {
+    this.unsubscribers.forEach((unsubscribe) => unsubscribe());
+  }
+
+  private refreshInfoOverlayIfFocused(coordinate: {
+    x: number;
+    y: number;
+  }): void {
+    if (
+      this.focusedObject &&
+      this.focusedObject.x === coordinate.x &&
+      this.focusedObject.y === coordinate.y
+    ) {
+      this.updateInfoOverlay();
+    }
   }
 
   step(): void {
@@ -53,8 +110,6 @@ export class Game implements IGame {
     if (this.isPaused) return;
     this.city.simulate();
     this.sceneManager.update(this.city);
-    this.updateTitleBar();
-    this.updateInfoOverlay();
   }
 
   onToolSelected(event: MouseEvent): void {

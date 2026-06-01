@@ -52,6 +52,7 @@ export interface CityEventMap {
   };
   levelChanged: { x: number; y: number; level: number; previousLevel: number };
   citizenMovedIn: { citizenId: string; x: number; y: number };
+  citizenMovedOut: { citizenId: string; x: number; y: number };
   citizenEmployed: { citizenId: string; x: number; y: number };
   citizenUnemployed: { citizenId: string; x: number; y: number };
   roadNetworkChanged: { x: number; y: number };
