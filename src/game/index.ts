@@ -8,6 +8,7 @@ import { createUi } from "../ui";
 import { TOOLBAR_BUTTONS, ToggleButton } from "../ui/constants";
 import { setupEventListeners } from "./utils";
 import { cityEvents, Unsubscribe } from "../events";
+import { createTools, GameContext, Tool } from "./tools";
 
 export interface IGame {
   selectedControl: HTMLElement | null;
@@ -35,6 +36,12 @@ export class Game implements IGame {
     setInterval(this.step.bind(this), 1000);
   });
   private unsubscribers: Unsubscribe[] = [];
+  private tools: Record<string, Tool> = createTools();
+  private gameContext: GameContext = {
+    city: this.city,
+    sceneManager: this.sceneManager,
+    setFocusedTile: (tile) => this.setFocusedTile(tile),
+  };
 
   constructor() {
     createUi();
@@ -164,7 +171,7 @@ export class Game implements IGame {
     const hoverObject = this.sceneManager.getSelectedObject(event);
     this.sceneManager.setHighlightedMesh(hoverObject as THREE.Mesh);
     if (hoverObject && event.buttons & 1) {
-      this.useActiveTool(hoverObject as THREE.Object3D);
+      this.useActiveTool(hoverObject as THREE.Object3D, true);
     }
 
     this.sceneManager.cameraManager.onMouseMove(event);
@@ -174,28 +181,27 @@ export class Game implements IGame {
     this.sceneManager.cameraManager.onMouseScroll(event);
   }
 
-  private useActiveTool(object: THREE.Object3D | null): void {
+  private useActiveTool(
+    object: THREE.Object3D | null,
+    isDrag: boolean = false
+  ): void {
     if (!object) {
       this.updateInfoOverlay(true);
       return;
     }
     const tile = object.userData as ITile;
-    if (this.activeToolId === TOOLBAR_BUTTONS.SELECT.id) {
-      this.sceneManager.setActiveObject(object);
-      this.focusedObject = tile;
-      this.updateInfoOverlay();
-    } else if (
-      this.activeToolId === TOOLBAR_BUTTONS.BULLDOZE.id &&
-      tile.building
-    ) {
-      tile.removeBuilding();
-      this.city.simulate();
-      this.sceneManager.update(this.city);
-    } else if (!tile.building) {
-      tile.placeBuilding(this.activeToolId);
-      this.city.simulate();
-      this.sceneManager.update(this.city);
-    }
+    // Raycasts can land on non-tile meshes (e.g. a moving vehicle), whose
+    // userData is never set to a tile. Ignore those instead of dispatching.
+    if (typeof tile?.placeBuilding !== "function") return;
+    const tool = this.activeToolId ? this.tools[this.activeToolId] : undefined;
+    if (!tool) return;
+    const handler = (isDrag && tool.onDrag) || tool.onTileClick;
+    handler.call(tool, tile, object, this.gameContext);
+  }
+
+  private setFocusedTile(tile: ITile | null): void {
+    this.focusedObject = tile;
+    this.updateInfoOverlay();
   }
 
   private updateInfoOverlay(clear?: boolean): void {
