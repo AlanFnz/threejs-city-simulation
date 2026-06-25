@@ -3,7 +3,9 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 import { textures } from './textures';
 import { ITile } from '../city/tile';
 import { IZone } from '../city/building/interfaces';
-import { BUILDING_TYPE } from '../city/building/constants';
+import { BUILDING_TYPE, BuildingType } from '../city/building/constants';
+import { Road } from '../city/building/road';
+import { ICity } from '../city';
 import { models } from './models';
 import { ModelEntry, ModelKey, modelType } from './constants';
 import { DevelopmentState } from '../city/building/attributes/development';
@@ -14,6 +16,11 @@ export interface IAssetManager {
   createGroundMesh(tile: ITile): THREE.Mesh | null;
   createBuildingMesh(tile: ITile): THREE.Mesh | null;
   createRandomVehicleMesh(): THREE.Mesh | null;
+  createPreviewMesh(
+    tile: ITile,
+    buildingType: BuildingType,
+    city: ICity
+  ): THREE.Mesh | null;
   textures: Record<string, THREE.Texture>;
 }
 
@@ -220,5 +227,33 @@ export class AssetManager implements IAssetManager {
 
     const i = Math.floor(types.length * Math.random());
     return this.cloneMesh(types[i], true);
+  }
+
+  /**
+   * A translucent, un-attached preview of what placing buildingType at tile
+   * would look like. For roads, a throwaway Road is simulated against the
+   * real city (never inserted into the grid) so the ghost shows the correct
+   * connector style for the tile's actual current neighbors.
+   */
+  createPreviewMesh(
+    tile: ITile,
+    buildingType: BuildingType,
+    city: ICity
+  ): THREE.Mesh | null {
+    if (buildingType === BUILDING_TYPE.ROAD) {
+      const road = new Road(tile.x, tile.y);
+      road.simulate(city);
+      const mesh = this.cloneMesh(`${road.type}-${road.style}` as ModelKey, true);
+      if (!mesh) return null;
+      mesh.rotation.set(0, road.rotation.y * DEG2RAD, 0);
+      mesh.position.set(tile.x, 0.01, tile.y);
+      return mesh;
+    }
+
+    // RESIDENTIAL/COMMERCIAL/INDUSTRIAL all start out under construction.
+    const mesh = this.cloneMesh('UNDER-CONSTRUCTION' as ModelKey, true);
+    if (!mesh) return null;
+    mesh.position.set(tile.x, 0, tile.y);
+    return mesh;
   }
 }

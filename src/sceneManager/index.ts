@@ -10,17 +10,20 @@ export interface ISceneManager {
   stop(): void;
   update(city: ICity): void;
   cameraManager: ICameraManager;
+  assetManager: IAssetManager;
   getSelectedObject(event: MouseEvent): THREE.Object3D | null;
   setActiveObject(object: THREE.Object3D): void;
   deactivateObject(): void;
   setHighlightedMesh(mesh: THREE.Mesh | null): void;
+  showPreviewMesh(mesh: THREE.Object3D, valid: boolean): void;
+  hidePreviewMesh(): void;
 }
 
 export class SceneManager implements ISceneManager {
   private renderer: THREE.WebGLRenderer;
   private scene: THREE.Scene;
   private gameWindow: HTMLElement;
-  private assetManager: IAssetManager;
+  assetManager: IAssetManager;
   private buildings: (THREE.Mesh | null)[][];
   private terrain: THREE.Mesh[][] = [];
   private raycaster: THREE.Raycaster;
@@ -29,6 +32,7 @@ export class SceneManager implements ISceneManager {
   private hoverObject: THREE.Object3D | null;
   private vehicleGraph: VehicleGraph = null!;
   private root: THREE.Group = new THREE.Group();
+  private previewMesh: THREE.Object3D | null = null;
   cameraManager: ICameraManager;
 
   constructor(city: ICity, onLoad: () => void) {
@@ -204,6 +208,39 @@ export class SceneManager implements ISceneManager {
     if (this.hoverObject) {
       this.setMeshEmission(this.hoverObject, 0x555555);
     }
+  }
+
+  /**
+   * Shows a translucent ghost of a not-yet-placed building, tinted by
+   * validity. An invalid ghost sits at the same position as whatever's
+   * already on that tile, so depth testing is disabled and render order
+   * bumped - otherwise the opaque real building in front would win the
+   * depth test and hide the very ghost meant to warn "can't build here".
+   */
+  public showPreviewMesh(mesh: THREE.Object3D, valid: boolean): void {
+    this.hidePreviewMesh();
+
+    const tint = valid ? 0x33cc33 : 0xcc3333;
+    mesh.traverse((child) => {
+      if (!(child as THREE.Mesh).isMesh) return;
+      const material = (child as THREE.Mesh)
+        .material as THREE.MeshLambertMaterial;
+      material.color = new THREE.Color(tint);
+      material.opacity = 0.55;
+      material.depthTest = false;
+      child.renderOrder = 999;
+    });
+    mesh.userData.nonInteractive = true;
+
+    this.root.add(mesh);
+    this.previewMesh = mesh;
+  }
+
+  public hidePreviewMesh(): void {
+    if (!this.previewMesh) return;
+    this.disposeMeshMaterials(this.previewMesh);
+    this.root.remove(this.previewMesh);
+    this.previewMesh = null;
   }
 
   private setMeshEmission(mesh: THREE.Object3D | null, color: number): void {

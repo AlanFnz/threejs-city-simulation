@@ -11,6 +11,7 @@ function fakeContext(): GameContext & { setFocusedTile: ReturnType<typeof vi.fn>
       setActiveObject: vi.fn(),
       update: vi.fn(),
     } as unknown as GameContext['sceneManager'],
+    assetManager: {} as GameContext['assetManager'],
     setFocusedTile: vi.fn(),
   };
 }

@@ -9,6 +9,7 @@ function fakeContext(): GameContext {
   return {
     city: { simulate: vi.fn() } as unknown as ICity,
     sceneManager: { update: vi.fn() } as unknown as GameContext['sceneManager'],
+    assetManager: {} as GameContext['assetManager'],
     setFocusedTile: vi.fn(),
   };
 }

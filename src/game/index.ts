@@ -40,8 +40,10 @@ export class Game implements IGame {
   private gameContext: GameContext = {
     city: this.city,
     sceneManager: this.sceneManager,
+    assetManager: this.sceneManager.assetManager,
     setFocusedTile: (tile) => this.setFocusedTile(tile),
   };
+  private lastPreviewTile: ITile | null = null;
 
   constructor() {
     createUi();
@@ -127,6 +129,8 @@ export class Game implements IGame {
     this.selectedControl.classList.add("selected");
     this.activeToolId = this.selectedControl.getAttribute("data-type") || null;
     this.sceneManager.deactivateObject();
+    this.sceneManager.hidePreviewMesh();
+    this.lastPreviewTile = null;
   }
 
   togglePause(): void {
@@ -170,11 +174,34 @@ export class Game implements IGame {
     this.lastMove = Date.now();
     const hoverObject = this.sceneManager.getSelectedObject(event);
     this.sceneManager.setHighlightedMesh(hoverObject as THREE.Mesh);
+    this.updatePreview(hoverObject as THREE.Object3D | null);
     if (hoverObject && event.buttons & 1) {
       this.useActiveTool(hoverObject as THREE.Object3D, true);
     }
 
     this.sceneManager.cameraManager.onMouseMove(event);
+  }
+
+  private updatePreview(object: THREE.Object3D | null): void {
+    const tile = object?.userData as ITile | undefined;
+    const tileIsValid = typeof tile?.placeBuilding === "function";
+    const tool = this.activeToolId ? this.tools[this.activeToolId] : undefined;
+
+    if (!tileIsValid || !tool?.getPreview) {
+      if (this.lastPreviewTile !== null) this.sceneManager.hidePreviewMesh();
+      this.lastPreviewTile = null;
+      return;
+    }
+
+    if (tile === this.lastPreviewTile) return;
+    this.lastPreviewTile = tile as ITile;
+
+    const preview = tool.getPreview(tile as ITile, this.gameContext);
+    if (!preview) {
+      this.sceneManager.hidePreviewMesh();
+      return;
+    }
+    this.sceneManager.showPreviewMesh(preview.mesh, preview.valid);
   }
 
   private onMouseScroll(event: WheelEvent): void {

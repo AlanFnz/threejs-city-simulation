@@ -4,7 +4,7 @@ import { BulldozeTool } from "./bulldozeTool";
 import { BuildingTool } from "./buildingTool";
 import { Tool } from "./tool";
 
-export { Tool, GameContext } from "./tool";
+export { Tool, GameContext, ToolPreview } from "./tool";
 export { SelectTool } from "./selectTool";
 export { BulldozeTool } from "./bulldozeTool";
 export { BuildingTool } from "./buildingTool";
