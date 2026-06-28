@@ -1,4 +1,55 @@
-export default {
+export interface Config {
+  ATTRIBUTES: {
+    ROAD_ACCESS: {
+      /** tiles (Manhattan distance) a tile searches for a road */
+      SEARCH_DISTANCE: number;
+    };
+  };
+  CITIZEN: {
+    /** years */
+    MIN_WORKING_AGE: number;
+    /** years */
+    RETIREMENT_AGE: number;
+    /** tiles (Manhattan distance) a citizen searches for a job */
+    MAX_JOB_SEARCH_DISTANCE: number;
+  };
+  ZONE: {
+    /** probability per simulation tick, 0-1 */
+    ABANDONMENT_CHANCE: number;
+    /** probability per simulation tick, 0-1 */
+    LEVEL_UP_CHANCE: number;
+    /** probability per simulation tick, 0-1, of starting/resuming development */
+    REDEVELOP_CHANCE: number;
+    /** simulation ticks (~1s each) without road access before a zone is eligible for abandonment */
+    ABANDONMENT_THRESHOLD: number;
+    /** base of an exponential: MAX_RESIDENTS ^ level */
+    MAX_RESIDENTS: number;
+    /** base of an exponential: MAX_WORKERS ^ level */
+    MAX_WORKERS: number;
+    /** probability per simulation tick, 0-1 */
+    RESIDENT_MOVE_IN_CHANCE: number;
+    /** simulation ticks to finish construction */
+    CONSTRUCTION_TIME: number;
+  };
+  CITY: {
+    /** tiles per side */
+    SIZE: number;
+  };
+  VEHICLE: {
+    /** distance per millisecond */
+    SPEED: number;
+    /** milliseconds spent fading in/out at either end of a vehicle's life */
+    FADE_TIME: number;
+    /** milliseconds before a vehicle is removed regardless of route progress */
+    MAX_LIFETIME: number;
+    /** hard cap on vehicles in the scene at once */
+    MAX_VEHICLE_COUNT: number;
+    /** milliseconds between spawn attempts */
+    SPAWN_INTERVAL: number;
+  };
+}
+
+const CONFIG = {
   ATTRIBUTES: {
     ROAD_ACCESS: {
       SEARCH_DISTANCE: 3,
@@ -10,28 +61,25 @@ export default {
     MAX_JOB_SEARCH_DISTANCE: 4,
   },
   ZONE: {
-    // chances
     ABANDONMENT_CHANCE: 0.25,
     LEVEL_UP_CHANCE: 0.05,
-    REDEVELOP_CHANCE: 0.25, // probability of building being re-developed after it is no longer meeting the abandonment criteria
-    DEVELOPMENT_CHANCE: 0.25,
-
-    // props
-    ABANDONMENT_THRESHOLD: 10, // number of days before abandonment
-    MAX_ROAD_SEARCH_DISTANCE: 3, // max distance between buildng and road
-    MAX_RESIDENTS: 2, // used as exponential
-    MAX_WORKERS: 2, // used as exponential
+    REDEVELOP_CHANCE: 0.25,
+    ABANDONMENT_THRESHOLD: 10,
+    MAX_RESIDENTS: 2,
+    MAX_WORKERS: 2,
     RESIDENT_MOVE_IN_CHANCE: 0.5,
-    CONSTRUCTION_TIME: 3, // number of days it takes to build
+    CONSTRUCTION_TIME: 3,
   },
   CITY: {
     SIZE: 16,
   },
   VEHICLE: {
-    SPEED: 0.0005, // distance travelled per millisecond
-    FADE_TIME: 1000, // start/end time where the vehicle should fade
-    MAX_LIFETIME: 10000, // maximum lifetime of a vehicle
-    MAX_VEHICLE_COUNT: 10, // maximum number of vehicles in scene
-    SPAWN_INTERVAL: 1000, // how often vehicles are spawned in milliseconds
+    SPEED: 0.0005,
+    FADE_TIME: 1000,
+    MAX_LIFETIME: 10000,
+    MAX_VEHICLE_COUNT: 10,
+    SPAWN_INTERVAL: 1000,
   },
-};
+} as const satisfies Config;
+
+export default CONFIG;
