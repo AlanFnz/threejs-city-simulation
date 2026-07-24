@@ -222,6 +222,11 @@ export class SceneManager implements ISceneManager {
 
     const tint = valid ? 0x33cc33 : 0xcc3333;
     mesh.traverse((child) => {
+      // The raycaster reports the specific child hit, not this top-level
+      // container, so every descendant needs the flag - otherwise the ghost
+      // can intercept its own raycast, read as "no tile", hide itself, get
+      // out of the way, reappear, and repeat: a flicker every frame.
+      child.userData.nonInteractive = true;
       if (!(child as THREE.Mesh).isMesh) return;
       const material = (child as THREE.Mesh)
         .material as THREE.MeshLambertMaterial;
@@ -230,7 +235,6 @@ export class SceneManager implements ISceneManager {
       material.depthTest = false;
       child.renderOrder = 999;
     });
-    mesh.userData.nonInteractive = true;
 
     this.root.add(mesh);
     this.previewMesh = mesh;
