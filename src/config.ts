@@ -47,6 +47,10 @@ export interface Config {
     /** milliseconds between spawn attempts */
     SPAWN_INTERVAL: number;
   };
+  DEBUG: {
+    /** rebuilds and renders node/edge markers for the road graph on every road edit; O(citySize^2) per edit, so keep off outside debugging */
+    SHOW_VEHICLE_GRAPH: boolean;
+  };
 }
 
 const CONFIG = {
@@ -79,6 +83,9 @@ const CONFIG = {
     MAX_LIFETIME: 10000,
     MAX_VEHICLE_COUNT: 10,
     SPAWN_INTERVAL: 1000,
+  },
+  DEBUG: {
+    SHOW_VEHICLE_GRAPH: false,
   },
 } as const satisfies Config;
 

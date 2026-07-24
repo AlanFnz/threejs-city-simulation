@@ -29,6 +29,7 @@ export class VehicleGraph extends THREE.Group {
     this.add(this.vehicles);
 
     this.helper = new VehicleGraphHelper();
+    this.helper.visible = CONFIG.DEBUG.SHOW_VEHICLE_GRAPH;
     this.add(this.helper);
 
     // initialize the vehicle graph tiles array
@@ -40,7 +41,7 @@ export class VehicleGraph extends THREE.Group {
       this.tiles.push(column);
     }
 
-    this.helper.update(this);
+    if (CONFIG.DEBUG.SHOW_VEHICLE_GRAPH) this.helper.update(this);
 
     setInterval(this.spawnVehicle.bind(this), CONFIG.VEHICLE.SPAWN_INTERVAL);
   }
@@ -83,7 +84,7 @@ export class VehicleGraph extends THREE.Group {
       topTile?.getWorldBottomSide()?.out?.disconnectAll();
       bottomTile?.getWorldTopSide()?.out?.disconnectAll();
       this.tiles[x][y] = null;
-      this.helper.update(this);
+      if (CONFIG.DEBUG.SHOW_VEHICLE_GRAPH) this.helper.update(this);
       return;
     }
 
@@ -132,7 +133,7 @@ export class VehicleGraph extends THREE.Group {
     }
 
     // update the vehicle graph visualization
-    this.helper.update(this);
+    if (CONFIG.DEBUG.SHOW_VEHICLE_GRAPH) this.helper.update(this);
   }
 
   getTile(x: number, y: number): VehicleGraphTile | null {
