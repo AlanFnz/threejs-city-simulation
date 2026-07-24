@@ -3,7 +3,7 @@ import {
   DEG2RAD,
   RIGHT_MOUSE_BUTTON,
   CAMERA_SIZE,
-  MIN_CAMERA_RADIUS,
+  MIN_CAMERA_RADIUS_AT_SIZE_16,
   MAX_CAMERA_RADIUS,
   MIN_CAMERA_ELEVATION,
   MAX_CAMERA_ELEVATION,
@@ -32,8 +32,10 @@ export class CameraManager implements ICameraManager {
   private cameraElevation: number;
   private startTouches: { x: number; y: number };
   private isPanning: boolean;
+  /** Scaled by 16/citySize so every map size keeps the same relative zoomed-out coverage. */
+  private minCameraRadius: number;
 
-  constructor(gameWindow: HTMLElement) {
+  constructor(gameWindow: HTMLElement, citySize: number) {
     const aspect = gameWindow.clientWidth / gameWindow.clientHeight;
 
     this.camera = new THREE.OrthographicCamera(
@@ -45,8 +47,15 @@ export class CameraManager implements ICameraManager {
       1000
     );
 
-    this.cameraOrigin = new THREE.Vector3(6, 0, 6);
-    this.cameraRadius = 0.5;
+    const center = citySize / 2 - 0.5;
+    this.cameraOrigin = new THREE.Vector3(center, 0, center);
+    this.minCameraRadius = MIN_CAMERA_RADIUS_AT_SIZE_16 * (16 / citySize);
+    // Starting zoom shows the whole map plus a small margin, same as the
+    // original tuning (size 16, zoom 0.5, visible extent 20).
+    this.cameraRadius = Math.min(
+      MAX_CAMERA_RADIUS,
+      Math.max(this.minCameraRadius, CAMERA_SIZE / (citySize + 4))
+    );
     this.cameraAzimuth = 135;
     this.cameraElevation = 45;
     this.startTouches = { x: 0, y: 0 };
@@ -105,7 +114,7 @@ export class CameraManager implements ICameraManager {
     this.cameraRadius *= 1 - event.deltaY * ZOOM_SENSITIVITY;
     this.cameraRadius = Math.min(
       MAX_CAMERA_RADIUS,
-      Math.max(MIN_CAMERA_RADIUS, this.cameraRadius)
+      Math.max(this.minCameraRadius, this.cameraRadius)
     );
     this.updateCameraPosition();
   }

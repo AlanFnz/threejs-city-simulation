@@ -45,7 +45,7 @@ export class SceneManager implements ISceneManager {
       this.initialize(city);
       onLoad();
     });
-    this.cameraManager = new CameraManager(this.gameWindow);
+    this.cameraManager = new CameraManager(this.gameWindow, city.size);
     this.buildings = [];
     this.terrain = [];
 
@@ -92,7 +92,7 @@ export class SceneManager implements ISceneManager {
       this.terrain.push(column);
     }
 
-    this.setupLights();
+    this.setupLights(city.size);
     this.setupGrid(city);
   }
 
@@ -114,19 +114,38 @@ export class SceneManager implements ISceneManager {
     });
   }
 
-  private setupLights(): void {
+  private setupLights(citySize: number): void {
+    // The shadow camera used to target the world origin, which is a corner
+    // of the grid (tiles span [0, citySize-1]) rather than its center. That
+    // was invisible at size 16 only because the old fixed frustum happened
+    // to be generous enough to reach past the map anyway; at real scale it
+    // clipped shadows well before the far edge. Centering the target on the
+    // grid (same point the camera and grid mesh use) and sizing a symmetric
+    // frustum around it scales correctly for any map size.
+    const center = citySize / 2 - 0.5;
+    // Half-extent of the ground's footprint as seen from the light: the
+    // frustum is axis-aligned to the light's own view direction, not the
+    // world, so it must fit the square's diagonal (citySize/sqrt(2)) rather
+    // than just its side, plus margin for tall buildings poking above y=0.
+    const halfExtent = citySize * 0.75;
+
     const sun = new THREE.DirectionalLight(0xffffff, 1);
-    sun.position.set(10, 20, 20);
+    sun.position.set(center + 10, 20, center + 20);
+    sun.target.position.set(center, 0, center);
     sun.castShadow = true;
-    sun.shadow.camera.left = -10;
-    sun.shadow.camera.right = 10;
-    sun.shadow.camera.top = 0;
-    sun.shadow.camera.bottom = -10;
+    sun.shadow.camera.left = -halfExtent;
+    sun.shadow.camera.right = halfExtent;
+    sun.shadow.camera.top = halfExtent;
+    sun.shadow.camera.bottom = -halfExtent;
     sun.shadow.mapSize.width = 1024;
     sun.shadow.mapSize.height = 1024;
-    sun.shadow.camera.near = 10;
-    sun.shadow.camera.far = 50;
+    sun.shadow.camera.near = 1;
+    // Distance from the light to its target is fixed at 30 (sqrt(10^2+20^2+20^2));
+    // the far plane needs to reach past the target by roughly the map's own
+    // extent to cover the far side of the ground from the light's viewpoint.
+    sun.shadow.camera.far = citySize + 50;
     this.root.add(sun);
+    this.root.add(sun.target);
     this.root.add(new THREE.AmbientLight(0xffffff, 0.2));
   }
 

@@ -7,7 +7,9 @@ export const MIDDLE_MOUSE_BUTTON = 1;
 export const RIGHT_MOUSE_BUTTON = 2;
 
 export const CAMERA_SIZE = 10;
-export const MIN_CAMERA_RADIUS = 0.1;
+/** Zoom-out limit tuned for a 16-tile map; CameraManager scales this by 16/citySize. */
+export const MIN_CAMERA_RADIUS_AT_SIZE_16 = 0.1;
+/** Zoom-in limit: tile detail doesn't change with map size, so this stays fixed. */
 export const MAX_CAMERA_RADIUS = 1.5;
 export const INIT_CAMERA_ELEVATION = 45;
 export const MIN_CAMERA_ELEVATION = 10;
