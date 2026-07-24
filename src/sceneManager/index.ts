@@ -1,9 +1,24 @@
 import * as THREE from 'three';
 import { ICity } from '../city';
+import { ITile } from '../city/tile';
 import { AssetManager, IAssetManager } from '../assetManager';
 import { ICameraManager, CameraManager } from '../cameraManager';
 import { VehicleGraph } from '../city/vehicle/vehicleGraph';
 import { BUILDING_TYPE } from '../city/building/constants';
+
+/** Matrix that collapses a terrain instance to zero volume - InstancedMesh has
+ * no per-instance visibility flag, so hiding a tile means scaling its instance
+ * to nothing rather than toggling a `visible` property. */
+const HIDDEN_INSTANCE_MATRIX = new THREE.Matrix4().makeScale(0, 0, 0);
+
+/** Approximate the old emissive hover/select glow as a multiplicative tint,
+ * since InstancedMesh has no per-instance emissive - only instanceColor,
+ * which multiplies the sampled texture rather than adding light to it. */
+const TERRAIN_TINTS: Record<number, THREE.Color> = {
+  0x000000: new THREE.Color(1, 1, 1),
+  0x555555: new THREE.Color(1.3, 1.3, 1.1),
+  0xaaaa55: new THREE.Color(1.6, 1.6, 0.9),
+};
 
 export interface ISceneManager {
   start(): void;
@@ -25,11 +40,20 @@ export class SceneManager implements ISceneManager {
   private gameWindow: HTMLElement;
   assetManager: IAssetManager;
   private buildings: (THREE.Mesh | null)[][];
-  private terrain: THREE.Mesh[][] = [];
+  private terrainMesh: THREE.InstancedMesh | null = null;
+  private terrainTiles: (ITile | null)[] = [];
+  private terrainBaseMatrices: THREE.Matrix4[] = [];
+  private terrainHidden: boolean[] = [];
   private raycaster: THREE.Raycaster;
   private mouse: THREE.Vector2;
   private activeObject: THREE.Object3D | null;
+  private activeTerrainIndex: number | null = null;
   private hoverObject: THREE.Object3D | null;
+  private hoverTerrainIndex: number | null = null;
+  /** Set by getSelectedObject just before returning terrainMesh; read
+   * synchronously by the setHighlightedMesh/setActiveObject call that follows
+   * within the same mouse-event handler, before any other raycast can run. */
+  private lastPickedTerrainIndex: number | null = null;
   private vehicleGraph: VehicleGraph = null!;
   private root: THREE.Group = new THREE.Group();
   private previewMesh: THREE.Object3D | null = null;
@@ -47,7 +71,6 @@ export class SceneManager implements ISceneManager {
     });
     this.cameraManager = new CameraManager(this.gameWindow, city.size);
     this.buildings = [];
-    this.terrain = [];
 
     this.renderer.setSize(
       this.gameWindow.offsetWidth,
@@ -75,25 +98,44 @@ export class SceneManager implements ISceneManager {
     this.root.add(this.vehicleGraph);
 
     this.buildings = [];
-    this.terrain = [];
-
     for (let x = 0; x < city.size; x++) {
-      const column = [];
-      for (let y = 0; y < city.size; y++) {
-        const tile = city.getTile(x, y);
-        if (tile) {
-          const mesh = this.assetManager.createGroundMesh(tile);
-          if (!mesh) return
-          this.root.add(mesh);
-          column.push(mesh);
-        }
-      }
       this.buildings.push([...Array(city.size)]);
-      this.terrain.push(column);
     }
 
+    this.setupTerrain(city);
     this.setupLights(city.size);
     this.setupGrid(city);
+  }
+
+  private setupTerrain(city: ICity): void {
+    this.terrainMesh?.geometry.dispose();
+
+    const count = city.size * city.size;
+    const mesh = this.assetManager.createTerrainInstancedMesh(count);
+    if (!mesh) return;
+
+    this.terrainTiles = new Array(count).fill(null);
+    this.terrainBaseMatrices = new Array(count);
+    this.terrainHidden = new Array(count).fill(false);
+
+    const matrix = new THREE.Matrix4();
+    const white = TERRAIN_TINTS[0x000000];
+    for (let x = 0; x < city.size; x++) {
+      for (let y = 0; y < city.size; y++) {
+        const tile = city.getTile(x, y);
+        const index = x * city.size + y;
+        matrix.makeTranslation(x, 0, y);
+        this.terrainBaseMatrices[index] = matrix.clone();
+        this.terrainTiles[index] = tile;
+        mesh.setMatrixAt(index, tile ? matrix : HIDDEN_INSTANCE_MATRIX);
+        mesh.setColorAt(index, white);
+      }
+    }
+    mesh.instanceMatrix.needsUpdate = true;
+    if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+
+    this.terrainMesh = mesh;
+    this.root.add(mesh);
   }
 
   /**
@@ -174,13 +216,26 @@ export class SceneManager implements ISceneManager {
   }
 
   update(city: ICity): void {
+    let terrainMatrixChanged = false;
+
     for (let x = 0; x < city.size; x++) {
       for (let y = 0; y < city.size; y++) {
         const tile = city.getTile(x, y);
         const existingBuildingMesh = this.buildings[x][y];
 
         if (tile) {
-          this.terrain[x][y].visible = !tile.building?.hideTerrain;
+          if (this.terrainMesh) {
+            const index = x * city.size + y;
+            const hidden = !!tile.building?.hideTerrain;
+            if (hidden !== this.terrainHidden[index]) {
+              this.terrainMesh.setMatrixAt(
+                index,
+                hidden ? HIDDEN_INSTANCE_MATRIX : this.terrainBaseMatrices[index]
+              );
+              this.terrainHidden[index] = hidden;
+              terrainMatrixChanged = true;
+            }
+          }
 
           if (!tile.building && existingBuildingMesh) {
             this.disposeMeshMaterials(existingBuildingMesh);
@@ -204,6 +259,10 @@ export class SceneManager implements ISceneManager {
         }
       }
     }
+
+    if (terrainMatrixChanged && this.terrainMesh) {
+      this.terrainMesh.instanceMatrix.needsUpdate = true;
+    }
   }
 
   public start(): void {
@@ -220,13 +279,36 @@ export class SceneManager implements ISceneManager {
   }
 
   public setHighlightedMesh(mesh: THREE.Mesh | null): void {
-    if (this.hoverObject && this.hoverObject !== this.activeObject) {
-      this.setMeshEmission(this.hoverObject, 0x000000);
+    if (
+      this.hoverObject &&
+      !this.isSamePick(
+        this.hoverObject,
+        this.hoverTerrainIndex,
+        this.activeObject,
+        this.activeTerrainIndex
+      )
+    ) {
+      this.setMeshEmission(this.hoverObject, this.hoverTerrainIndex, 0x000000);
     }
     this.hoverObject = mesh;
+    this.hoverTerrainIndex =
+      mesh === this.terrainMesh ? this.lastPickedTerrainIndex : null;
     if (this.hoverObject) {
-      this.setMeshEmission(this.hoverObject, 0x555555);
+      this.setMeshEmission(this.hoverObject, this.hoverTerrainIndex, 0x555555);
     }
+  }
+
+  /** Two picks are the same target only if they're the same object AND,
+   * for the shared terrain InstancedMesh, the same tile instance. */
+  private isSamePick(
+    objectA: THREE.Object3D | null,
+    terrainIndexA: number | null,
+    objectB: THREE.Object3D | null,
+    terrainIndexB: number | null
+  ): boolean {
+    if (objectA !== objectB) return false;
+    if (objectA === this.terrainMesh) return terrainIndexA === terrainIndexB;
+    return true;
   }
 
   /**
@@ -266,8 +348,21 @@ export class SceneManager implements ISceneManager {
     this.previewMesh = null;
   }
 
-  private setMeshEmission(mesh: THREE.Object3D | null, color: number): void {
-    if (!mesh || !(mesh instanceof THREE.Mesh)) return;
+  private setMeshEmission(
+    mesh: THREE.Object3D | null,
+    terrainIndex: number | null,
+    color: number
+  ): void {
+    if (!mesh) return;
+    if (mesh === this.terrainMesh) {
+      if (terrainIndex === null) return;
+      const tint = TERRAIN_TINTS[color] ?? TERRAIN_TINTS[0x000000];
+      this.terrainMesh.setColorAt(terrainIndex, tint);
+      if (this.terrainMesh.instanceColor)
+        this.terrainMesh.instanceColor.needsUpdate = true;
+      return;
+    }
+    if (!(mesh instanceof THREE.Mesh)) return;
     mesh.material.emissive?.setHex(color);
   }
 
@@ -282,23 +377,40 @@ export class SceneManager implements ISceneManager {
       true
     );
     for (const intersection of intersections) {
+      if (
+        this.terrainMesh &&
+        intersection.object === this.terrainMesh &&
+        intersection.instanceId !== undefined
+      ) {
+        const tile = this.terrainTiles[intersection.instanceId];
+        if (!tile) continue;
+        this.terrainMesh.userData = tile;
+        this.lastPickedTerrainIndex = intersection.instanceId;
+        return this.terrainMesh;
+      }
       if (!intersection.object.userData.nonInteractive) {
+        this.lastPickedTerrainIndex = null;
         return intersection.object;
       }
     }
+    this.lastPickedTerrainIndex = null;
     return null;
   }
 
   public setActiveObject(object: THREE.Object3D): void {
     this.deactivateObject();
     this.activeObject = object;
-    if (this.activeObject) this.setMeshEmission(this.activeObject, 0xaaaa55);
+    this.activeTerrainIndex =
+      object === this.terrainMesh ? this.lastPickedTerrainIndex : null;
+    if (this.activeObject)
+      this.setMeshEmission(this.activeObject, this.activeTerrainIndex, 0xaaaa55);
   }
 
   public deactivateObject(): void {
     if (this.activeObject) {
-      this.setMeshEmission(this.activeObject, 0x000000);
+      this.setMeshEmission(this.activeObject, this.activeTerrainIndex, 0x000000);
       this.activeObject = null;
+      this.activeTerrainIndex = null;
     }
   }
 

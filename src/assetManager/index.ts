@@ -13,7 +13,7 @@ import { DevelopmentState } from '../city/building/attributes/development';
 const DEG2RAD = Math.PI / 180.0;
 
 export interface IAssetManager {
-  createGroundMesh(tile: ITile): THREE.Mesh | null;
+  createTerrainInstancedMesh(count: number): THREE.InstancedMesh | null;
   createBuildingMesh(tile: ITile): THREE.Mesh | null;
   createRandomVehicleMesh(): THREE.Mesh | null;
   createPreviewMesh(
@@ -137,21 +137,43 @@ export class AssetManager implements IAssetManager {
     return mesh;
   }
 
-  createGroundMesh(tile: ITile): THREE.Mesh | null {
+  /**
+   * One InstancedMesh shared by every grass tile instead of a mesh per tile.
+   * The GRASS model is a single mesh/material GLB, so its geometry is baked
+   * with the loaded model's own transform (matrixWorld) so each instance only
+   * needs a per-tile translation - reproducing what createGroundMesh used to
+   * do per-tile, without per-tile Object3D/material overhead.
+   */
+  createTerrainInstancedMesh(count: number): THREE.InstancedMesh | null {
+    const root = this.loadedModels[ModelKey.GRASS];
+    if (!root) return null;
+
+    let sourceMesh: THREE.Mesh | null = null;
+    root.updateMatrixWorld(true);
+    root.traverse((obj) => {
+      if (!sourceMesh && (obj as THREE.Mesh).isMesh) {
+        sourceMesh = obj as THREE.Mesh;
+      }
+    });
+    if (!sourceMesh) return null;
+
+    const geometry = (sourceMesh as THREE.Mesh).geometry
+      .clone()
+      .applyMatrix4((sourceMesh as THREE.Mesh).matrixWorld);
+
     const texture = this.textures.grass.clone();
     texture.wrapS = THREE.RepeatWrapping;
     texture.wrapT = THREE.RepeatWrapping;
     texture.repeat.set(4, 4);
+    texture.needsUpdate = true;
     const material = new THREE.MeshLambertMaterial({
       map: texture,
     });
 
-    const mesh = this.cloneMesh(ModelKey.GRASS, false, material);
-    if (!mesh) return null;
-    mesh.traverse((obj) => (obj.userData = tile));
-    mesh.position.set(tile.x, 0, tile.y);
-    mesh.receiveShadow = true;
-    return mesh;
+    const instancedMesh = new THREE.InstancedMesh(geometry, material, count);
+    instancedMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+    instancedMesh.receiveShadow = true;
+    return instancedMesh;
   }
 
   createBuildingMesh(tile: ITile): THREE.Mesh | null {
