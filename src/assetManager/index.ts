@@ -12,9 +12,19 @@ import { DevelopmentState } from '../city/building/attributes/development';
 
 const DEG2RAD = Math.PI / 180.0;
 
+export interface ResolvedBuildingInstance {
+  modelKey: ModelKey;
+  matrix: THREE.Matrix4;
+  abandoned: boolean;
+}
+
 export interface IAssetManager {
   createTerrainInstancedMesh(count: number): THREE.InstancedMesh | null;
-  createBuildingMesh(tile: ITile): THREE.Mesh | null;
+  createModelInstancedMesh(
+    modelKey: ModelKey,
+    count: number
+  ): THREE.InstancedMesh | null;
+  resolveBuildingInstance(tile: ITile): ResolvedBuildingInstance | null;
   createRandomVehicleMesh(): THREE.Mesh | null;
   createPreviewMesh(
     tile: ITile,
@@ -138,14 +148,18 @@ export class AssetManager implements IAssetManager {
   }
 
   /**
-   * One InstancedMesh shared by every grass tile instead of a mesh per tile.
-   * The GRASS model is a single mesh/material GLB, so its geometry is baked
-   * with the loaded model's own transform (matrixWorld) so each instance only
-   * needs a per-tile translation - reproducing what createGroundMesh used to
-   * do per-tile, without per-tile Object3D/material overhead.
+   * One InstancedMesh shared by every tile using this model instead of a mesh
+   * per tile. Every zone/road/terrain GLB is single mesh/single material, so
+   * its geometry is baked with the loaded model's own transform (matrixWorld)
+   * so each instance only needs a per-tile placement matrix - reproducing
+   * what cloneMesh + per-tile position/rotation used to do, without a
+   * per-tile Object3D/material.
    */
-  createTerrainInstancedMesh(count: number): THREE.InstancedMesh | null {
-    const root = this.loadedModels[ModelKey.GRASS];
+  createModelInstancedMesh(
+    modelKey: ModelKey,
+    count: number
+  ): THREE.InstancedMesh | null {
+    const root = this.loadedModels[modelKey];
     if (!root) return null;
 
     let sourceMesh: THREE.Mesh | null = null;
@@ -160,39 +174,62 @@ export class AssetManager implements IAssetManager {
     const geometry = (sourceMesh as THREE.Mesh).geometry
       .clone()
       .applyMatrix4((sourceMesh as THREE.Mesh).matrixWorld);
+    const sourceMaterial = (sourceMesh as THREE.Mesh)
+      .material as THREE.MeshLambertMaterial;
+    const material = sourceMaterial.clone();
+
+    const instancedMesh = new THREE.InstancedMesh(geometry, material, count);
+    instancedMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+    instancedMesh.receiveShadow = (sourceMesh as THREE.Mesh).receiveShadow;
+    instancedMesh.castShadow = (sourceMesh as THREE.Mesh).castShadow;
+    return instancedMesh;
+  }
+
+  /**
+   * One InstancedMesh shared by every grass tile. Grass uses its own tiled
+   * texture (not the shared base/specular atlas every other model uses), so
+   * it gets a dedicated material rather than cloning the loaded model's.
+   */
+  createTerrainInstancedMesh(count: number): THREE.InstancedMesh | null {
+    const mesh = this.createModelInstancedMesh(ModelKey.GRASS, count);
+    if (!mesh) return null;
 
     const texture = this.textures.grass.clone();
     texture.wrapS = THREE.RepeatWrapping;
     texture.wrapT = THREE.RepeatWrapping;
     texture.repeat.set(4, 4);
     texture.needsUpdate = true;
-    const material = new THREE.MeshLambertMaterial({
-      map: texture,
-    });
-
-    const instancedMesh = new THREE.InstancedMesh(geometry, material, count);
-    instancedMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
-    instancedMesh.receiveShadow = true;
-    return instancedMesh;
+    mesh.material = new THREE.MeshLambertMaterial({ map: texture });
+    // GRASS's ModelEntry doesn't set castShadow, so loadModel's default
+    // (true) applies to the source mesh - but flat ground was never meant to
+    // cast shadows onto itself/neighbors, only receive them.
+    mesh.castShadow = false;
+    return mesh;
   }
 
-  createBuildingMesh(tile: ITile): THREE.Mesh | null {
+  /**
+   * Resolves what a tile's building should look like right now - which
+   * model, at what transform, and whether it's abandoned (for the base tint)
+   * - without creating a mesh. SceneManager places this into the shared
+   * InstancedMesh pool for that model.
+   */
+  resolveBuildingInstance(tile: ITile): ResolvedBuildingInstance | null {
     if (!tile.building) return null;
 
     switch (tile.building.type) {
       case BUILDING_TYPE.RESIDENTIAL:
       case BUILDING_TYPE.COMMERCIAL:
       case BUILDING_TYPE.INDUSTRIAL:
-        return this.createZoneMesh(tile);
+        return this.resolveZoneInstance(tile);
       case BUILDING_TYPE.ROAD:
-        return this.createRoadMesh(tile);
+        return this.resolveRoadInstance(tile);
       default:
         console.warn(`Mesh type ${tile.building?.type} is not recognized.`);
         return null;
     }
   }
 
-  private createZoneMesh(tile: ITile): THREE.Mesh | null {
+  private resolveZoneInstance(tile: ITile): ResolvedBuildingInstance | null {
     const zone = tile.building as IZone | null;
     if (!zone) {
       throw new Error('Tile does not have a valid building.');
@@ -209,37 +246,30 @@ export class AssetManager implements IAssetManager {
         break;
     }
 
-    const mesh = this.cloneMesh(modelName as ModelKey);
-    if (!mesh) return null;
-    mesh.traverse((obj) => (obj.userData = tile));
-    mesh.rotation.set(0, (zone.rotation?.y || 0) * DEG2RAD, 0);
-    mesh.position.set(zone.x, 0, zone.y);
+    const matrix = new THREE.Matrix4();
+    matrix.makeRotationY((zone.rotation?.y || 0) * DEG2RAD);
+    matrix.setPosition(zone.x, 0, zone.y);
 
-    if (zone.development.state === DevelopmentState.ABANDONED) {
-      mesh.traverse((obj) => {
-        if ((obj as THREE.Mesh).isMesh) {
-          const material = (obj as THREE.Mesh)
-            .material as THREE.MeshLambertMaterial;
-          material.color = new THREE.Color(0x707070);
-        }
-      });
-    }
-
-    return mesh;
+    return {
+      modelKey: modelName as ModelKey,
+      matrix,
+      abandoned: zone.development.state === DevelopmentState.ABANDONED,
+    };
   }
 
-  private createRoadMesh(tile: ITile): THREE.Mesh | null {
+  private resolveRoadInstance(tile: ITile): ResolvedBuildingInstance | null {
     const road = tile.building;
     if (!road) return null;
-    const mesh = this.cloneMesh(`${road.type}-${road.style}` as ModelKey);
-    if (!mesh) return null;
-    mesh.traverse((obj) => (obj.userData = tile));
-    if (road.rotation?.y !== undefined) {
-      mesh.rotation.set(0, road.rotation.y * DEG2RAD, 0);
-    }
-    mesh.position.set(road.x, 0.01, road.y);
-    mesh.receiveShadow = true;
-    return mesh;
+
+    const matrix = new THREE.Matrix4();
+    matrix.makeRotationY((road.rotation?.y ?? 0) * DEG2RAD);
+    matrix.setPosition(road.x, 0.01, road.y);
+
+    return {
+      modelKey: `${road.type}-${road.style}` as ModelKey,
+      matrix,
+      abandoned: false,
+    };
   }
 
   createRandomVehicleMesh(): THREE.Mesh | null {

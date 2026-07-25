@@ -2,23 +2,63 @@ import * as THREE from 'three';
 import { ICity } from '../city';
 import { ITile } from '../city/tile';
 import { AssetManager, IAssetManager } from '../assetManager';
+import { ModelKey } from '../assetManager/constants';
 import { ICameraManager, CameraManager } from '../cameraManager';
 import { VehicleGraph } from '../city/vehicle/vehicleGraph';
 import { BUILDING_TYPE } from '../city/building/constants';
 
-/** Matrix that collapses a terrain instance to zero volume - InstancedMesh has
- * no per-instance visibility flag, so hiding a tile means scaling its instance
- * to nothing rather than toggling a `visible` property. */
+/** Matrix that collapses an instance to zero volume - InstancedMesh has no
+ * per-instance visibility flag, so hiding a tile (terrain under a building,
+ * or a freed building pool slot) means scaling its instance to nothing
+ * rather than toggling a `visible` property. */
 const HIDDEN_INSTANCE_MATRIX = new THREE.Matrix4().makeScale(0, 0, 0);
 
-/** Approximate the old emissive hover/select glow as a multiplicative tint,
- * since InstancedMesh has no per-instance emissive - only instanceColor,
- * which multiplies the sampled texture rather than adding light to it. */
-const TERRAIN_TINTS: Record<number, THREE.Color> = {
-  0x000000: new THREE.Color(1, 1, 1),
-  0x555555: new THREE.Color(1.3, 1.3, 1.1),
-  0xaaaa55: new THREE.Color(1.6, 1.6, 0.9),
+const WHITE_TINT = new THREE.Color(1, 1, 1);
+const ABANDONED_TINT = new THREE.Color(0x707070);
+
+/** Highlights are a lerp toward a target color rather than a multiplicative
+ * factor: instanceColor only multiplies the sampled texture (no per-instance
+ * emissive like a regular mesh had), and a multiply produces a barely
+ * visible shift on already-dark building textures, even though the same
+ * factor reads clearly on bright flat grass. A lerp blends by a fixed
+ * *amount* regardless of how dark or light the base pixel is, so hover/select
+ * stay visible on every building instead of just terrain. */
+const HIGHLIGHT_BLENDS: Record<number, { color: THREE.Color; amount: number }> = {
+  // Not pure white: a base tint is white for every normal (non-abandoned)
+  // instance, and lerping white toward white is a no-op. THREE's color
+  // management applies sRGB<->linear conversion around this lerp, which
+  // compresses how visible a shift near white ends up looking - a saturated
+  // color and a strong amount are both needed for it to read clearly.
+  0x555555: { color: new THREE.Color(0.15, 0.55, 1), amount: 0.6 },
+  0xaaaa55: { color: new THREE.Color(1, 0.65, 0.05), amount: 0.65 },
 };
+
+function applyHighlight(base: THREE.Color, highlightColor: number): THREE.Color {
+  const blend = HIGHLIGHT_BLENDS[highlightColor];
+  if (!blend) return base.clone();
+  return base.clone().lerp(blend.color, blend.amount);
+}
+
+const INITIAL_POOL_CAPACITY = 16;
+
+interface BuildingPool {
+  mesh: THREE.InstancedMesh;
+  capacity: number;
+  freeSlots: number[];
+  tileAtSlot: (ITile | null)[];
+  baseTintAtSlot: THREE.Color[];
+}
+
+/** Per-tile record of which pool slot currently renders its building, and
+ * the transform/tint it was last given - so a redundant isMeshOutOfDate
+ * (e.g. Road recomputes it every tick even when nothing about the tile's
+ * connectivity actually changed) can be skipped instead of reallocating. */
+interface BuildingSlotRecord {
+  modelKey: ModelKey;
+  slot: number;
+  matrix: THREE.Matrix4;
+  abandoned: boolean;
+}
 
 export interface ISceneManager {
   start(): void;
@@ -39,7 +79,10 @@ export class SceneManager implements ISceneManager {
   private scene: THREE.Scene;
   private gameWindow: HTMLElement;
   assetManager: IAssetManager;
-  private buildings: (THREE.Mesh | null)[][];
+  private buildingSlots: (BuildingSlotRecord | null)[][] = [];
+  private buildingPools: Map<ModelKey, BuildingPool> = new Map();
+  private buildingPoolByMesh: Map<THREE.InstancedMesh, BuildingPool> =
+    new Map();
   private terrainMesh: THREE.InstancedMesh | null = null;
   private terrainTiles: (ITile | null)[] = [];
   private terrainBaseMatrices: THREE.Matrix4[] = [];
@@ -47,13 +90,13 @@ export class SceneManager implements ISceneManager {
   private raycaster: THREE.Raycaster;
   private mouse: THREE.Vector2;
   private activeObject: THREE.Object3D | null;
-  private activeTerrainIndex: number | null = null;
+  private activeInstanceIndex: number | null = null;
   private hoverObject: THREE.Object3D | null;
-  private hoverTerrainIndex: number | null = null;
-  /** Set by getSelectedObject just before returning terrainMesh; read
+  private hoverInstanceIndex: number | null = null;
+  /** Set by getSelectedObject just before returning an instanced mesh; read
    * synchronously by the setHighlightedMesh/setActiveObject call that follows
    * within the same mouse-event handler, before any other raycast can run. */
-  private lastPickedTerrainIndex: number | null = null;
+  private lastPickedInstanceIndex: number | null = null;
   private vehicleGraph: VehicleGraph = null!;
   private root: THREE.Group = new THREE.Group();
   private previewMesh: THREE.Object3D | null = null;
@@ -70,7 +113,6 @@ export class SceneManager implements ISceneManager {
       onLoad();
     });
     this.cameraManager = new CameraManager(this.gameWindow, city.size);
-    this.buildings = [];
 
     this.renderer.setSize(
       this.gameWindow.offsetWidth,
@@ -90,6 +132,7 @@ export class SceneManager implements ISceneManager {
 
   private initialize(city: ICity): void {
     this.disposeMeshMaterials(this.root);
+    this.disposeBuildingPools();
     this.scene.remove(this.root);
     this.root = new THREE.Group();
     this.scene.add(this.root);
@@ -97,9 +140,9 @@ export class SceneManager implements ISceneManager {
     this.vehicleGraph = new VehicleGraph(city, this.assetManager);
     this.root.add(this.vehicleGraph);
 
-    this.buildings = [];
+    this.buildingSlots = [];
     for (let x = 0; x < city.size; x++) {
-      this.buildings.push([...Array(city.size)]);
+      this.buildingSlots.push(new Array(city.size).fill(null));
     }
 
     this.setupTerrain(city);
@@ -119,7 +162,6 @@ export class SceneManager implements ISceneManager {
     this.terrainHidden = new Array(count).fill(false);
 
     const matrix = new THREE.Matrix4();
-    const white = TERRAIN_TINTS[0x000000];
     for (let x = 0; x < city.size; x++) {
       for (let y = 0; y < city.size; y++) {
         const tile = city.getTile(x, y);
@@ -128,7 +170,7 @@ export class SceneManager implements ISceneManager {
         this.terrainBaseMatrices[index] = matrix.clone();
         this.terrainTiles[index] = tile;
         mesh.setMatrixAt(index, tile ? matrix : HIDDEN_INSTANCE_MATRIX);
-        mesh.setColorAt(index, white);
+        mesh.setColorAt(index, WHITE_TINT);
       }
     }
     mesh.instanceMatrix.needsUpdate = true;
@@ -138,11 +180,22 @@ export class SceneManager implements ISceneManager {
     this.root.add(mesh);
   }
 
+  private disposeBuildingPools(): void {
+    for (const pool of this.buildingPools.values()) {
+      pool.mesh.geometry.dispose();
+    }
+    this.buildingPools.clear();
+    this.buildingPoolByMesh.clear();
+  }
+
   /**
    * Disposes cloned per-instance materials under an object.
    * Never disposes geometry: building/vehicle geometries are shared references
    * back to AssetManager's cached loaded models, so disposing one instance's
    * geometry would break every other instance of that model still in the scene.
+   * (Instance-pool geometries are a one-off bake per pool, not shared with
+   * AssetManager's cache, so those are disposed separately - see
+   * disposeBuildingPools/setupTerrain.)
    */
   private disposeMeshMaterials(object: THREE.Object3D): void {
     object.traverse((child) => {
@@ -215,46 +268,255 @@ export class SceneManager implements ISceneManager {
     this.root.add(grid);
   }
 
+  private getOrCreateBuildingPool(modelKey: ModelKey): BuildingPool | null {
+    const existing = this.buildingPools.get(modelKey);
+    if (existing) return existing;
+
+    const mesh = this.assetManager.createModelInstancedMesh(
+      modelKey,
+      INITIAL_POOL_CAPACITY
+    );
+    if (!mesh) return null;
+
+    for (let i = 0; i < INITIAL_POOL_CAPACITY; i++) {
+      mesh.setMatrixAt(i, HIDDEN_INSTANCE_MATRIX);
+    }
+    mesh.instanceMatrix.needsUpdate = true;
+
+    const pool: BuildingPool = {
+      mesh,
+      capacity: INITIAL_POOL_CAPACITY,
+      freeSlots: Array.from(
+        { length: INITIAL_POOL_CAPACITY },
+        (_, i) => INITIAL_POOL_CAPACITY - 1 - i
+      ),
+      tileAtSlot: new Array(INITIAL_POOL_CAPACITY).fill(null),
+      baseTintAtSlot: new Array(INITIAL_POOL_CAPACITY).fill(WHITE_TINT),
+    };
+    this.buildingPools.set(modelKey, pool);
+    this.buildingPoolByMesh.set(mesh, pool);
+    this.root.add(mesh);
+    return pool;
+  }
+
+  /** Doubles a pool's capacity. Growing an InstancedMesh means building a
+   * whole new one (its instance buffers are a fixed size at construction), so
+   * any outstanding hover/active reference to the old mesh object is
+   * repointed to the new one - the instance indices themselves don't change. */
+  private growBuildingPool(modelKey: ModelKey, pool: BuildingPool): BuildingPool {
+    const newCapacity = pool.capacity * 2;
+    const newMesh = this.assetManager.createModelInstancedMesh(
+      modelKey,
+      newCapacity
+    );
+    if (!newMesh) return pool;
+
+    const matrix = new THREE.Matrix4();
+    const color = new THREE.Color();
+    for (let i = 0; i < pool.capacity; i++) {
+      pool.mesh.getMatrixAt(i, matrix);
+      newMesh.setMatrixAt(i, matrix);
+      if (pool.mesh.instanceColor) {
+        color.fromBufferAttribute(pool.mesh.instanceColor, i);
+        newMesh.setColorAt(i, color);
+      }
+    }
+    for (let i = pool.capacity; i < newCapacity; i++) {
+      newMesh.setMatrixAt(i, HIDDEN_INSTANCE_MATRIX);
+    }
+    newMesh.instanceMatrix.needsUpdate = true;
+    if (newMesh.instanceColor) newMesh.instanceColor.needsUpdate = true;
+
+    this.root.remove(pool.mesh);
+    pool.mesh.geometry.dispose();
+    this.root.add(newMesh);
+
+    if (this.hoverObject === pool.mesh) this.hoverObject = newMesh;
+    if (this.activeObject === pool.mesh) this.activeObject = newMesh;
+    this.buildingPoolByMesh.delete(pool.mesh);
+
+    const freeSlots = [...pool.freeSlots];
+    for (let i = newCapacity - 1; i >= pool.capacity; i--) freeSlots.push(i);
+
+    const grown: BuildingPool = {
+      mesh: newMesh,
+      capacity: newCapacity,
+      freeSlots,
+      tileAtSlot: pool.tileAtSlot.concat(
+        new Array(newCapacity - pool.capacity).fill(null)
+      ),
+      baseTintAtSlot: pool.baseTintAtSlot.concat(
+        new Array(newCapacity - pool.capacity).fill(WHITE_TINT)
+      ),
+    };
+    this.buildingPools.set(modelKey, grown);
+    this.buildingPoolByMesh.set(newMesh, grown);
+    return grown;
+  }
+
+  private allocateBuildingSlot(
+    modelKey: ModelKey,
+    tile: ITile
+  ): { pool: BuildingPool; slot: number } | null {
+    let pool = this.getOrCreateBuildingPool(modelKey);
+    if (!pool) return null;
+    if (pool.freeSlots.length === 0) pool = this.growBuildingPool(modelKey, pool);
+    if (pool.freeSlots.length === 0) return null;
+
+    const slot = pool.freeSlots.pop() as number;
+    pool.tileAtSlot[slot] = tile;
+    return { pool, slot };
+  }
+
+  private freeBuildingSlot(record: BuildingSlotRecord): void {
+    const pool = this.buildingPools.get(record.modelKey);
+    if (!pool) return;
+    pool.mesh.setMatrixAt(record.slot, HIDDEN_INSTANCE_MATRIX);
+    pool.mesh.instanceMatrix.needsUpdate = true;
+    pool.tileAtSlot[record.slot] = null;
+    pool.freeSlots.push(record.slot);
+  }
+
+  private setBuildingSlotTransform(
+    pool: BuildingPool,
+    slot: number,
+    matrix: THREE.Matrix4
+  ): void {
+    pool.mesh.setMatrixAt(slot, matrix);
+    pool.mesh.instanceMatrix.needsUpdate = true;
+  }
+
+  private setBuildingSlotBaseTint(
+    pool: BuildingPool,
+    slot: number,
+    tint: THREE.Color
+  ): void {
+    pool.baseTintAtSlot[slot] = tint;
+    this.refreshInstanceColor(pool.mesh, slot);
+  }
+
+  /** Recombines a slot's stored base tint (normal/abandoned) with whatever
+   * highlight is currently active on it, if any - hover/active tracking is a
+   * single shared pair of (mesh, index) that can point at any pool (or
+   * terrain), not just this one, so this has to check against it rather than
+   * assume no highlight is active. */
+  private refreshInstanceColor(mesh: THREE.InstancedMesh, index: number): void {
+    let color = 0x000000;
+    if (this.activeObject === mesh && this.activeInstanceIndex === index) {
+      color = 0xaaaa55;
+    } else if (this.hoverObject === mesh && this.hoverInstanceIndex === index) {
+      color = 0x555555;
+    }
+    const base = this.getInstanceBaseTint(mesh, index);
+    mesh.setColorAt(index, applyHighlight(base, color));
+    if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+  }
+
+  private getInstanceBaseTint(mesh: THREE.InstancedMesh, index: number): THREE.Color {
+    if (mesh === this.terrainMesh) return WHITE_TINT;
+    return this.buildingPoolByMesh.get(mesh)?.baseTintAtSlot[index] ?? WHITE_TINT;
+  }
+
+  private isInstancedPickable(
+    object: THREE.Object3D
+  ): object is THREE.InstancedMesh {
+    return (
+      object === this.terrainMesh ||
+      this.buildingPoolByMesh.has(object as THREE.InstancedMesh)
+    );
+  }
+
+  private resolveInstanceTile(
+    mesh: THREE.InstancedMesh,
+    index: number
+  ): ITile | null {
+    if (mesh === this.terrainMesh) return this.terrainTiles[index] ?? null;
+    return this.buildingPoolByMesh.get(mesh)?.tileAtSlot[index] ?? null;
+  }
+
   update(city: ICity): void {
     let terrainMatrixChanged = false;
 
     for (let x = 0; x < city.size; x++) {
       for (let y = 0; y < city.size; y++) {
         const tile = city.getTile(x, y);
-        const existingBuildingMesh = this.buildings[x][y];
+        if (!tile) continue;
 
-        if (tile) {
-          if (this.terrainMesh) {
-            const index = x * city.size + y;
-            const hidden = !!tile.building?.hideTerrain;
-            if (hidden !== this.terrainHidden[index]) {
-              this.terrainMesh.setMatrixAt(
-                index,
-                hidden ? HIDDEN_INSTANCE_MATRIX : this.terrainBaseMatrices[index]
-              );
-              this.terrainHidden[index] = hidden;
-              terrainMatrixChanged = true;
+        if (this.terrainMesh) {
+          const index = x * city.size + y;
+          const hidden = !!tile.building?.hideTerrain;
+          if (hidden !== this.terrainHidden[index]) {
+            this.terrainMesh.setMatrixAt(
+              index,
+              hidden ? HIDDEN_INSTANCE_MATRIX : this.terrainBaseMatrices[index]
+            );
+            this.terrainHidden[index] = hidden;
+            terrainMatrixChanged = true;
+          }
+        }
+
+        const existing = this.buildingSlots[x][y];
+
+        if (!tile.building && existing) {
+          this.freeBuildingSlot(existing);
+          this.buildingSlots[x][y] = null;
+          this.vehicleGraph.updateTile(x, y, null);
+          continue;
+        }
+
+        if (tile.building && tile.building.isMeshOutOfDate) {
+          const resolved = this.assetManager.resolveBuildingInstance(tile);
+
+          if (!resolved) {
+            if (existing) {
+              this.freeBuildingSlot(existing);
+              this.buildingSlots[x][y] = null;
+            }
+          } else {
+            const { modelKey, matrix, abandoned } = resolved;
+            const unchanged =
+              !!existing &&
+              existing.modelKey === modelKey &&
+              existing.abandoned === abandoned &&
+              existing.matrix.equals(matrix);
+
+            if (!unchanged) {
+              if (existing && existing.modelKey === modelKey) {
+                const pool = this.buildingPools.get(modelKey);
+                if (pool) {
+                  this.setBuildingSlotTransform(pool, existing.slot, matrix);
+                  if (existing.abandoned !== abandoned) {
+                    this.setBuildingSlotBaseTint(
+                      pool,
+                      existing.slot,
+                      abandoned ? ABANDONED_TINT : WHITE_TINT
+                    );
+                  }
+                  existing.matrix = matrix;
+                  existing.abandoned = abandoned;
+                }
+              } else {
+                if (existing) this.freeBuildingSlot(existing);
+                const allocation = this.allocateBuildingSlot(modelKey, tile);
+                if (allocation) {
+                  const { pool, slot } = allocation;
+                  this.setBuildingSlotTransform(pool, slot, matrix);
+                  this.setBuildingSlotBaseTint(
+                    pool,
+                    slot,
+                    abandoned ? ABANDONED_TINT : WHITE_TINT
+                  );
+                  this.buildingSlots[x][y] = { modelKey, slot, matrix, abandoned };
+                } else {
+                  this.buildingSlots[x][y] = null;
+                }
+              }
             }
           }
 
-          if (!tile.building && existingBuildingMesh) {
-            this.disposeMeshMaterials(existingBuildingMesh);
-            this.root.remove(existingBuildingMesh);
-            this.buildings[x][y] = null;
-            this.vehicleGraph.updateTile(x, y, null);
-          }
-
-          if (tile.building && tile.building.isMeshOutOfDate) {
-            if (existingBuildingMesh) {
-              this.disposeMeshMaterials(existingBuildingMesh);
-              this.root.remove(existingBuildingMesh);
-            }
-            this.buildings[x][y] = this.assetManager.createBuildingMesh(tile);
-            if (this.buildings[x][y] !== null)
-              this.root.add(this.buildings[x][y] as THREE.Object3D);
-            tile.building.isMeshOutOfDate = false;
-            if (tile.building.type === BUILDING_TYPE.ROAD)
-              this.vehicleGraph.updateTile(x, y, tile.building);
+          tile.building.isMeshOutOfDate = false;
+          if (tile.building.type === BUILDING_TYPE.ROAD) {
+            this.vehicleGraph.updateTile(x, y, tile.building);
           }
         }
       }
@@ -283,31 +545,43 @@ export class SceneManager implements ISceneManager {
       this.hoverObject &&
       !this.isSamePick(
         this.hoverObject,
-        this.hoverTerrainIndex,
+        this.hoverInstanceIndex,
         this.activeObject,
-        this.activeTerrainIndex
+        this.activeInstanceIndex
       )
     ) {
-      this.setMeshEmission(this.hoverObject, this.hoverTerrainIndex, 0x000000);
+      this.setMeshEmission(this.hoverObject, this.hoverInstanceIndex, 0x000000);
     }
     this.hoverObject = mesh;
-    this.hoverTerrainIndex =
-      mesh === this.terrainMesh ? this.lastPickedTerrainIndex : null;
-    if (this.hoverObject) {
-      this.setMeshEmission(this.hoverObject, this.hoverTerrainIndex, 0x555555);
+    this.hoverInstanceIndex =
+      mesh && this.isInstancedPickable(mesh) ? this.lastPickedInstanceIndex : null;
+    // Skip re-applying hover tint over the active selection's tint - without
+    // this, hovering the currently-selected tile (which a click's own
+    // synthetic mousemove does immediately) downgrades its look from
+    // selected to merely hovered until the mouse moves off and back.
+    if (
+      this.hoverObject &&
+      !this.isSamePick(
+        this.hoverObject,
+        this.hoverInstanceIndex,
+        this.activeObject,
+        this.activeInstanceIndex
+      )
+    ) {
+      this.setMeshEmission(this.hoverObject, this.hoverInstanceIndex, 0x555555);
     }
   }
 
-  /** Two picks are the same target only if they're the same object AND,
-   * for the shared terrain InstancedMesh, the same tile instance. */
+  /** Two picks are the same target only if they're the same object AND, for
+   * a shared InstancedMesh (terrain or a building pool), the same instance. */
   private isSamePick(
     objectA: THREE.Object3D | null,
-    terrainIndexA: number | null,
+    indexA: number | null,
     objectB: THREE.Object3D | null,
-    terrainIndexB: number | null
+    indexB: number | null
   ): boolean {
     if (objectA !== objectB) return false;
-    if (objectA === this.terrainMesh) return terrainIndexA === terrainIndexB;
+    if (objectA && this.isInstancedPickable(objectA)) return indexA === indexB;
     return true;
   }
 
@@ -350,20 +624,30 @@ export class SceneManager implements ISceneManager {
 
   private setMeshEmission(
     mesh: THREE.Object3D | null,
-    terrainIndex: number | null,
+    instanceIndex: number | null,
     color: number
   ): void {
     if (!mesh) return;
-    if (mesh === this.terrainMesh) {
-      if (terrainIndex === null) return;
-      const tint = TERRAIN_TINTS[color] ?? TERRAIN_TINTS[0x000000];
-      this.terrainMesh.setColorAt(terrainIndex, tint);
-      if (this.terrainMesh.instanceColor)
-        this.terrainMesh.instanceColor.needsUpdate = true;
+    if (this.isInstancedPickable(mesh)) {
+      if (instanceIndex === null) return;
+      this.refreshInstanceColorWithHighlight(mesh, instanceIndex, color);
       return;
     }
     if (!(mesh instanceof THREE.Mesh)) return;
     mesh.material.emissive?.setHex(color);
+  }
+
+  /** Same combination logic as refreshInstanceColor, but driven by an
+   * explicit "apply this highlight color now" call (hover/select changing)
+   * rather than "something about the base tint changed". */
+  private refreshInstanceColorWithHighlight(
+    mesh: THREE.InstancedMesh,
+    index: number,
+    color: number
+  ): void {
+    const base = this.getInstanceBaseTint(mesh, index);
+    mesh.setColorAt(index, applyHighlight(base, color));
+    if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
   }
 
   public getSelectedObject(event: MouseEvent): THREE.Object3D | null {
@@ -377,40 +661,38 @@ export class SceneManager implements ISceneManager {
       true
     );
     for (const intersection of intersections) {
-      if (
-        this.terrainMesh &&
-        intersection.object === this.terrainMesh &&
-        intersection.instanceId !== undefined
-      ) {
-        const tile = this.terrainTiles[intersection.instanceId];
+      const object = intersection.object;
+      if (this.isInstancedPickable(object) && intersection.instanceId !== undefined) {
+        const tile = this.resolveInstanceTile(object, intersection.instanceId);
         if (!tile) continue;
-        this.terrainMesh.userData = tile;
-        this.lastPickedTerrainIndex = intersection.instanceId;
-        return this.terrainMesh;
+        object.userData = tile;
+        this.lastPickedInstanceIndex = intersection.instanceId;
+        return object;
       }
-      if (!intersection.object.userData.nonInteractive) {
-        this.lastPickedTerrainIndex = null;
-        return intersection.object;
+      if (!object.userData.nonInteractive) {
+        this.lastPickedInstanceIndex = null;
+        return object;
       }
     }
-    this.lastPickedTerrainIndex = null;
+    this.lastPickedInstanceIndex = null;
     return null;
   }
 
   public setActiveObject(object: THREE.Object3D): void {
     this.deactivateObject();
     this.activeObject = object;
-    this.activeTerrainIndex =
-      object === this.terrainMesh ? this.lastPickedTerrainIndex : null;
+    this.activeInstanceIndex = this.isInstancedPickable(object)
+      ? this.lastPickedInstanceIndex
+      : null;
     if (this.activeObject)
-      this.setMeshEmission(this.activeObject, this.activeTerrainIndex, 0xaaaa55);
+      this.setMeshEmission(this.activeObject, this.activeInstanceIndex, 0xaaaa55);
   }
 
   public deactivateObject(): void {
     if (this.activeObject) {
-      this.setMeshEmission(this.activeObject, this.activeTerrainIndex, 0x000000);
+      this.setMeshEmission(this.activeObject, this.activeInstanceIndex, 0x000000);
       this.activeObject = null;
-      this.activeTerrainIndex = null;
+      this.activeInstanceIndex = null;
     }
   }
 
