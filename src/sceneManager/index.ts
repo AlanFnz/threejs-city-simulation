@@ -6,6 +6,7 @@ import { ModelKey } from '../assetManager/constants';
 import { ICameraManager, CameraManager } from '../cameraManager';
 import { VehicleGraph } from '../city/vehicle/vehicleGraph';
 import { BUILDING_TYPE } from '../city/building/constants';
+import { IRoad } from '../city/building/road';
 
 /** Matrix that collapses an instance to zero volume - InstancedMesh has no
  * per-instance visibility flag, so hiding a tile (terrain under a building,
@@ -516,7 +517,7 @@ export class SceneManager implements ISceneManager {
 
           tile.building.isMeshOutOfDate = false;
           if (tile.building.type === BUILDING_TYPE.ROAD) {
-            this.vehicleGraph.updateTile(x, y, tile.building);
+            this.vehicleGraph.updateTile(x, y, tile.building as unknown as IRoad);
           }
         }
       }

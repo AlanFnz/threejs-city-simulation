@@ -113,18 +113,15 @@ export class DevelopmentAttribute {
 
   checkDevelopmentCriteria(city: ICity): boolean {
     const { x, y } = this.zone;
-
-    if (city.getTile(x, y)?.roadAccess?.value) {
-      return true;
-    } else {
-      return false;
-    }
+    const tile = city.getTile(x, y);
+    return !!(tile?.roadAccess?.value && tile?.powerAccess?.value);
   }
 
   checkAbandonmentCriteria(city: ICity): void {
     const { x, y } = this.zone;
+    const tile = city.getTile(x, y);
 
-    if (!city.getTile(x, y)?.roadAccess?.value) {
+    if (!tile?.roadAccess?.value || !tile?.powerAccess?.value) {
       this.abandonmentCounter++;
     } else {
       this.abandonmentCounter = 0;

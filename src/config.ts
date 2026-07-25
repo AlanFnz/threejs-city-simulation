@@ -4,6 +4,12 @@ export interface Config {
       /** tiles (Manhattan distance) a tile searches for a road */
       SEARCH_DISTANCE: number;
     };
+    POWER_ACCESS: {
+      /** tiles (Manhattan distance) a tile searches for a power plant */
+      SEARCH_DISTANCE: number;
+      /** number of zone tiles a single power plant can supply power to */
+      CAPACITY: number;
+    };
   };
   CITIZEN: {
     /** years */
@@ -57,6 +63,10 @@ const CONFIG = {
   ATTRIBUTES: {
     ROAD_ACCESS: {
       SEARCH_DISTANCE: 3,
+    },
+    POWER_ACCESS: {
+      SEARCH_DISTANCE: 6,
+      CAPACITY: 20,
     },
   },
   CITIZEN: {

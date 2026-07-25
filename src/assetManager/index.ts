@@ -4,7 +4,7 @@ import { textures } from './textures';
 import { ITile } from '../city/tile';
 import { IZone } from '../city/building/interfaces';
 import { BUILDING_TYPE, BuildingType } from '../city/building/constants';
-import { Road } from '../city/building/road';
+import { Road, IRoad } from '../city/building/road';
 import { ICity } from '../city';
 import { models } from './models';
 import { ModelEntry, ModelKey, modelType } from './constants';
@@ -223,6 +223,8 @@ export class AssetManager implements IAssetManager {
         return this.resolveZoneInstance(tile);
       case BUILDING_TYPE.ROAD:
         return this.resolveRoadInstance(tile);
+      case BUILDING_TYPE.POWER_PLANT:
+        return this.resolvePowerPlantInstance(tile);
       default:
         console.warn(`Mesh type ${tile.building?.type} is not recognized.`);
         return null;
@@ -258,15 +260,26 @@ export class AssetManager implements IAssetManager {
   }
 
   private resolveRoadInstance(tile: ITile): ResolvedBuildingInstance | null {
-    const road = tile.building;
+    const road = tile.building as IRoad | null;
     if (!road) return null;
 
     const matrix = new THREE.Matrix4();
     matrix.makeRotationY((road.rotation?.y ?? 0) * DEG2RAD);
-    matrix.setPosition(road.x, 0.01, road.y);
+    matrix.setPosition(tile.x, 0.01, tile.y);
 
     return {
-      modelKey: `${road.type}-${road.style}` as ModelKey,
+      modelKey: `${BUILDING_TYPE.ROAD}-${road.style}` as ModelKey,
+      matrix,
+      abandoned: false,
+    };
+  }
+
+  private resolvePowerPlantInstance(tile: ITile): ResolvedBuildingInstance | null {
+    const matrix = new THREE.Matrix4();
+    matrix.setPosition(tile.x, 0, tile.y);
+
+    return {
+      modelKey: ModelKey.POWER_PLANT,
       matrix,
       abandoned: false,
     };
@@ -299,6 +312,14 @@ export class AssetManager implements IAssetManager {
       if (!mesh) return null;
       mesh.rotation.set(0, road.rotation.y * DEG2RAD, 0);
       mesh.position.set(tile.x, 0.01, tile.y);
+      return mesh;
+    }
+
+    if (buildingType === BUILDING_TYPE.POWER_PLANT) {
+      // Built instantly like a road, not under-construction like a zone.
+      const mesh = this.cloneMesh(ModelKey.POWER_PLANT, true);
+      if (!mesh) return null;
+      mesh.position.set(tile.x, 0, tile.y);
       return mesh;
     }
 

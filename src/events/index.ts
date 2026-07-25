@@ -56,6 +56,7 @@ export interface CityEventMap {
   citizenEmployed: { citizenId: string; x: number; y: number };
   citizenUnemployed: { citizenId: string; x: number; y: number };
   roadNetworkChanged: { x: number; y: number };
+  powerNetworkChanged: { x: number; y: number };
 }
 
 export const cityEvents = new EventBus<CityEventMap>();

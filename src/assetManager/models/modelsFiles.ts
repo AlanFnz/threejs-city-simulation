@@ -29,6 +29,7 @@ import DATA_CENTER from './glb/data-center.glb';
 import INDUSTRY_FACTORY_OLD from './glb/industry-factory-old.glb';
 import INDUSTRY_FACTORY from './glb/industry-factory.glb';
 import INDUSTRY_WAREHOUSE from './glb/industry-warehouse.glb';
+import NUCLEAR_POWER_PLANT from './glb/nuclear-power-plant.glb';
 import TILE_PLAIN_GRASS from './glb/tile-plain_grass.glb';
 import TILE_ROAD_CURVE from './glb/tile-road-curve.glb';
 import TILE_ROAD_END from './glb/tile-road-end.glb';
@@ -69,6 +70,7 @@ const modelsFiles = {
   INDUSTRY_FACTORY_OLD,
   INDUSTRY_FACTORY,
   INDUSTRY_WAREHOUSE,
+  NUCLEAR_POWER_PLANT,
   TILE_PLAIN_GRASS,
   TILE_ROAD_CURVE,
   TILE_ROAD_END,

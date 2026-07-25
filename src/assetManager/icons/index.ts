@@ -17,6 +17,7 @@ import PLAY_COLOR from './play-color.png';
 import ROAD from './road.png';
 import ROAD_COLOR from './road-color.png';
 import STORE_COLOR from './store-color.png';
+import POWER_COLOR from './power-color.png';
 
 export const ICON_KEYS = {
   SELECT: 'SELECT',
@@ -38,6 +39,7 @@ export const ICON_KEYS = {
   PLAY: 'PLAY',
   PLAY_COLOR: 'PLAY_COLOR',
   STORE_COLOR: 'STORE_COLOR',
+  POWER_COLOR: 'POWER_COLOR',
 } as const;
 
 type IconKey = (typeof ICON_KEYS)[keyof typeof ICON_KEYS];
@@ -62,6 +64,7 @@ const icons: Record<IconKey, string> = {
   ROAD,
   ROAD_COLOR,
   STORE_COLOR,
+  POWER_COLOR,
 };
 
 function isValidIconKey(key: string): key is IconKey {

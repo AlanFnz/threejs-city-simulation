@@ -176,6 +176,11 @@ const models: Record<ModelKey, ModelEntry> = {
     file: modelsFiles.TILE_ROAD_INTERSECTION,
     castShadow: false,
   },
+  [ModelKey.POWER_PLANT]: {
+    filename: 'nuclear-power-plant.glb',
+    type: modelType.ZONE,
+    file: modelsFiles.NUCLEAR_POWER_PLANT,
+  },
   [ModelKey.GRASS]: {
     filename: 'tile-plain_grass.glb',
     type: modelType.TERRAIN,
