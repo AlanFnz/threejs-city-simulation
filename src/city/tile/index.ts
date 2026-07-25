@@ -61,14 +61,16 @@ export class Tile implements ITile {
   removeBuilding(): void {
     if (this.building) {
       const wasRoad = this.building.type === BUILDING_TYPE.ROAD;
-      const wasPowerPlant = this.building.type === BUILDING_TYPE.POWER_PLANT;
+      const wasPowerInfrastructure =
+        this.building.type === BUILDING_TYPE.POWER_PLANT ||
+        this.building.type === BUILDING_TYPE.POWER_LINE;
       this.building.dispose();
       this.building = null;
       cityEvents.emit("buildingRemoved", { x: this.x, y: this.y });
       if (wasRoad) {
         cityEvents.emit("roadNetworkChanged", { x: this.x, y: this.y });
       }
-      if (wasPowerPlant) {
+      if (wasPowerInfrastructure) {
         cityEvents.emit("powerNetworkChanged", { x: this.x, y: this.y });
       }
     }
@@ -84,7 +86,7 @@ export class Tile implements ITile {
     if (type === BUILDING_TYPE.ROAD) {
       cityEvents.emit("roadNetworkChanged", { x: this.x, y: this.y });
     }
-    if (type === BUILDING_TYPE.POWER_PLANT) {
+    if (type === BUILDING_TYPE.POWER_PLANT || type === BUILDING_TYPE.POWER_LINE) {
       cityEvents.emit("powerNetworkChanged", { x: this.x, y: this.y });
     }
   }

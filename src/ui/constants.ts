@@ -49,6 +49,11 @@ const TOOLBAR_BUTTONS: ToolbarButtons = {
     icon: ICON_KEYS.POWER_COLOR,
     uiText: 'POWER PLANT',
   },
+  POWER_LINE: {
+    id: 'POWER_LINE',
+    icon: ICON_KEYS.POWER_LINE_COLOR,
+    uiText: 'POWER LINE',
+  },
   BULLDOZE: {
     id: 'BULLDOZE',
     icon: ICON_KEYS.BULLDOZER_COLOR,

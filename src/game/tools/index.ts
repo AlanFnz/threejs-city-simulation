@@ -18,6 +18,7 @@ export function createTools(): Record<string, Tool> {
     new BuildingTool(BUILDING_TYPE.INDUSTRIAL),
     new BuildingTool(BUILDING_TYPE.ROAD),
     new BuildingTool(BUILDING_TYPE.POWER_PLANT),
+    new BuildingTool(BUILDING_TYPE.POWER_LINE),
   ];
 
   const byId: Record<string, Tool> = {};

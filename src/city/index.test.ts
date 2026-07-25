@@ -188,3 +188,72 @@ describe('reactive power access', () => {
   });
 });
 
+describe('power lines', () => {
+  const SEARCH_DISTANCE = CONFIG.ATTRIBUTES.POWER_ACCESS.SEARCH_DISTANCE;
+
+  beforeEach(() => {
+    cityEvents.clear();
+  });
+
+  it('powers a zone far beyond SEARCH_DISTANCE once a chain of power lines connects it to a plant', () => {
+    const city = new City(30);
+    city.getTile(10, 0)!.placeBuilding(BUILDING_TYPE.POWER_PLANT);
+
+    const chainEnd = 10;
+    for (let y = 1; y <= chainEnd; y++) {
+      city.getTile(10, y)!.placeBuilding(BUILDING_TYPE.POWER_LINE);
+    }
+
+    const zoneTile = city.getTile(10, chainEnd + SEARCH_DISTANCE)!;
+    expect(zoneTile.distanceTo(city.getTile(10, 0)!)).toBeGreaterThan(SEARCH_DISTANCE);
+
+    zoneTile.placeBuilding(BUILDING_TYPE.RESIDENTIAL);
+
+    expect(zoneTile.powerAccess?.value).toBe(true);
+  });
+
+  it('does not power a zone near a power line stub that never reaches a plant', () => {
+    const city = new City(30);
+
+    const chainEnd = 10;
+    for (let y = 1; y <= chainEnd; y++) {
+      city.getTile(10, y)!.placeBuilding(BUILDING_TYPE.POWER_LINE);
+    }
+
+    const zoneTile = city.getTile(10, chainEnd + SEARCH_DISTANCE)!;
+    zoneTile.placeBuilding(BUILDING_TYPE.RESIDENTIAL);
+
+    expect(zoneTile.powerAccess?.value).toBe(false);
+  });
+
+  it('cuts power to a zone when the line linking it to the network is removed', () => {
+    const city = new City(30);
+    city.getTile(10, 0)!.placeBuilding(BUILDING_TYPE.POWER_PLANT);
+
+    const chainEnd = 10;
+    for (let y = 1; y <= chainEnd; y++) {
+      city.getTile(10, y)!.placeBuilding(BUILDING_TYPE.POWER_LINE);
+    }
+
+    const zoneTile = city.getTile(10, chainEnd + SEARCH_DISTANCE)!;
+    zoneTile.placeBuilding(BUILDING_TYPE.RESIDENTIAL);
+    expect(zoneTile.powerAccess?.value).toBe(true);
+
+    // the last link, within SEARCH_DISTANCE of the zone itself, so removing
+    // it directly triggers a recompute for the zone (not the "mid-cable, far
+    // from the edit" limitation noted in City.recomputePowerAccessNear)
+    city.getTile(10, chainEnd)!.removeBuilding();
+
+    expect(zoneTile.powerAccess?.value).toBe(false);
+  });
+
+  it('lets a zone directly adjacent to a bare plant stay powered with no lines at all', () => {
+    const city = new City(10);
+    city.getTile(5, 5)!.placeBuilding(BUILDING_TYPE.POWER_PLANT);
+
+    const zoneTile = city.getTile(5, 6)!;
+    zoneTile.placeBuilding(BUILDING_TYPE.RESIDENTIAL);
+
+    expect(zoneTile.powerAccess?.value).toBe(true);
+  });
+});

@@ -5,6 +5,7 @@ const BUILDING_TYPE = {
   INDUSTRIAL: 'INDUSTRIAL',
   ROAD: 'ROAD',
   POWER_PLANT: 'POWER_PLANT',
+  POWER_LINE: 'POWER_LINE',
 } as const;
 
 const ROAD_TYPE = {

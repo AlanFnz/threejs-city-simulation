@@ -1,5 +1,6 @@
 import { Road } from './road';
 import { PowerPlant } from './powerPlant';
+import { PowerLine } from './powerLine';
 import { BUILDING_TYPE, BuildingType } from './constants';
 import { ResidentialZone } from './zones/residentialZone';
 import { CommercialZone } from './zones/commercialZone';
@@ -10,7 +11,8 @@ export type BuildingEntity =
   | CommercialZone
   | IndustrialZone
   | Road
-  | PowerPlant;
+  | PowerPlant
+  | PowerLine;
 
 /**
  * creates a new building object based on the type specified
@@ -35,6 +37,8 @@ export function createBuilding(
       return new Road(x, y);
     case BUILDING_TYPE.POWER_PLANT:
       return new PowerPlant(x, y);
+    case BUILDING_TYPE.POWER_LINE:
+      return new PowerLine(x, y);
     default:
       return undefined;
   }

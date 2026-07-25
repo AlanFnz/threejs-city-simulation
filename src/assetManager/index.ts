@@ -225,6 +225,8 @@ export class AssetManager implements IAssetManager {
         return this.resolveRoadInstance(tile);
       case BUILDING_TYPE.POWER_PLANT:
         return this.resolvePowerPlantInstance(tile);
+      case BUILDING_TYPE.POWER_LINE:
+        return this.resolvePowerLineInstance(tile);
       default:
         console.warn(`Mesh type ${tile.building?.type} is not recognized.`);
         return null;
@@ -285,6 +287,17 @@ export class AssetManager implements IAssetManager {
     };
   }
 
+  private resolvePowerLineInstance(tile: ITile): ResolvedBuildingInstance | null {
+    const matrix = new THREE.Matrix4();
+    matrix.setPosition(tile.x, 0, tile.y);
+
+    return {
+      modelKey: ModelKey.POWER_LINE,
+      matrix,
+      abandoned: false,
+    };
+  }
+
   createRandomVehicleMesh(): THREE.Mesh | null {
     const types = Object.entries(models)
       .filter(([_, model]) => model.type === modelType.VEHICLE)
@@ -318,6 +331,13 @@ export class AssetManager implements IAssetManager {
     if (buildingType === BUILDING_TYPE.POWER_PLANT) {
       // Built instantly like a road, not under-construction like a zone.
       const mesh = this.cloneMesh(ModelKey.POWER_PLANT, true);
+      if (!mesh) return null;
+      mesh.position.set(tile.x, 0, tile.y);
+      return mesh;
+    }
+
+    if (buildingType === BUILDING_TYPE.POWER_LINE) {
+      const mesh = this.cloneMesh(ModelKey.POWER_LINE, true);
       if (!mesh) return null;
       mesh.position.set(tile.x, 0, tile.y);
       return mesh;

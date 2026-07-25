@@ -181,6 +181,11 @@ const models: Record<ModelKey, ModelEntry> = {
     type: modelType.ZONE,
     file: modelsFiles.NUCLEAR_POWER_PLANT,
   },
+  [ModelKey.POWER_LINE]: {
+    filename: 'power_line_pole.glb',
+    type: modelType.ZONE,
+    file: modelsFiles.POWER_LINE_POLE,
+  },
   [ModelKey.GRASS]: {
     filename: 'tile-plain_grass.glb',
     type: modelType.TERRAIN,

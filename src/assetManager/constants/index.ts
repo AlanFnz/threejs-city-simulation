@@ -54,6 +54,7 @@ enum ModelKey {
   ROAD_TEE = 'ROAD-THREE-WAY',
   ROAD_INTERSECTION = 'ROAD-FOUR-WAY',
   POWER_PLANT = 'POWER-PLANT',
+  POWER_LINE = 'POWER-LINE',
   GRASS = 'GRASS',
   /**
    * cars
