@@ -99,6 +99,12 @@ export class Tile implements ITile {
       <span class="info-label">Terrain: </span>
       <span class="info-value">${this.terrain}</span>
       <br>
+      <span class="info-label">Road access: </span>
+      <span class="info-value">${this.roadAccess?.value ? "Yes" : "No"}</span>
+      <br>
+      <span class="info-label">Power access: </span>
+      <span class="info-value">${this.powerAccess?.value ? "Yes" : "No"}</span>
+      <br>
     `;
 
     if (this.building) {
