@@ -11,6 +11,7 @@ import { cityEvents, Unsubscribe } from "../events";
 import { createTools, GameContext, Tool } from "./tools";
 import { MilestoneTracker } from "./milestones";
 import { MILESTONES, describeReward } from "./milestones/constants";
+import { RandomEventsSystem } from "./randomEvents";
 
 export interface IGame {
   selectedControl: HTMLElement | null;
@@ -34,6 +35,8 @@ export class Game implements IGame {
   private startTime: number = Date.now();
   private city: ICity = new City(CONFIG.CITY.SIZE);
   private milestoneTracker: MilestoneTracker = new MilestoneTracker(this.city);
+  private randomEventsSystem: RandomEventsSystem = new RandomEventsSystem(this.city);
+  private eventToastHideTimer: ReturnType<typeof setTimeout> | null = null;
   private sceneManager: ISceneManager = new SceneManager(this.city, () => {
     this.sceneManager.start();
     setInterval(this.step.bind(this), 1000);
@@ -75,6 +78,9 @@ export class Game implements IGame {
       cityEvents.on("moneyChanged", () => this.updateMoneyDisplay()),
       cityEvents.on("milestoneCompleted", (payload) =>
         this.onMilestoneCompleted(payload)
+      ),
+      cityEvents.on("randomEventTriggered", ({ message }) =>
+        this.showEventToast(message)
       ),
       cityEvents.on("developmentStateChanged", (payload) =>
         this.refreshInfoOverlayIfFocused(payload)
@@ -126,6 +132,7 @@ export class Game implements IGame {
     this.updateDebugOverlay();
     if (this.isPaused) return;
     this.city.simulate();
+    this.randomEventsSystem.tick();
     this.sceneManager.update(this.city);
   }
 
@@ -261,6 +268,20 @@ export class Game implements IGame {
     if (!moneyCounter) return;
     moneyCounter.textContent = Math.floor(this.city.money).toString();
     moneyCounter.classList.toggle("low-funds", this.city.money < 0);
+  }
+
+  private showEventToast(message: string): void {
+    const toast = document.getElementById("event-toast");
+    if (!toast) return;
+
+    toast.textContent = message;
+    toast.classList.add("visible");
+
+    if (this.eventToastHideTimer) clearTimeout(this.eventToastHideTimer);
+    this.eventToastHideTimer = setTimeout(() => {
+      toast.classList.remove("visible");
+      this.eventToastHideTimer = null;
+    }, 4000);
   }
 
   private onMilestoneCompleted({ id }: { id: string }): void {

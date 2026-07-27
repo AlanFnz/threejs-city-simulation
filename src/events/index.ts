@@ -59,6 +59,7 @@ export interface CityEventMap {
   powerNetworkChanged: { x: number; y: number };
   moneyChanged: { amount: number; balance: number };
   milestoneCompleted: { id: string };
+  randomEventTriggered: { message: string };
 }
 
 export const cityEvents = new EventBus<CityEventMap>();

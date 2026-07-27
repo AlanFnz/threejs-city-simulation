@@ -80,6 +80,26 @@ export interface Config {
       POWER_LINE: number;
     };
   };
+  RANDOM_EVENTS: {
+    WINDFALL: {
+      /** probability per simulation tick, 0-1 */
+      BASE_CHANCE: number;
+      MIN_AMOUNT: number;
+      MAX_AMOUNT: number;
+    };
+    FIRE: {
+      /** probability per simulation tick, 0-1, with zero zones currently abandoned */
+      BASE_CHANCE: number;
+      /** added to BASE_CHANCE per currently-abandoned zone in the city */
+      CHANCE_PER_ABANDONED_ZONE: number;
+    };
+    LAYOFFS: {
+      /** probability per simulation tick, 0-1, while the city is running a surplus */
+      BASE_CHANCE: number;
+      /** BASE_CHANCE is multiplied by this while the city is running a deficit (City.netIncome < 0) */
+      DEFICIT_MULTIPLIER: number;
+    };
+  };
 }
 
 const CONFIG = {
@@ -136,6 +156,21 @@ const CONFIG = {
       ROAD: 0.2,
       POWER_PLANT: 5,
       POWER_LINE: 0.5,
+    },
+  },
+  RANDOM_EVENTS: {
+    WINDFALL: {
+      BASE_CHANCE: 0.005,
+      MIN_AMOUNT: 500,
+      MAX_AMOUNT: 2000,
+    },
+    FIRE: {
+      BASE_CHANCE: 0.003,
+      CHANCE_PER_ABANDONED_ZONE: 0.002,
+    },
+    LAYOFFS: {
+      BASE_CHANCE: 0.005,
+      DEFICIT_MULTIPLIER: 2,
     },
   },
 } as const satisfies Config;

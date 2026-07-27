@@ -36,6 +36,7 @@ export interface ICity {
   spend(amount: number): boolean;
   earn(amount: number): void;
   applyUpkeepDiscount(multiplier: number): void;
+  readonly netIncome: number;
 }
 
 export class City implements ICity {
@@ -46,6 +47,10 @@ export class City implements ICity {
   /** Multiplies upkeep before it's charged - milestone rewards can reduce
    * this permanently (e.g. 0.9 = 10% off), stacking multiplicatively. */
   private upkeepDiscount: number = 1;
+  /** income minus upkeep from the last collectEconomy() pass - read by
+   * RandomEventsSystem to gauge whether the city is currently struggling,
+   * without re-scanning the grid itself. */
+  private lastNetIncome: number = 0;
   private unsubscribers: Unsubscribe[];
 
   constructor(size: number) {
@@ -320,6 +325,10 @@ export class City implements ICity {
     this.upkeepDiscount *= multiplier;
   }
 
+  get netIncome(): number {
+    return this.lastNetIncome;
+  }
+
   /** Unconditional, unlike spend() - upkeep applies every tick regardless of
    * balance, so a city can go into the red rather than upkeep silently
    * stopping (which would let players ignore their own maintenance debt). */
@@ -361,8 +370,10 @@ export class City implements ICity {
       }
     }
 
+    const discountedUpkeep = upkeep * this.upkeepDiscount;
+    this.lastNetIncome = income - discountedUpkeep;
     this.earn(income);
-    this.chargeUpkeep(upkeep * this.upkeepDiscount);
+    this.chargeUpkeep(discountedUpkeep);
   }
 
   getTileByCoordinate(coordinate: ICoordinate) {
