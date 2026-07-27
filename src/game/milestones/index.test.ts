@@ -98,6 +98,21 @@ describe('MilestoneTracker - population/money milestones', () => {
     expect(city.applyUpkeepDiscount).toHaveBeenCalledWith(0.9);
   });
 
+  it('restoreState never re-locks a tool that STARTING_UNLOCKED_TOOLS guarantees, even from an older save', () => {
+    const city = fakeCity();
+    const tracker = new MilestoneTracker(city);
+
+    // simulates a save written before COMMERCIAL/INDUSTRIAL were always
+    // unlocked - it simply never recorded them.
+    tracker.restoreState({
+      completed: [],
+      unlockedToolIds: ['SELECT', 'RESIDENTIAL', 'ROAD', 'POWER_PLANT', 'POWER_LINE', 'BULLDOZE'],
+    });
+
+    expect(tracker.isUnlocked(BUILDING_TYPE.COMMERCIAL)).toBe(true);
+    expect(tracker.isUnlocked(BUILDING_TYPE.INDUSTRIAL)).toBe(true);
+  });
+
   it('does not re-check population milestones on a moneyChanged event', () => {
     const city = fakeCity({ population: 10, money: 0 });
     new MilestoneTracker(city);

@@ -72,9 +72,14 @@ export class MilestoneTracker implements IMilestoneTracker {
     };
   }
 
+  /** Unions with STARTING_UNLOCKED_TOOLS rather than replacing outright - a
+   * save written by an older version of the game can predate a tool being
+   * added to that starting set (e.g. Commercial/Industrial used to be
+   * milestone-gated), and restoring it wholesale would incorrectly re-lock
+   * something the current build guarantees is always available. */
   restoreState(state: { completed: string[]; unlockedToolIds: string[] }): void {
     this.completed = new Set(state.completed);
-    this.unlockedToolIds = new Set(state.unlockedToolIds);
+    this.unlockedToolIds = new Set([...STARTING_UNLOCKED_TOOLS, ...state.unlockedToolIds]);
   }
 
   get nextMilestone(): Milestone | null {
