@@ -259,7 +259,7 @@ export class AssetManager implements IAssetManager {
         modelName = 'UNDER-CONSTRUCTION';
         break;
       default:
-        modelName = `${zone.type}-${zone.style}${zone.development.level}`;
+        modelName = this.resolveZoneModelName(zone.type, zone.style, zone.development.level);
         break;
     }
 
@@ -272,6 +272,22 @@ export class AssetManager implements IAssetManager {
       matrix,
       abandoned: zone.development.state === DevelopmentState.ABANDONED,
     };
+  }
+
+  /**
+   * A zone's level cap (raised by some milestone rewards, e.g. "develop 5
+   * commercial zones") can exceed how many distinct level models actually
+   * exist for its type/style - resolving straight to a nonexistent key
+   * would free the zone's current instance and never allocate a
+   * replacement, making the building silently vanish. Walk back down to
+   * the highest level that has a real registered model instead.
+   */
+  private resolveZoneModelName(type: string, style: string, level: number): string {
+    for (let candidate = level; candidate >= 1; candidate--) {
+      const key = `${type}-${style}${candidate}`;
+      if (key in models) return key;
+    }
+    return `${type}-${style}1`;
   }
 
   private resolveRoadInstance(tile: ITile): ResolvedBuildingInstance | null {
