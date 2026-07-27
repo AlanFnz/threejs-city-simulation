@@ -2,6 +2,7 @@ import CONFIG from "../config";
 import { getIcon } from "../assetManager/icons";
 import { City, ICity } from "../city";
 import { BuildingEntity } from "../city/building/buildingCreator";
+import { BUILDING_TYPE } from "../city/building/constants";
 import { ITile } from "../city/tile";
 import { ISceneManager, SceneManager } from "../sceneManager";
 import { createUi } from "../ui";
@@ -315,9 +316,31 @@ export class Game implements IGame {
     const infoPanel = document.getElementById("info-panel");
     const infoOverlayDetails = document.getElementById("info-overlay-details");
     const tile = clear ? null : this.focusedObject || null;
-    if (infoOverlayDetails)
-      infoOverlayDetails.innerHTML = tile ? tile.toHTML() : "";
+    if (infoOverlayDetails) {
+      let html = tile ? tile.toHTML() : "";
+      const plantCoordinate = tile ? this.getFocusedPowerPlantCoordinate(tile) : null;
+      if (plantCoordinate) {
+        const used = this.city.getPowerPlantLoad(plantCoordinate);
+        html += `
+          <span class="info-label">Capacity: </span>
+          <span class="info-value">${used}/${CONFIG.ATTRIBUTES.POWER_ACCESS.CAPACITY} zones powered</span>
+          <br>
+        `;
+      }
+      infoOverlayDetails.innerHTML = html;
+    }
     infoPanel?.classList.toggle("visible", !!tile);
+  }
+
+  /** focusedObject is either a tile (has .building) or a building entity
+   * directly - handles both so the capacity readout shows up regardless of
+   * which one a click happened to focus. */
+  private getFocusedPowerPlantCoordinate(
+    focused: BuildingEntity | ITile
+  ): { x: number; y: number } | null {
+    const building = "building" in focused ? focused.building : focused;
+    if (building?.type !== BUILDING_TYPE.POWER_PLANT) return null;
+    return { x: building.x, y: building.y };
   }
 
   private updateTitleBar(): void {

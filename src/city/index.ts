@@ -32,6 +32,7 @@ export interface ICity {
   ): ITile[];
   getTileNeighbors(x: number, y: number): ITile[];
   checkPowerAccess(tile: ICoordinate): boolean;
+  getPowerPlantLoad(plant: ICoordinate): number;
   canAfford(amount: number): boolean;
   spend(amount: number): boolean;
   earn(amount: number): void;
@@ -218,6 +219,13 @@ export class City implements ICity {
       this.findReachablePlants(tile),
       CONFIG.ATTRIBUTES.POWER_ACCESS.CAPACITY
     );
+  }
+
+  /** Zone tiles currently powered by this plant - for the info panel, so the
+   * hard per-plant capacity (CONFIG.ATTRIBUTES.POWER_ACCESS.CAPACITY) isn't
+   * an invisible mystery once a city outgrows a single plant. */
+  getPowerPlantLoad(plant: ICoordinate): number {
+    return this.powerGrid.getCapacityUsed(plant);
   }
 
   private isZoneType(type: string | undefined): boolean {

@@ -190,6 +190,20 @@ describe('reactive power access', () => {
 
     expect(overflowTile.powerAccess?.value).toBe(true);
   });
+
+  it('reports how many zones a plant is currently powering, for the info panel', () => {
+    const city = new City(20);
+    const plantCoordinate = { x: 10, y: 10 };
+    city.getTile(10, 10)!.placeBuilding(BUILDING_TYPE.POWER_PLANT);
+    expect(city.getPowerPlantLoad(plantCoordinate)).toBe(0);
+
+    city.getTile(10, 11)!.placeBuilding(BUILDING_TYPE.RESIDENTIAL);
+    city.getTile(10, 12)!.placeBuilding(BUILDING_TYPE.RESIDENTIAL);
+    expect(city.getPowerPlantLoad(plantCoordinate)).toBe(2);
+
+    city.getTile(10, 11)!.removeBuilding();
+    expect(city.getPowerPlantLoad(plantCoordinate)).toBe(1);
+  });
 });
 
 describe('power lines', () => {

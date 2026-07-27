@@ -15,6 +15,12 @@ export class PowerGrid {
   private capacityUsed = new Map<string, number>();
   private assignedPlant = new Map<string, string>();
 
+  /** Zones currently assigned to this plant, for the info panel - 0 if the
+   * plant isn't registered (e.g. not yet placed). */
+  getCapacityUsed(plant: ICoordinate): number {
+    return this.capacityUsed.get(key(plant)) ?? 0;
+  }
+
   /** Idempotent - a plant that already exists keeps its current load. */
   registerPlant(plant: ICoordinate): void {
     const plantKey = key(plant);
