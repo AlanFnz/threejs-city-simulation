@@ -1,6 +1,10 @@
 import { Road } from './road';
 import { PowerPlant } from './powerPlant';
 import { PowerLine } from './powerLine';
+import { FireStation } from './fireStation';
+import { PoliceStation } from './policeStation';
+import { Hospital } from './hospital';
+import { School } from './school';
 import { BUILDING_TYPE, BuildingType } from './constants';
 import { ResidentialZone } from './zones/residentialZone';
 import { CommercialZone } from './zones/commercialZone';
@@ -12,7 +16,11 @@ export type BuildingEntity =
   | IndustrialZone
   | Road
   | PowerPlant
-  | PowerLine;
+  | PowerLine
+  | FireStation
+  | PoliceStation
+  | Hospital
+  | School;
 
 /**
  * creates a new building object based on the type specified
@@ -39,6 +47,14 @@ export function createBuilding(
       return new PowerPlant(x, y);
     case BUILDING_TYPE.POWER_LINE:
       return new PowerLine(x, y);
+    case BUILDING_TYPE.FIRE_STATION:
+      return new FireStation(x, y);
+    case BUILDING_TYPE.POLICE_STATION:
+      return new PoliceStation(x, y);
+    case BUILDING_TYPE.HOSPITAL:
+      return new Hospital(x, y);
+    case BUILDING_TYPE.SCHOOL:
+      return new School(x, y);
     default:
       return undefined;
   }

@@ -99,13 +99,20 @@ export class RandomEventsSystem {
     return true;
   }
 
+  /** Excludes zones within a Fire Station's coverage - they're immune to
+   * this event entirely, not just less likely. */
   private findDevelopedZoneTiles(): ITile[] {
     const tiles: ITile[] = [];
     for (let x = 0; x < this.city.size; x++) {
       for (let y = 0; y < this.city.size; y++) {
-        const building = this.city.getTile(x, y)?.building;
-        if (building instanceof Zone && building.development.state === DevelopmentState.DEVELOPED) {
-          tiles.push(this.city.getTile(x, y)!);
+        const tile = this.city.getTile(x, y);
+        const building = tile?.building;
+        if (
+          building instanceof Zone &&
+          building.development.state === DevelopmentState.DEVELOPED &&
+          !tile?.fireStationCoverage?.value
+        ) {
+          tiles.push(tile!);
         }
       }
     }

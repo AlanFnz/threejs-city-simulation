@@ -57,6 +57,7 @@ export interface CityEventMap {
   citizenUnemployed: { citizenId: string; x: number; y: number };
   roadNetworkChanged: { x: number; y: number };
   powerNetworkChanged: { x: number; y: number };
+  civicCoverageChanged: { x: number; y: number };
   moneyChanged: { amount: number; balance: number };
   milestoneCompleted: { id: string };
   randomEventTriggered: { message: string };

@@ -20,11 +20,11 @@ export interface Milestone {
   reward: MilestoneReward;
 }
 
-/** Starting set - numbers are a first pass, easy to retune. COMMERCIAL and
- * INDUSTRIAL are the only tools ever gated: RESIDENTIAL/ROAD/POWER_PLANT/
- * POWER_LINE must stay available from the start since a zone only needs
- * road+power access to develop (not jobs), so population can grow before
- * Commercial/Industrial unlock. */
+/** Starting set - numbers are a first pass, easy to retune. RESIDENTIAL/
+ * COMMERCIAL/INDUSTRIAL/ROAD/POWER_PLANT/POWER_LINE are all available from
+ * the start (a real city needs shops and jobs from day one, not after a
+ * population milestone) - the four civic services (fire/police/hospital/
+ * school) are what's gated behind progression instead. */
 export const MILESTONES: Milestone[] = [
   {
     id: 'pop-10',
@@ -33,16 +33,28 @@ export const MILESTONES: Milestone[] = [
     reward: { type: 'cash', amount: 2000 },
   },
   {
-    id: 'pop-30',
-    title: 'Reach 30 residents',
-    condition: { type: 'population', atLeast: 30 },
-    reward: { type: 'unlockTool', toolId: BUILDING_TYPE.COMMERCIAL },
+    id: 'pop-15',
+    title: 'Reach 15 residents',
+    condition: { type: 'population', atLeast: 15 },
+    reward: { type: 'unlockTool', toolId: BUILDING_TYPE.FIRE_STATION },
   },
   {
-    id: 'pop-75',
-    title: 'Reach 75 residents',
-    condition: { type: 'population', atLeast: 75 },
-    reward: { type: 'unlockTool', toolId: BUILDING_TYPE.INDUSTRIAL },
+    id: 'pop-25',
+    title: 'Reach 25 residents',
+    condition: { type: 'population', atLeast: 25 },
+    reward: { type: 'unlockTool', toolId: BUILDING_TYPE.POLICE_STATION },
+  },
+  {
+    id: 'pop-40',
+    title: 'Reach 40 residents',
+    condition: { type: 'population', atLeast: 40 },
+    reward: { type: 'unlockTool', toolId: BUILDING_TYPE.HOSPITAL },
+  },
+  {
+    id: 'pop-60',
+    title: 'Reach 60 residents',
+    condition: { type: 'population', atLeast: 60 },
+    reward: { type: 'unlockTool', toolId: BUILDING_TYPE.SCHOOL },
   },
   {
     id: 'money-25000',

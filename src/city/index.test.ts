@@ -315,6 +315,69 @@ describe('power relay through connected buildings', () => {
   });
 });
 
+describe('reactive civic coverage', () => {
+  const SEARCH_DISTANCE = CONFIG.CIVIC_SERVICES.FIRE_STATION.SEARCH_DISTANCE;
+
+  beforeEach(() => {
+    cityEvents.clear();
+  });
+
+  it('placing a fire station updates fire coverage for a tile within range without a simulate() tick', () => {
+    const city = new City(20);
+    const nearTile = city.getTile(10, 10 - SEARCH_DISTANCE)!;
+    expect(nearTile.fireStationCoverage?.value).toBe(false);
+
+    city.getTile(10, 10)!.placeBuilding(BUILDING_TYPE.FIRE_STATION);
+
+    expect(nearTile.fireStationCoverage?.value).toBe(true);
+  });
+
+  it('does not affect a tile beyond SEARCH_DISTANCE', () => {
+    const city = new City(20);
+    const farTile = city.getTile(10, 10 - SEARCH_DISTANCE - 1)!;
+
+    city.getTile(10, 10)!.placeBuilding(BUILDING_TYPE.FIRE_STATION);
+
+    expect(farTile.fireStationCoverage?.value).toBe(false);
+  });
+
+  it('placing a zone next to an existing civic building picks up coverage immediately', () => {
+    const city = new City(20);
+    city.getTile(10, 10)!.placeBuilding(BUILDING_TYPE.POLICE_STATION);
+
+    const zoneTile = city.getTile(10, 11)!;
+    zoneTile.placeBuilding(BUILDING_TYPE.RESIDENTIAL);
+
+    expect(zoneTile.policeStationCoverage?.value).toBe(true);
+  });
+
+  it('removing the civic building clears coverage for previously-covered tiles', () => {
+    const city = new City(20);
+    const hospitalTile = city.getTile(10, 10)!;
+    hospitalTile.placeBuilding(BUILDING_TYPE.HOSPITAL);
+    const zoneTile = city.getTile(10, 11)!;
+    zoneTile.placeBuilding(BUILDING_TYPE.RESIDENTIAL);
+    expect(zoneTile.hospitalCoverage?.value).toBe(true);
+
+    hospitalTile.removeBuilding();
+
+    expect(zoneTile.hospitalCoverage?.value).toBe(false);
+  });
+
+  it('tracks all four civic services independently on the same tile', () => {
+    const city = new City(20);
+    city.getTile(10, 10)!.placeBuilding(BUILDING_TYPE.SCHOOL);
+
+    const zoneTile = city.getTile(10, 11)!;
+    zoneTile.placeBuilding(BUILDING_TYPE.RESIDENTIAL);
+
+    expect(zoneTile.schoolCoverage?.value).toBe(true);
+    expect(zoneTile.fireStationCoverage?.value).toBe(false);
+    expect(zoneTile.policeStationCoverage?.value).toBe(false);
+    expect(zoneTile.hospitalCoverage?.value).toBe(false);
+  });
+});
+
 describe('economy', () => {
   beforeEach(() => {
     cityEvents.clear();

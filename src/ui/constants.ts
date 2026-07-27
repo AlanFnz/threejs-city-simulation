@@ -54,6 +54,26 @@ const TOOLBAR_BUTTONS: ToolbarButtons = {
     icon: ICON_KEYS.POWER_LINE_COLOR,
     uiText: 'POWER LINE',
   },
+  FIRE_STATION: {
+    id: 'FIRE_STATION',
+    icon: ICON_KEYS.FIRE_STATION_COLOR,
+    uiText: 'FIRE STATION',
+  },
+  POLICE_STATION: {
+    id: 'POLICE_STATION',
+    icon: ICON_KEYS.POLICE_STATION_COLOR,
+    uiText: 'POLICE STATION',
+  },
+  HOSPITAL: {
+    id: 'HOSPITAL',
+    icon: ICON_KEYS.HOSPITAL_COLOR,
+    uiText: 'HOSPITAL',
+  },
+  SCHOOL: {
+    id: 'SCHOOL',
+    icon: ICON_KEYS.SCHOOL_COLOR,
+    uiText: 'SCHOOL',
+  },
   BULLDOZE: {
     id: 'BULLDOZE',
     icon: ICON_KEYS.BULLDOZER_COLOR,

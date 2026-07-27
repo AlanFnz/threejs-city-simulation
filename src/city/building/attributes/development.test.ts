@@ -11,11 +11,17 @@ vi.mock('../../../utils/rng', () => ({ random: vi.fn() }));
 
 const mockedRandom = vi.mocked(random);
 
-function mockCity(hasRoadAccess: boolean, hasPowerAccess: boolean = true): ICity {
+function mockCity(
+  hasRoadAccess: boolean,
+  hasPowerAccess: boolean = true,
+  coverage: { police?: boolean; school?: boolean } = {}
+): ICity {
   return {
     getTile: () => ({
       roadAccess: { value: hasRoadAccess },
       powerAccess: { value: hasPowerAccess },
+      policeStationCoverage: { value: coverage.police ?? false },
+      schoolCoverage: { value: coverage.school ?? false },
     }),
   } as unknown as ICity;
 }
@@ -166,5 +172,42 @@ describe('DevelopmentAttribute', () => {
     }
 
     expect(zone.development.state).toBe(DevelopmentState.ABANDONED);
+  });
+
+  it('never abandons a zone covered by a Police Station, even past the threshold with an unfavorable roll', () => {
+    const zone = new ResidentialZone(0, 0);
+    mockedRandom.mockReturnValue(0);
+    advanceThroughConstruction(zone, mockCity(true));
+    expect(zone.development.state).toBe(DevelopmentState.DEVELOPED);
+
+    // random() always returns 0, which alone would trigger abandonment -
+    // police coverage should skip that roll entirely.
+    const disconnectedButCovered = mockCity(false, true, { police: true });
+    for (let i = 0; i <= CONFIG.ZONE.ABANDONMENT_THRESHOLD; i++) {
+      zone.development.simulate(disconnectedButCovered);
+    }
+
+    expect(zone.development.state).toBe(DevelopmentState.DEVELOPED);
+  });
+
+  it('levels up on a roll that would fail without School coverage', () => {
+    const zone = new ResidentialZone(0, 0);
+    mockedRandom.mockReturnValue(0);
+    advanceThroughConstruction(zone, mockCity(true));
+    expect(zone.development.level).toBe(1);
+
+    // between LEVEL_UP_CHANCE and LEVEL_UP_CHANCE * LEVEL_UP_CHANCE_MULTIPLIER -
+    // fails uncovered, succeeds covered.
+    const midRoll =
+      (CONFIG.ZONE.LEVEL_UP_CHANCE +
+        CONFIG.ZONE.LEVEL_UP_CHANCE * CONFIG.CIVIC_SERVICES.SCHOOL.LEVEL_UP_CHANCE_MULTIPLIER) /
+      2;
+    mockedRandom.mockReturnValue(midRoll);
+
+    zone.development.simulate(mockCity(true));
+    expect(zone.development.level).toBe(1);
+
+    zone.development.simulate(mockCity(true, true, { school: true }));
+    expect(zone.development.level).toBe(2);
   });
 });

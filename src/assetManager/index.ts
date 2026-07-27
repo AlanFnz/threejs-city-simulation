@@ -12,6 +12,18 @@ import { DevelopmentState } from '../city/building/attributes/development';
 
 const DEG2RAD = Math.PI / 180.0;
 
+/** Building types with no zone leveling/styling - a single fixed model at
+ * the tile's position. Shared by resolveBuildingInstance and createPreviewMesh
+ * instead of a near-duplicate branch per type. */
+const FIXED_BUILDING_MODEL_KEYS: Partial<Record<BuildingType, ModelKey>> = {
+  [BUILDING_TYPE.POWER_PLANT]: ModelKey.POWER_PLANT,
+  [BUILDING_TYPE.POWER_LINE]: ModelKey.POWER_LINE,
+  [BUILDING_TYPE.FIRE_STATION]: ModelKey.FIRE_STATION,
+  [BUILDING_TYPE.POLICE_STATION]: ModelKey.POLICE_STATION,
+  [BUILDING_TYPE.HOSPITAL]: ModelKey.HOSPITAL,
+  [BUILDING_TYPE.SCHOOL]: ModelKey.SCHOOL,
+};
+
 export interface ResolvedBuildingInstance {
   modelKey: ModelKey;
   matrix: THREE.Matrix4;
@@ -216,6 +228,11 @@ export class AssetManager implements IAssetManager {
   resolveBuildingInstance(tile: ITile): ResolvedBuildingInstance | null {
     if (!tile.building) return null;
 
+    const fixedBuildingModelKey = FIXED_BUILDING_MODEL_KEYS[tile.building.type];
+    if (fixedBuildingModelKey) {
+      return this.resolveFixedBuildingInstance(tile, fixedBuildingModelKey);
+    }
+
     switch (tile.building.type) {
       case BUILDING_TYPE.RESIDENTIAL:
       case BUILDING_TYPE.COMMERCIAL:
@@ -223,10 +240,6 @@ export class AssetManager implements IAssetManager {
         return this.resolveZoneInstance(tile);
       case BUILDING_TYPE.ROAD:
         return this.resolveRoadInstance(tile);
-      case BUILDING_TYPE.POWER_PLANT:
-        return this.resolvePowerPlantInstance(tile);
-      case BUILDING_TYPE.POWER_LINE:
-        return this.resolvePowerLineInstance(tile);
       default:
         console.warn(`Mesh type ${tile.building?.type} is not recognized.`);
         return null;
@@ -276,26 +289,17 @@ export class AssetManager implements IAssetManager {
     };
   }
 
-  private resolvePowerPlantInstance(tile: ITile): ResolvedBuildingInstance | null {
+  /** Shared by every "fixed" building - no zone leveling/styling, just a
+   * single model sitting at the tile's position (power plant/line, and the
+   * four civic services). */
+  private resolveFixedBuildingInstance(
+    tile: ITile,
+    modelKey: ModelKey
+  ): ResolvedBuildingInstance {
     const matrix = new THREE.Matrix4();
     matrix.setPosition(tile.x, 0, tile.y);
 
-    return {
-      modelKey: ModelKey.POWER_PLANT,
-      matrix,
-      abandoned: false,
-    };
-  }
-
-  private resolvePowerLineInstance(tile: ITile): ResolvedBuildingInstance | null {
-    const matrix = new THREE.Matrix4();
-    matrix.setPosition(tile.x, 0, tile.y);
-
-    return {
-      modelKey: ModelKey.POWER_LINE,
-      matrix,
-      abandoned: false,
-    };
+    return { modelKey, matrix, abandoned: false };
   }
 
   createRandomVehicleMesh(): THREE.Mesh | null {
@@ -328,16 +332,10 @@ export class AssetManager implements IAssetManager {
       return mesh;
     }
 
-    if (buildingType === BUILDING_TYPE.POWER_PLANT) {
+    const fixedBuildingModelKey = FIXED_BUILDING_MODEL_KEYS[buildingType];
+    if (fixedBuildingModelKey) {
       // Built instantly like a road, not under-construction like a zone.
-      const mesh = this.cloneMesh(ModelKey.POWER_PLANT, true);
-      if (!mesh) return null;
-      mesh.position.set(tile.x, 0, tile.y);
-      return mesh;
-    }
-
-    if (buildingType === BUILDING_TYPE.POWER_LINE) {
-      const mesh = this.cloneMesh(ModelKey.POWER_LINE, true);
+      const mesh = this.cloneMesh(fixedBuildingModelKey, true);
       if (!mesh) return null;
       mesh.position.set(tile.x, 0, tile.y);
       return mesh;

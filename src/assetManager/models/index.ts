@@ -186,6 +186,26 @@ const models: Record<ModelKey, ModelEntry> = {
     type: modelType.ZONE,
     file: modelsFiles.POWER_LINE_POLE,
   },
+  [ModelKey.FIRE_STATION]: {
+    filename: 'building-firestation.glb',
+    type: modelType.ZONE,
+    file: modelsFiles.BUILDING_FIRESTATION,
+  },
+  [ModelKey.POLICE_STATION]: {
+    filename: 'building-policestation.glb',
+    type: modelType.ZONE,
+    file: modelsFiles.BUILDING_POLICESTATION,
+  },
+  [ModelKey.HOSPITAL]: {
+    filename: 'building-hospital.glb',
+    type: modelType.ZONE,
+    file: modelsFiles.BUILDING_HOSPITAL,
+  },
+  [ModelKey.SCHOOL]: {
+    filename: 'building-school.glb',
+    type: modelType.ZONE,
+    file: modelsFiles.BUILDING_SCHOOL,
+  },
   [ModelKey.GRASS]: {
     filename: 'tile-plain_grass.glb',
     type: modelType.TERRAIN,

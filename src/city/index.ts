@@ -65,9 +65,17 @@ export class City implements ICity {
       cityEvents.on('powerNetworkChanged', ({ x, y }) =>
         this.handlePowerNetworkChanged(x, y)
       ),
+      cityEvents.on('civicCoverageChanged', ({ x, y }) =>
+        this.recomputeCivicCoverageNear(x, y)
+      ),
       cityEvents.on('buildingPlaced', ({ x, y }) => {
         this.getTile(x, y)?.roadAccess?.recompute(this);
         this.cascadePowerAccessChange(x, y);
+        const tile = this.getTile(x, y);
+        tile?.fireStationCoverage?.recompute(this);
+        tile?.policeStationCoverage?.recompute(this);
+        tile?.hospitalCoverage?.recompute(this);
+        tile?.schoolCoverage?.recompute(this);
       }),
       cityEvents.on('buildingRemoved', ({ x, y }) => {
         // Releasing this tile's own slot (if it had one) may free capacity a
@@ -95,6 +103,33 @@ export class City implements ICity {
       for (let dy = -radius; dy <= radius; dy++) {
         if (Math.abs(dx) + Math.abs(dy) > radius) continue;
         this.getTile(x + dx, y + dy)?.roadAccess?.recompute(this);
+      }
+    }
+  }
+
+  /**
+   * A civic building (fire/police/hospital/school) was placed or removed at
+   * (x, y). Same bounded-radius idea as recomputeRoadAccessNear - coverage
+   * doesn't chain through other coverage, so a one-shot radius sweep is
+   * enough (no cascade needed, unlike power access). Uses the largest of
+   * the four SEARCH_DISTANCEs so nothing in range of any one of them is missed.
+   */
+  private recomputeCivicCoverageNear(x: number, y: number): void {
+    const { FIRE_STATION, POLICE_STATION, HOSPITAL, SCHOOL } = CONFIG.CIVIC_SERVICES;
+    const radius = Math.max(
+      FIRE_STATION.SEARCH_DISTANCE,
+      POLICE_STATION.SEARCH_DISTANCE,
+      HOSPITAL.SEARCH_DISTANCE,
+      SCHOOL.SEARCH_DISTANCE
+    );
+    for (let dx = -radius; dx <= radius; dx++) {
+      for (let dy = -radius; dy <= radius; dy++) {
+        if (Math.abs(dx) + Math.abs(dy) > radius) continue;
+        const tile = this.getTile(x + dx, y + dy);
+        tile?.fireStationCoverage?.recompute(this);
+        tile?.policeStationCoverage?.recompute(this);
+        tile?.hospitalCoverage?.recompute(this);
+        tile?.schoolCoverage?.recompute(this);
       }
     }
   }

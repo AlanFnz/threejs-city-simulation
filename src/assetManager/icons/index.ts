@@ -19,6 +19,10 @@ import ROAD_COLOR from './road-color.png';
 import STORE_COLOR from './store-color.png';
 import POWER_COLOR from './power-color.png';
 import POWER_LINE_COLOR from './power-line-color.png';
+import FIRE_STATION_COLOR from './fire-station-color.svg';
+import POLICE_STATION_COLOR from './police-station-color.svg';
+import HOSPITAL_COLOR from './hospital-color.svg';
+import SCHOOL_COLOR from './school-color.svg';
 
 export const ICON_KEYS = {
   SELECT: 'SELECT',
@@ -42,6 +46,10 @@ export const ICON_KEYS = {
   STORE_COLOR: 'STORE_COLOR',
   POWER_COLOR: 'POWER_COLOR',
   POWER_LINE_COLOR: 'POWER_LINE_COLOR',
+  FIRE_STATION_COLOR: 'FIRE_STATION_COLOR',
+  POLICE_STATION_COLOR: 'POLICE_STATION_COLOR',
+  HOSPITAL_COLOR: 'HOSPITAL_COLOR',
+  SCHOOL_COLOR: 'SCHOOL_COLOR',
 } as const;
 
 type IconKey = (typeof ICON_KEYS)[keyof typeof ICON_KEYS];
@@ -68,6 +76,10 @@ const icons: Record<IconKey, string> = {
   STORE_COLOR,
   POWER_COLOR,
   POWER_LINE_COLOR,
+  FIRE_STATION_COLOR,
+  POLICE_STATION_COLOR,
+  HOSPITAL_COLOR,
+  SCHOOL_COLOR,
 };
 
 function isValidIconKey(key: string): key is IconKey {

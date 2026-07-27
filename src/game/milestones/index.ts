@@ -7,7 +7,16 @@ import { Milestone, MilestoneCondition, MilestoneReward, MILESTONES } from './co
 
 /** Exported for save/load's "New Game" reset (see src/game/saveGame), so a
  * blank save can't drift from what a fresh MilestoneTracker actually starts with. */
-export const STARTING_UNLOCKED_TOOLS = ['SELECT', 'RESIDENTIAL', 'ROAD', 'POWER_PLANT', 'POWER_LINE', 'BULLDOZE'];
+export const STARTING_UNLOCKED_TOOLS = [
+  'SELECT',
+  'RESIDENTIAL',
+  'COMMERCIAL',
+  'INDUSTRIAL',
+  'ROAD',
+  'POWER_PLANT',
+  'POWER_LINE',
+  'BULLDOZE',
+];
 
 export interface IMilestoneTracker {
   isUnlocked(toolId: string): boolean;

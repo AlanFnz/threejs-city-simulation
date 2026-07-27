@@ -40,7 +40,7 @@ describe('ResidentsAttribute move-in', () => {
     const listener = vi.fn();
     cityEvents.on('citizenMovedIn', listener);
 
-    zone.residents.update({} as ICity);
+    zone.residents.update({ getTile: () => null } as unknown as ICity);
 
     expect(zone.residents.count).toBe(1);
     expect(listener).toHaveBeenCalledTimes(1);
@@ -49,6 +49,30 @@ describe('ResidentsAttribute move-in', () => {
       x: 4,
       y: 6,
     });
+  });
+
+  it('moves in on a roll that would fail without Hospital coverage', () => {
+    const zone = new ResidentialZone(4, 6);
+    zone.development.state = DevelopmentState.DEVELOPED;
+
+    // between RESIDENT_MOVE_IN_CHANCE and RESIDENT_MOVE_IN_CHANCE *
+    // MOVE_IN_CHANCE_MULTIPLIER - fails uncovered, succeeds covered.
+    // findTile is stubbed since this roll can land a working-age citizen,
+    // whose own step() would otherwise look for a job against a real city.
+    const midRoll =
+      (CONFIG.ZONE.RESIDENT_MOVE_IN_CHANCE +
+        CONFIG.ZONE.RESIDENT_MOVE_IN_CHANCE * CONFIG.CIVIC_SERVICES.HOSPITAL.MOVE_IN_CHANCE_MULTIPLIER) /
+      2;
+    mockedRandom.mockReturnValue(midRoll);
+
+    zone.residents.update({ getTile: () => null, findTile: () => null } as unknown as ICity);
+    expect(zone.residents.count).toBe(0);
+
+    zone.residents.update({
+      getTile: () => ({ hospitalCoverage: { value: true } }),
+      findTile: () => null,
+    } as unknown as ICity);
+    expect(zone.residents.count).toBe(1);
   });
 });
 
@@ -62,7 +86,7 @@ describe('ResidentsAttribute.evictAll', () => {
     const zone = new ResidentialZone(2, 3);
     zone.development.state = DevelopmentState.DEVELOPED;
     mockedRandom.mockReturnValue(0); // move-in roll + SCHOOL-age citizen
-    zone.residents.update({} as ICity);
+    zone.residents.update({ getTile: () => null } as unknown as ICity);
     expect(zone.residents.count).toBe(1);
 
     let countDuringEmit = -1;
@@ -79,7 +103,7 @@ describe('ResidentsAttribute.evictAll', () => {
     const zone = new ResidentialZone(2, 3);
     zone.development.state = DevelopmentState.DEVELOPED;
     mockedRandom.mockReturnValue(0);
-    zone.residents.update({} as ICity); // one resident moves in
+    zone.residents.update({ getTile: () => null } as unknown as ICity); // one resident moves in
     const listener = vi.fn();
     cityEvents.on('citizenMovedOut', listener);
 

@@ -11,6 +11,28 @@ export interface Config {
       CAPACITY: number;
     };
   };
+  CIVIC_SERVICES: {
+    FIRE_STATION: {
+      /** tiles (Manhattan distance) a zone is protected from the Fire random event */
+      SEARCH_DISTANCE: number;
+    };
+    POLICE_STATION: {
+      /** tiles (Manhattan distance) a zone is immune to abandonment */
+      SEARCH_DISTANCE: number;
+    };
+    HOSPITAL: {
+      /** tiles (Manhattan distance) a residential zone gets a boosted move-in chance */
+      SEARCH_DISTANCE: number;
+      /** multiplies ZONE.RESIDENT_MOVE_IN_CHANCE for covered residential zones */
+      MOVE_IN_CHANCE_MULTIPLIER: number;
+    };
+    SCHOOL: {
+      /** tiles (Manhattan distance) a zone gets a boosted level-up chance */
+      SEARCH_DISTANCE: number;
+      /** multiplies ZONE.LEVEL_UP_CHANCE for covered zones */
+      LEVEL_UP_CHANCE_MULTIPLIER: number;
+    };
+  };
   CITIZEN: {
     /** years */
     MIN_WORKING_AGE: number;
@@ -68,6 +90,10 @@ export interface Config {
       ROAD: number;
       POWER_PLANT: number;
       POWER_LINE: number;
+      FIRE_STATION: number;
+      POLICE_STATION: number;
+      HOSPITAL: number;
+      SCHOOL: number;
     };
     /** income per simulation tick, per resident in a developed residential zone */
     TAX_PER_RESIDENT: number;
@@ -78,6 +104,10 @@ export interface Config {
       ROAD: number;
       POWER_PLANT: number;
       POWER_LINE: number;
+      FIRE_STATION: number;
+      POLICE_STATION: number;
+      HOSPITAL: number;
+      SCHOOL: number;
     };
   };
   RANDOM_EVENTS: {
@@ -110,6 +140,22 @@ const CONFIG = {
     POWER_ACCESS: {
       SEARCH_DISTANCE: 6,
       CAPACITY: 20,
+    },
+  },
+  CIVIC_SERVICES: {
+    FIRE_STATION: {
+      SEARCH_DISTANCE: 5,
+    },
+    POLICE_STATION: {
+      SEARCH_DISTANCE: 5,
+    },
+    HOSPITAL: {
+      SEARCH_DISTANCE: 5,
+      MOVE_IN_CHANCE_MULTIPLIER: 1.5,
+    },
+    SCHOOL: {
+      SEARCH_DISTANCE: 5,
+      LEVEL_UP_CHANCE_MULTIPLIER: 2,
     },
   },
   CITIZEN: {
@@ -149,6 +195,10 @@ const CONFIG = {
       ROAD: 10,
       POWER_PLANT: 500,
       POWER_LINE: 20,
+      FIRE_STATION: 300,
+      POLICE_STATION: 300,
+      HOSPITAL: 400,
+      SCHOOL: 250,
     },
     TAX_PER_RESIDENT: 2,
     TAX_PER_WORKER: 2,
@@ -156,6 +206,10 @@ const CONFIG = {
       ROAD: 0.2,
       POWER_PLANT: 5,
       POWER_LINE: 0.5,
+      FIRE_STATION: 3,
+      POLICE_STATION: 3,
+      HOSPITAL: 4,
+      SCHOOL: 2,
     },
   },
   RANDOM_EVENTS: {

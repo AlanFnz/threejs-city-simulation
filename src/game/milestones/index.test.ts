@@ -51,23 +51,41 @@ describe('MilestoneTracker - population/money milestones', () => {
     expect(city.earn).toHaveBeenCalledTimes(1);
   });
 
-  it('unlocks COMMERCIAL and INDUSTRIAL as population crosses their thresholds', () => {
+  it('unlocks COMMERCIAL and INDUSTRIAL from the start, with no milestone required', () => {
+    const city = fakeCity({ population: 0 });
+    const tracker = new MilestoneTracker(city);
+
+    expect(tracker.isUnlocked(BUILDING_TYPE.COMMERCIAL)).toBe(true);
+    expect(tracker.isUnlocked(BUILDING_TYPE.INDUSTRIAL)).toBe(true);
+  });
+
+  it('unlocks the four civic buildings as population crosses their thresholds', () => {
     const city = fakeCity({ population: 5 });
     const tracker = new MilestoneTracker(city);
 
-    expect(tracker.isUnlocked(BUILDING_TYPE.COMMERCIAL)).toBe(false);
-    expect(tracker.isUnlocked(BUILDING_TYPE.INDUSTRIAL)).toBe(false);
+    expect(tracker.isUnlocked(BUILDING_TYPE.FIRE_STATION)).toBe(false);
+    expect(tracker.isUnlocked(BUILDING_TYPE.POLICE_STATION)).toBe(false);
+    expect(tracker.isUnlocked(BUILDING_TYPE.HOSPITAL)).toBe(false);
+    expect(tracker.isUnlocked(BUILDING_TYPE.SCHOOL)).toBe(false);
 
-    (city as { population: number }).population = 30;
+    (city as { population: number }).population = 15;
     cityEvents.emit('citizenMovedIn', { citizenId: '1', x: 0, y: 0 });
+    expect(tracker.isUnlocked(BUILDING_TYPE.FIRE_STATION)).toBe(true);
+    expect(tracker.isUnlocked(BUILDING_TYPE.POLICE_STATION)).toBe(false);
 
-    expect(tracker.isUnlocked(BUILDING_TYPE.COMMERCIAL)).toBe(true);
-    expect(tracker.isUnlocked(BUILDING_TYPE.INDUSTRIAL)).toBe(false);
-
-    (city as { population: number }).population = 75;
+    (city as { population: number }).population = 25;
     cityEvents.emit('citizenMovedIn', { citizenId: '2', x: 0, y: 0 });
+    expect(tracker.isUnlocked(BUILDING_TYPE.POLICE_STATION)).toBe(true);
+    expect(tracker.isUnlocked(BUILDING_TYPE.HOSPITAL)).toBe(false);
 
-    expect(tracker.isUnlocked(BUILDING_TYPE.INDUSTRIAL)).toBe(true);
+    (city as { population: number }).population = 40;
+    cityEvents.emit('citizenMovedIn', { citizenId: '3', x: 0, y: 0 });
+    expect(tracker.isUnlocked(BUILDING_TYPE.HOSPITAL)).toBe(true);
+    expect(tracker.isUnlocked(BUILDING_TYPE.SCHOOL)).toBe(false);
+
+    (city as { population: number }).population = 60;
+    cityEvents.emit('citizenMovedIn', { citizenId: '4', x: 0, y: 0 });
+    expect(tracker.isUnlocked(BUILDING_TYPE.SCHOOL)).toBe(true);
   });
 
   it('applies the upkeep discount once the money milestone is reached', () => {

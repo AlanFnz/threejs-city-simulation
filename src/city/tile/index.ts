@@ -9,7 +9,16 @@ import {
   IPowerAccessAttribute,
   PowerAccessAttribute,
 } from "../building/attributes/powerAccess";
+import { ICivicCoverageAttribute, CivicCoverageAttribute } from "../building/attributes/civicCoverage";
 import { cityEvents } from "../../events";
+import CONFIG from "../../config";
+
+const CIVIC_BUILDING_TYPES = [
+  BUILDING_TYPE.FIRE_STATION,
+  BUILDING_TYPE.POLICE_STATION,
+  BUILDING_TYPE.HOSPITAL,
+  BUILDING_TYPE.SCHOOL,
+] as const;
 
 export interface ITile {
   id: string;
@@ -19,6 +28,10 @@ export interface ITile {
   building: BuildingEntity | null | undefined;
   roadAccess: IRoadAccessAttribute | null | undefined;
   powerAccess: IPowerAccessAttribute | null | undefined;
+  fireStationCoverage: ICivicCoverageAttribute | null | undefined;
+  policeStationCoverage: ICivicCoverageAttribute | null | undefined;
+  hospitalCoverage: ICivicCoverageAttribute | null | undefined;
+  schoolCoverage: ICivicCoverageAttribute | null | undefined;
   distanceTo(tile: ITile): number;
   simulate(city: ICity): void;
   refresh(city: ICity): void;
@@ -35,6 +48,10 @@ export class Tile implements ITile {
   building: BuildingEntity | null | undefined;
   roadAccess: IRoadAccessAttribute | null | undefined;
   powerAccess: IPowerAccessAttribute | null | undefined;
+  fireStationCoverage: ICivicCoverageAttribute | null | undefined;
+  policeStationCoverage: ICivicCoverageAttribute | null | undefined;
+  hospitalCoverage: ICivicCoverageAttribute | null | undefined;
+  schoolCoverage: ICivicCoverageAttribute | null | undefined;
 
   constructor(x: number, y: number) {
     this.id = crypto.randomUUID();
@@ -44,6 +61,26 @@ export class Tile implements ITile {
     this.building = null;
     this.roadAccess = new RoadAccessAttribute(this);
     this.powerAccess = new PowerAccessAttribute(this);
+    this.fireStationCoverage = new CivicCoverageAttribute(
+      this,
+      BUILDING_TYPE.FIRE_STATION,
+      CONFIG.CIVIC_SERVICES.FIRE_STATION.SEARCH_DISTANCE
+    );
+    this.policeStationCoverage = new CivicCoverageAttribute(
+      this,
+      BUILDING_TYPE.POLICE_STATION,
+      CONFIG.CIVIC_SERVICES.POLICE_STATION.SEARCH_DISTANCE
+    );
+    this.hospitalCoverage = new CivicCoverageAttribute(
+      this,
+      BUILDING_TYPE.HOSPITAL,
+      CONFIG.CIVIC_SERVICES.HOSPITAL.SEARCH_DISTANCE
+    );
+    this.schoolCoverage = new CivicCoverageAttribute(
+      this,
+      BUILDING_TYPE.SCHOOL,
+      CONFIG.CIVIC_SERVICES.SCHOOL.SEARCH_DISTANCE
+    );
   }
 
   distanceTo(tile: Tile): number {
@@ -64,6 +101,9 @@ export class Tile implements ITile {
       const wasPowerInfrastructure =
         this.building.type === BUILDING_TYPE.POWER_PLANT ||
         this.building.type === BUILDING_TYPE.POWER_LINE;
+      const wasCivicBuilding = (CIVIC_BUILDING_TYPES as readonly string[]).includes(
+        this.building.type
+      );
       this.building.dispose();
       this.building = null;
       cityEvents.emit("buildingRemoved", { x: this.x, y: this.y });
@@ -72,6 +112,9 @@ export class Tile implements ITile {
       }
       if (wasPowerInfrastructure) {
         cityEvents.emit("powerNetworkChanged", { x: this.x, y: this.y });
+      }
+      if (wasCivicBuilding) {
+        cityEvents.emit("civicCoverageChanged", { x: this.x, y: this.y });
       }
     }
   }
@@ -89,6 +132,9 @@ export class Tile implements ITile {
     if (type === BUILDING_TYPE.POWER_PLANT || type === BUILDING_TYPE.POWER_LINE) {
       cityEvents.emit("powerNetworkChanged", { x: this.x, y: this.y });
     }
+    if ((CIVIC_BUILDING_TYPES as readonly string[]).includes(type)) {
+      cityEvents.emit("civicCoverageChanged", { x: this.x, y: this.y });
+    }
   }
 
   toHTML(): string {
@@ -104,6 +150,18 @@ export class Tile implements ITile {
       <br>
       <span class="info-label">Power access: </span>
       <span class="info-value">${this.powerAccess?.value ? "Yes" : "No"}</span>
+      <br>
+      <span class="info-label">Fire coverage: </span>
+      <span class="info-value">${this.fireStationCoverage?.value ? "Yes" : "No"}</span>
+      <br>
+      <span class="info-label">Police coverage: </span>
+      <span class="info-value">${this.policeStationCoverage?.value ? "Yes" : "No"}</span>
+      <br>
+      <span class="info-label">Hospital coverage: </span>
+      <span class="info-value">${this.hospitalCoverage?.value ? "Yes" : "No"}</span>
+      <br>
+      <span class="info-label">School coverage: </span>
+      <span class="info-value">${this.schoolCoverage?.value ? "Yes" : "No"}</span>
       <br>
     `;
 

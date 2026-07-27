@@ -34,10 +34,15 @@ export class ResidentsAttribute {
     ) {
       this.evictAll();
     } else if (this.zone.development.state === 'developed') {
-      // Move in new residents if there is room
+      // Move in new residents if there is room - a nearby Hospital boosts
+      // the move-in chance (healthcare access draws residents).
+      const tile = city.getTile(this.zone.x, this.zone.y);
+      const moveInChance = tile?.hospitalCoverage?.value
+        ? CONFIG.ZONE.RESIDENT_MOVE_IN_CHANCE * CONFIG.CIVIC_SERVICES.HOSPITAL.MOVE_IN_CHANCE_MULTIPLIER
+        : CONFIG.ZONE.RESIDENT_MOVE_IN_CHANCE;
       if (
         this.residents.length < this.maximum &&
-        random() < CONFIG.ZONE.RESIDENT_MOVE_IN_CHANCE
+        random() < moveInChance
       ) {
         const citizen = new Citizen(this.zone as ResidentialZone);
         this.residents.push(citizen);

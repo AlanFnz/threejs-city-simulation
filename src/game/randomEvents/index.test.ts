@@ -121,6 +121,21 @@ describe('RandomEventsSystem - fire', () => {
 
     expect(asPrivate(system).tryFire()).toBe(true);
   });
+
+  it('never targets a zone covered by a Fire Station', () => {
+    const city = new City(20);
+    city.getTile(4, 4)!.placeBuilding(BUILDING_TYPE.FIRE_STATION);
+    const tile = city.getTile(5, 5)!;
+    tile.placeBuilding(BUILDING_TYPE.RESIDENTIAL);
+    (tile.building as ResidentialZone).development.state = DevelopmentState.DEVELOPED;
+    expect(tile.fireStationCoverage?.value).toBe(true);
+
+    mockedRandom.mockReturnValue(0.001);
+    const system = new RandomEventsSystem(city);
+
+    expect(asPrivate(system).tryFire()).toBe(false);
+    expect((tile.building as ResidentialZone).development.state).toBe(DevelopmentState.DEVELOPED);
+  });
 });
 
 describe('RandomEventsSystem - layoffs', () => {
