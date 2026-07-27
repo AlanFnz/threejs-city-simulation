@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { ResidentialZone } from '../zones/residentialZone';
 import { DevelopmentState } from './development';
+import { ITile } from '../../tile';
 import { ICity } from '../..';
 import CONFIG from '../../../config';
 import { random } from '../../../utils/rng';
@@ -9,6 +10,18 @@ import { cityEvents } from '../../../events';
 vi.mock('../../../utils/rng', () => ({ random: vi.fn() }));
 
 const mockedRandom = vi.mocked(random);
+
+/** findTile defaults to "no jobs found nearby" - tests that care about job
+ * availability override it explicitly. */
+function fakeCity(overrides: {
+  getTile?: () => unknown;
+  findTile?: () => ITile | null;
+} = {}): ICity {
+  return {
+    getTile: overrides.getTile ?? (() => null),
+    findTile: overrides.findTile ?? (() => null),
+  } as unknown as ICity;
+}
 
 describe('ResidentsAttribute.maximum', () => {
   it('scales exponentially with development level', () => {
@@ -40,7 +53,7 @@ describe('ResidentsAttribute move-in', () => {
     const listener = vi.fn();
     cityEvents.on('citizenMovedIn', listener);
 
-    zone.residents.update({ getTile: () => null } as unknown as ICity);
+    zone.residents.update(fakeCity());
 
     expect(zone.residents.count).toBe(1);
     expect(listener).toHaveBeenCalledTimes(1);
@@ -55,23 +68,39 @@ describe('ResidentsAttribute move-in', () => {
     const zone = new ResidentialZone(4, 6);
     zone.development.state = DevelopmentState.DEVELOPED;
 
-    // between RESIDENT_MOVE_IN_CHANCE and RESIDENT_MOVE_IN_CHANCE *
-    // MOVE_IN_CHANCE_MULTIPLIER - fails uncovered, succeeds covered.
-    // findTile is stubbed since this roll can land a working-age citizen,
-    // whose own step() would otherwise look for a job against a real city.
+    // Both branches here have no jobs nearby (findTile -> null), so both are
+    // already scaled by NO_JOBS_MOVE_IN_MULTIPLIER - the roll only needs to
+    // land between the (scaled) uncovered and covered chances.
     const midRoll =
-      (CONFIG.ZONE.RESIDENT_MOVE_IN_CHANCE +
-        CONFIG.ZONE.RESIDENT_MOVE_IN_CHANCE * CONFIG.CIVIC_SERVICES.HOSPITAL.MOVE_IN_CHANCE_MULTIPLIER) /
+      (CONFIG.ZONE.NO_JOBS_MOVE_IN_MULTIPLIER *
+        (CONFIG.ZONE.RESIDENT_MOVE_IN_CHANCE +
+          CONFIG.ZONE.RESIDENT_MOVE_IN_CHANCE * CONFIG.CIVIC_SERVICES.HOSPITAL.MOVE_IN_CHANCE_MULTIPLIER)) /
       2;
     mockedRandom.mockReturnValue(midRoll);
 
-    zone.residents.update({ getTile: () => null, findTile: () => null } as unknown as ICity);
+    zone.residents.update(fakeCity());
     expect(zone.residents.count).toBe(0);
 
-    zone.residents.update({
-      getTile: () => ({ hospitalCoverage: { value: true } }),
-      findTile: () => null,
-    } as unknown as ICity);
+    zone.residents.update(fakeCity({ getTile: () => ({ hospitalCoverage: { value: true } }) }));
+    expect(zone.residents.count).toBe(1);
+  });
+
+  it('moves in far more readily when a nearby job is available than when none exists', () => {
+    const zone = new ResidentialZone(4, 6);
+    zone.development.state = DevelopmentState.DEVELOPED;
+
+    // between the no-jobs-scaled chance and the full chance - fails with no
+    // jobs nearby, succeeds once a job is reachable.
+    const midRoll =
+      (CONFIG.ZONE.NO_JOBS_MOVE_IN_MULTIPLIER * CONFIG.ZONE.RESIDENT_MOVE_IN_CHANCE +
+        CONFIG.ZONE.RESIDENT_MOVE_IN_CHANCE) /
+      2;
+    mockedRandom.mockReturnValue(midRoll);
+
+    zone.residents.update(fakeCity({ findTile: () => null }));
+    expect(zone.residents.count).toBe(0);
+
+    zone.residents.update(fakeCity({ findTile: () => ({} as ITile) }));
     expect(zone.residents.count).toBe(1);
   });
 });
@@ -86,7 +115,7 @@ describe('ResidentsAttribute.evictAll', () => {
     const zone = new ResidentialZone(2, 3);
     zone.development.state = DevelopmentState.DEVELOPED;
     mockedRandom.mockReturnValue(0); // move-in roll + SCHOOL-age citizen
-    zone.residents.update({ getTile: () => null } as unknown as ICity);
+    zone.residents.update(fakeCity());
     expect(zone.residents.count).toBe(1);
 
     let countDuringEmit = -1;
@@ -103,7 +132,7 @@ describe('ResidentsAttribute.evictAll', () => {
     const zone = new ResidentialZone(2, 3);
     zone.development.state = DevelopmentState.DEVELOPED;
     mockedRandom.mockReturnValue(0);
-    zone.residents.update({ getTile: () => null } as unknown as ICity); // one resident moves in
+    zone.residents.update(fakeCity()); // one resident moves in
     const listener = vi.fn();
     cityEvents.on('citizenMovedOut', listener);
 

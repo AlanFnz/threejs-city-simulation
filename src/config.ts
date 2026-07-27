@@ -56,6 +56,11 @@ export interface Config {
     MAX_WORKERS: number;
     /** probability per simulation tick, 0-1 */
     RESIDENT_MOVE_IN_CHANCE: number;
+    /** RESIDENT_MOVE_IN_CHANCE is multiplied by this when no commercial/industrial
+     * zone has an available job within CITIZEN.MAX_JOB_SEARCH_DISTANCE - growth
+     * slows sharply without nearby jobs but never fully stops (retirees,
+     * students, remote workers) */
+    NO_JOBS_MOVE_IN_MULTIPLIER: number;
     /** simulation ticks to finish construction */
     CONSTRUCTION_TIME: number;
   };
@@ -171,6 +176,7 @@ const CONFIG = {
     MAX_RESIDENTS: 2,
     MAX_WORKERS: 2,
     RESIDENT_MOVE_IN_CHANCE: 0.5,
+    NO_JOBS_MOVE_IN_MULTIPLIER: 0.15,
     CONSTRUCTION_TIME: 3,
   },
   CITY: {
