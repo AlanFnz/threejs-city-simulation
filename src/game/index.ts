@@ -68,6 +68,7 @@ export class Game implements IGame {
     this.unsubscribers.push(
       cityEvents.on("citizenMovedIn", () => this.updateTitleBar()),
       cityEvents.on("citizenMovedOut", () => this.updateTitleBar()),
+      cityEvents.on("moneyChanged", () => this.updateMoneyDisplay()),
       cityEvents.on("developmentStateChanged", (payload) =>
         this.refreshInfoOverlayIfFocused(payload)
       ),
@@ -244,6 +245,13 @@ export class Game implements IGame {
     const populationCounter = document.getElementById("population-counter");
     if (populationCounter)
       populationCounter.textContent = this.city.population.toString();
+  }
+
+  private updateMoneyDisplay(): void {
+    const moneyCounter = document.getElementById("money-counter");
+    if (!moneyCounter) return;
+    moneyCounter.textContent = Math.floor(this.city.money).toString();
+    moneyCounter.classList.toggle("low-funds", this.city.money < 0);
   }
 
   /**

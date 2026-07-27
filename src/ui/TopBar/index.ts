@@ -1,4 +1,5 @@
 import personIcon from '../../assetManager/icons/person.png';
+import CONFIG from '../../config';
 
 function createTopBar() {
   const topbar = document.getElementById('ui-topbar') as HTMLElement;
@@ -10,7 +11,7 @@ function createTopBar() {
   const topbarLeftItems = document.createElement('div');
   topbarLeftItems.id = 'ui-topbar-left-items';
   topbarLeftItems.className = 'ui-topbar-items ui-topbar-left-items';
-  topbarLeftItems.textContent = '$1000';
+  topbarLeftItems.innerHTML = `$<span id="money-counter">${CONFIG.ECONOMY.STARTING_MONEY}</span>`;
   topbar.appendChild(topbarLeftItems);
 
   const topbarCenterItems = document.createElement('div');

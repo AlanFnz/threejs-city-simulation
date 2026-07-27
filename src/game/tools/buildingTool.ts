@@ -1,13 +1,23 @@
 import { ITile } from "../../city/tile";
 import { BuildingType } from "../../city/building/constants";
+import CONFIG from "../../config";
 import { GameContext, Tool, ToolPreview } from "./tool";
 
 /** One instance per placeable building type (residential, commercial, industrial, road). */
 export class BuildingTool implements Tool {
   constructor(public readonly id: BuildingType) {}
 
+  private cost(): number {
+    return (
+      CONFIG.ECONOMY.BUILD_COST[
+        this.id as keyof typeof CONFIG.ECONOMY.BUILD_COST
+      ] ?? 0
+    );
+  }
+
   onTileClick(tile: ITile, _object: THREE.Object3D, context: GameContext): void {
     if (tile.building) return;
+    if (!context.city.spend(this.cost())) return;
     tile.placeBuilding(this.id);
     context.city.simulate();
     context.sceneManager.update(context.city);
@@ -20,6 +30,7 @@ export class BuildingTool implements Tool {
       context.city
     );
     if (!mesh) return null;
-    return { mesh, valid: !tile.building };
+    const canAfford = context.city.canAfford(this.cost());
+    return { mesh, valid: !tile.building && canAfford };
   }
 }

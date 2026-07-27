@@ -57,6 +57,29 @@ export interface Config {
     /** rebuilds and renders node/edge markers for the road graph on every road edit; O(citySize^2) per edit, so keep off outside debugging */
     SHOW_VEHICLE_GRAPH: boolean;
   };
+  ECONOMY: {
+    /** starting balance for a new city */
+    STARTING_MONEY: number;
+    /** one-time cost charged on placement, per building type */
+    BUILD_COST: {
+      RESIDENTIAL: number;
+      COMMERCIAL: number;
+      INDUSTRIAL: number;
+      ROAD: number;
+      POWER_PLANT: number;
+      POWER_LINE: number;
+    };
+    /** income per simulation tick, per resident in a developed residential zone */
+    TAX_PER_RESIDENT: number;
+    /** income per simulation tick, per filled job in a developed commercial/industrial zone */
+    TAX_PER_WORKER: number;
+    /** upkeep cost per simulation tick, per tile of infrastructure */
+    UPKEEP: {
+      ROAD: number;
+      POWER_PLANT: number;
+      POWER_LINE: number;
+    };
+  };
 }
 
 const CONFIG = {
@@ -96,6 +119,24 @@ const CONFIG = {
   },
   DEBUG: {
     SHOW_VEHICLE_GRAPH: false,
+  },
+  ECONOMY: {
+    STARTING_MONEY: 10000,
+    BUILD_COST: {
+      RESIDENTIAL: 100,
+      COMMERCIAL: 150,
+      INDUSTRIAL: 150,
+      ROAD: 10,
+      POWER_PLANT: 500,
+      POWER_LINE: 20,
+    },
+    TAX_PER_RESIDENT: 2,
+    TAX_PER_WORKER: 2,
+    UPKEEP: {
+      ROAD: 0.2,
+      POWER_PLANT: 5,
+      POWER_LINE: 0.5,
+    },
   },
 } as const satisfies Config;
 

@@ -5,9 +5,13 @@ import { Tile } from '../../city/tile';
 import { BUILDING_TYPE } from '../../city/building/constants';
 import { ICity } from '../../city';
 
-function fakeContext(): GameContext {
+function fakeContext(canAfford: boolean = true): GameContext {
   return {
-    city: { simulate: vi.fn() } as unknown as ICity,
+    city: {
+      simulate: vi.fn(),
+      spend: vi.fn(() => canAfford),
+      canAfford: vi.fn(() => canAfford),
+    } as unknown as ICity,
     sceneManager: { update: vi.fn() } as unknown as GameContext['sceneManager'],
     assetManager: {
       createPreviewMesh: vi.fn(),
@@ -47,6 +51,19 @@ describe('BuildingTool', () => {
     expect(new BuildingTool(BUILDING_TYPE.INDUSTRIAL).id).toBe(
       BUILDING_TYPE.INDUSTRIAL
     );
+  });
+
+  it('does not place or simulate when the city cannot afford the cost', () => {
+    const tool = new BuildingTool(BUILDING_TYPE.RESIDENTIAL);
+    const tile = new Tile(3, 3);
+    const context = fakeContext(false);
+    const object = { userData: tile } as unknown as THREE.Object3D;
+
+    tool.onTileClick(tile, object, context);
+
+    expect(tile.building).toBeFalsy();
+    expect(context.city.spend).toHaveBeenCalled();
+    expect(context.city.simulate).not.toHaveBeenCalled();
   });
 });
 
@@ -94,5 +111,19 @@ describe('BuildingTool.getPreview', () => {
     );
 
     expect(tool.getPreview(tile, context)).toBeNull();
+  });
+
+  it('marks the preview invalid when the city cannot afford it', () => {
+    const tool = new BuildingTool(BUILDING_TYPE.RESIDENTIAL);
+    const tile = new Tile(5, 5);
+    const context = fakeContext(false);
+    const fakeMesh = {} as THREE.Object3D;
+    vi.mocked(context.assetManager.createPreviewMesh).mockReturnValue(
+      fakeMesh as never
+    );
+
+    const preview = tool.getPreview(tile, context);
+
+    expect(preview).toEqual({ mesh: fakeMesh, valid: false });
   });
 });

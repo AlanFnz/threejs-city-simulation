@@ -1,8 +1,12 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { City } from '.';
 import { BUILDING_TYPE } from './building/constants';
 import CONFIG from '../config';
 import { cityEvents } from '../events';
+import { random } from '../utils/rng';
+
+vi.mock('../utils/rng', () => ({ random: vi.fn() }));
+const mockedRandom = vi.mocked(random);
 
 describe('City.findTile', () => {
   it('finds a matching tile within range', () => {
@@ -255,5 +259,108 @@ describe('power lines', () => {
     zoneTile.placeBuilding(BUILDING_TYPE.RESIDENTIAL);
 
     expect(zoneTile.powerAccess?.value).toBe(true);
+  });
+});
+
+describe('economy', () => {
+  beforeEach(() => {
+    cityEvents.clear();
+  });
+
+  it('starts at STARTING_MONEY', () => {
+    const city = new City(5);
+    expect(city.money).toBe(CONFIG.ECONOMY.STARTING_MONEY);
+  });
+
+  it('canAfford reflects the current balance', () => {
+    const city = new City(5);
+    expect(city.canAfford(CONFIG.ECONOMY.STARTING_MONEY)).toBe(true);
+    expect(city.canAfford(CONFIG.ECONOMY.STARTING_MONEY + 1)).toBe(false);
+  });
+
+  it('spend deducts and emits moneyChanged when affordable', () => {
+    const listener = vi.fn();
+    cityEvents.on('moneyChanged', listener);
+    const city = new City(5);
+
+    const result = city.spend(100);
+
+    expect(result).toBe(true);
+    expect(city.money).toBe(CONFIG.ECONOMY.STARTING_MONEY - 100);
+    expect(listener).toHaveBeenCalledWith({
+      amount: -100,
+      balance: CONFIG.ECONOMY.STARTING_MONEY - 100,
+    });
+  });
+
+  it('spend rejects and leaves the balance untouched when unaffordable', () => {
+    const city = new City(5);
+
+    const result = city.spend(CONFIG.ECONOMY.STARTING_MONEY + 1);
+
+    expect(result).toBe(false);
+    expect(city.money).toBe(CONFIG.ECONOMY.STARTING_MONEY);
+  });
+
+  it('charges upkeep for infrastructure every simulate() tick', () => {
+    const city = new City(10);
+    city.getTile(5, 5)!.placeBuilding(BUILDING_TYPE.ROAD);
+    city.getTile(5, 6)!.placeBuilding(BUILDING_TYPE.POWER_PLANT);
+    city.getTile(5, 7)!.placeBuilding(BUILDING_TYPE.POWER_LINE);
+    const balanceAfterBuilding = city.money;
+
+    city.simulate();
+
+    const expectedUpkeep =
+      CONFIG.ECONOMY.UPKEEP.ROAD +
+      CONFIG.ECONOMY.UPKEEP.POWER_PLANT +
+      CONFIG.ECONOMY.UPKEEP.POWER_LINE;
+    expect(city.money).toBeCloseTo(balanceAfterBuilding - expectedUpkeep);
+  });
+
+  it('charges no upkeep for a tile with no building', () => {
+    const city = new City(5);
+    const balance = city.money;
+
+    city.simulate();
+
+    expect(city.money).toBe(balance);
+  });
+});
+
+describe('economy - tax income from developed zones', () => {
+  beforeEach(() => {
+    cityEvents.clear();
+    mockedRandom.mockReset();
+    mockedRandom.mockReturnValue(0); // always-favorable roll for every chance check
+  });
+
+  it('earns tax income per resident once a zone is developed and occupied', () => {
+    const city = new City(10);
+    city.getTile(5, 4)!.placeBuilding(BUILDING_TYPE.ROAD);
+    city.getTile(5, 5)!.placeBuilding(BUILDING_TYPE.POWER_PLANT);
+    const zoneTile = city.getTile(5, 6)!;
+    zoneTile.placeBuilding(BUILDING_TYPE.RESIDENTIAL);
+
+    // 1 tick UNDEVELOPED -> UNDER_CONSTRUCTION, then CONSTRUCTION_TIME ticks
+    // to reach DEVELOPED (and, same tick, a favorable resident move-in roll)
+    for (let i = 0; i <= CONFIG.ZONE.CONSTRUCTION_TIME; i++) {
+      city.simulate();
+    }
+
+    const zone = zoneTile.building as unknown as {
+      residents: { count: number };
+    };
+    expect(zone.residents.count).toBeGreaterThan(0);
+
+    const balanceBeforeTax = city.money;
+    city.simulate();
+
+    const expectedUpkeep =
+      CONFIG.ECONOMY.UPKEEP.ROAD + CONFIG.ECONOMY.UPKEEP.POWER_PLANT;
+    const expectedIncome = zone.residents.count * CONFIG.ECONOMY.TAX_PER_RESIDENT;
+    expect(city.money).toBeCloseTo(
+      balanceBeforeTax + expectedIncome - expectedUpkeep
+    );
   });
 });

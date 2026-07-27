@@ -1,4 +1,6 @@
 import { ResidentialZone } from './building/zones/residentialZone';
+import { CommercialZone } from './building/zones/commercialZone';
+import { IndustrialZone } from './building/zones/industrialZone';
 import { ITile, Tile } from './tile';
 import { BUILDING_TYPE } from './building/constants';
 import { PowerGrid } from './powerGrid';
@@ -15,6 +17,7 @@ export interface ICity {
   tiles: ITile[][];
   getTile(x: number, y: number): ITile | null;
   readonly population: number;
+  readonly money: number;
   simulate(): void;
   getTileByCoordinate(coordinate: ICoordinate): ITile | null;
   findTile(
@@ -29,12 +32,15 @@ export interface ICity {
   ): ITile[];
   getTileNeighbors(x: number, y: number): ITile[];
   checkPowerAccess(tile: ICoordinate): boolean;
+  canAfford(amount: number): boolean;
+  spend(amount: number): boolean;
 }
 
 export class City implements ICity {
   size: number;
   tiles: ITile[][];
   private powerGrid: PowerGrid = new PowerGrid();
+  private _money: number = CONFIG.ECONOMY.STARTING_MONEY;
   private unsubscribers: Unsubscribe[];
 
   constructor(size: number) {
@@ -234,6 +240,75 @@ export class City implements ICity {
 
   simulate(): void {
     this.tiles.forEach((row) => row.forEach((tile) => tile.simulate(this)));
+    this.collectEconomy();
+  }
+
+  get money(): number {
+    return this._money;
+  }
+
+  canAfford(amount: number): boolean {
+    return this._money >= amount;
+  }
+
+  /** Gated by balance - used for build costs, which should reject placement
+   * rather than let the player go into debt for something optional. */
+  spend(amount: number): boolean {
+    if (!this.canAfford(amount)) return false;
+    this._money -= amount;
+    this.emitMoneyChanged(-amount);
+    return true;
+  }
+
+  private earn(amount: number): void {
+    if (amount === 0) return;
+    this._money += amount;
+    this.emitMoneyChanged(amount);
+  }
+
+  /** Unconditional, unlike spend() - upkeep applies every tick regardless of
+   * balance, so a city can go into the red rather than upkeep silently
+   * stopping (which would let players ignore their own maintenance debt). */
+  private chargeUpkeep(amount: number): void {
+    if (amount === 0) return;
+    this._money -= amount;
+    this.emitMoneyChanged(-amount);
+  }
+
+  private emitMoneyChanged(amount: number): void {
+    cityEvents.emit('moneyChanged', { amount, balance: this._money });
+  }
+
+  /**
+   * Tax income from developed zones (residents/filled jobs) and upkeep cost
+   * from infrastructure, collected once per tick alongside the tile
+   * simulate pass. Undeveloped/under-construction zones have no residents
+   * or workers yet, so they naturally contribute nothing until they finish
+   * developing.
+   */
+  private collectEconomy(): void {
+    let income = 0;
+    let upkeep = 0;
+
+    for (let x = 0; x < this.size; x++) {
+      for (let y = 0; y < this.size; y++) {
+        const building = this.getTile(x, y)?.building;
+        if (building instanceof ResidentialZone) {
+          income += (building.residents?.count ?? 0) * CONFIG.ECONOMY.TAX_PER_RESIDENT;
+        } else if (building instanceof CommercialZone || building instanceof IndustrialZone) {
+          income += (building.jobs?.filledJobs ?? 0) * CONFIG.ECONOMY.TAX_PER_WORKER;
+        } else if (building?.type === BUILDING_TYPE.ROAD) {
+          upkeep += CONFIG.ECONOMY.UPKEEP.ROAD;
+        } else if (building?.type === BUILDING_TYPE.POWER_PLANT) {
+          upkeep += CONFIG.ECONOMY.UPKEEP.POWER_PLANT;
+        } else if (building?.type === BUILDING_TYPE.POWER_LINE) {
+          upkeep += CONFIG.ECONOMY.UPKEEP.POWER_LINE;
+        }
+      }
+    }
+
+    this.earn(income);
+    this.chargeUpkeep(upkeep);
   }
 
   getTileByCoordinate(coordinate: ICoordinate) {
