@@ -37,6 +37,8 @@ export interface ICity {
   earn(amount: number): void;
   applyUpkeepDiscount(multiplier: number): void;
   readonly netIncome: number;
+  readonly upkeepDiscount: number;
+  loadEconomyState(state: { money: number; upkeepDiscount: number }): void;
 }
 
 export class City implements ICity {
@@ -46,7 +48,7 @@ export class City implements ICity {
   private _money: number = CONFIG.ECONOMY.STARTING_MONEY;
   /** Multiplies upkeep before it's charged - milestone rewards can reduce
    * this permanently (e.g. 0.9 = 10% off), stacking multiplicatively. */
-  private upkeepDiscount: number = 1;
+  private _upkeepDiscount: number = 1;
   /** income minus upkeep from the last collectEconomy() pass - read by
    * RandomEventsSystem to gauge whether the city is currently struggling,
    * without re-scanning the grid itself. */
@@ -322,11 +324,23 @@ export class City implements ICity {
   }
 
   applyUpkeepDiscount(multiplier: number): void {
-    this.upkeepDiscount *= multiplier;
+    this._upkeepDiscount *= multiplier;
   }
 
   get netIncome(): number {
     return this.lastNetIncome;
+  }
+
+  get upkeepDiscount(): number {
+    return this._upkeepDiscount;
+  }
+
+  /** Save/load only - bypasses earn()/spend() to set an absolute balance
+   * rather than a delta, and restores the upkeep discount multiplier. */
+  loadEconomyState(state: { money: number; upkeepDiscount: number }): void {
+    this._money = state.money;
+    this._upkeepDiscount = state.upkeepDiscount;
+    this.emitMoneyChanged(0);
   }
 
   /** Unconditional, unlike spend() - upkeep applies every tick regardless of
@@ -370,7 +384,7 @@ export class City implements ICity {
       }
     }
 
-    const discountedUpkeep = upkeep * this.upkeepDiscount;
+    const discountedUpkeep = upkeep * this._upkeepDiscount;
     this.lastNetIncome = income - discountedUpkeep;
     this.earn(income);
     this.chargeUpkeep(discountedUpkeep);

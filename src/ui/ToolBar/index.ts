@@ -44,12 +44,15 @@ function createToolBar(isUnlocked: (toolId: string) => boolean) {
         ? toolbarButton.uiTextPause
         : toolbarButton.uiTextPlay;
     } else {
-      if (isUnlocked(toolbarButton.id)) {
-        button.onclick = (event) => {
-          event.stopPropagation();
-          window.game.onToolSelected(event);
-        };
-      } else {
+      // isUnlocked is re-checked at click time (not just here at creation),
+      // so a tool that unlocks later - via a milestone, or a loaded save -
+      // works immediately without needing to re-attach a handler.
+      button.onclick = (event) => {
+        event.stopPropagation();
+        if (!isUnlocked(toolbarButton.id)) return;
+        window.game.onToolSelected(event);
+      };
+      if (!isUnlocked(toolbarButton.id)) {
         button.classList.add('locked');
       }
       iconImg.src = getIcon(toolbarButton.icon as IconKey);

@@ -5,12 +5,16 @@ import { ZONE_LEVEL_CAPS } from '../../city/building/zones/zoneLevelCaps';
 import { cityEvents, Unsubscribe } from '../../events';
 import { Milestone, MilestoneCondition, MilestoneReward, MILESTONES } from './constants';
 
-const STARTING_UNLOCKED_TOOLS = ['SELECT', 'RESIDENTIAL', 'ROAD', 'POWER_PLANT', 'POWER_LINE', 'BULLDOZE'];
+/** Exported for save/load's "New Game" reset (see src/game/saveGame), so a
+ * blank save can't drift from what a fresh MilestoneTracker actually starts with. */
+export const STARTING_UNLOCKED_TOOLS = ['SELECT', 'RESIDENTIAL', 'ROAD', 'POWER_PLANT', 'POWER_LINE', 'BULLDOZE'];
 
 export interface IMilestoneTracker {
   isUnlocked(toolId: string): boolean;
   isCompleted(id: string): boolean;
   readonly nextMilestone: Milestone | null;
+  getState(): { completed: string[]; unlockedToolIds: string[] };
+  restoreState(state: { completed: string[]; unlockedToolIds: string[] }): void;
   dispose(): void;
 }
 
@@ -46,6 +50,22 @@ export class MilestoneTracker implements IMilestoneTracker {
 
   isCompleted(id: string): boolean {
     return this.completed.has(id);
+  }
+
+  /** For save/load - the reward side effects (cash, upkeep discount, zone
+   * level caps) live on City/ZONE_LEVEL_CAPS and are restored separately;
+   * this only restores which milestones/tools are already unlocked, so
+   * restoring doesn't re-fire any reward. */
+  getState(): { completed: string[]; unlockedToolIds: string[] } {
+    return {
+      completed: Array.from(this.completed),
+      unlockedToolIds: Array.from(this.unlockedToolIds),
+    };
+  }
+
+  restoreState(state: { completed: string[]; unlockedToolIds: string[] }): void {
+    this.completed = new Set(state.completed);
+    this.unlockedToolIds = new Set(state.unlockedToolIds);
   }
 
   get nextMilestone(): Milestone | null {

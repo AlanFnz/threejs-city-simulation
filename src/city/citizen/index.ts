@@ -36,16 +36,25 @@ export class Citizen implements ICitizen {
   residence: ResidentialZone;
   workplace: CommercialZone | IndustrialZone | null;
 
-  constructor(residence: ResidentialZone) {
-    this.id = crypto.randomUUID();
-    this.firstName = getRandomFirstName();
-    this.surname = getRandomSurname();
-    this.age = 1 + Math.floor(100 * random());
-    this.state = CITIZEN_STATE.IDLE;
+  /**
+   * `saved` restores a citizen exactly as it was when a save was written
+   * (id/name/age/state), rather than rolling a new one - used only by
+   * save/load, which then wires up `workplace` separately once every zone
+   * exists.
+   */
+  constructor(
+    residence: ResidentialZone,
+    saved?: { id: string; firstName: string; surname: string; age: number; state: CitizenState }
+  ) {
+    this.id = saved?.id ?? crypto.randomUUID();
+    this.firstName = saved?.firstName ?? getRandomFirstName();
+    this.surname = saved?.surname ?? getRandomSurname();
+    this.age = saved?.age ?? 1 + Math.floor(100 * random());
+    this.state = saved?.state ?? CITIZEN_STATE.IDLE;
     this.stateCounter = 0;
     this.residence = residence;
     this.workplace = null;
-    this.initializeState();
+    if (!saved) this.initializeState();
   }
 
   private initializeState() {

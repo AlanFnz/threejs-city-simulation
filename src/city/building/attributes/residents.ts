@@ -18,6 +18,10 @@ export class ResidentsAttribute {
     return this.residents.length;
   }
 
+  get all(): readonly Citizen[] {
+    return this.residents;
+  }
+
   get maximum(): number {
     return Math.pow(CONFIG.ZONE.MAX_RESIDENTS, this.zone.development.level);
   }
@@ -48,6 +52,12 @@ export class ResidentsAttribute {
     for (const resident of this.residents) {
       resident.step(city);
     }
+  }
+
+  /** Bypasses the normal random move-in gate - save/load only, to restore an
+   * exact roster rather than letting residents move in on their own schedule. */
+  restore(citizens: Citizen[]): void {
+    this.residents = citizens;
   }
 
   evictAll(): void {

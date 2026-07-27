@@ -1,5 +1,8 @@
 import personIcon from '../../assetManager/icons/person.png';
 import CONFIG from '../../config';
+import { CustomWindow } from '../../types';
+
+declare let window: CustomWindow;
 
 function createTopBar() {
   const topbar = document.getElementById('ui-topbar') as HTMLElement;
@@ -25,8 +28,21 @@ function createTopBar() {
   topbarRightItems.className = 'ui-topbar-items ui-topbar-right-items';
   topbarRightItems.innerHTML =
     `<img id="population-icon" src=${personIcon}>` +
-    '<span id="population-counter">0</span>';
+    '<span id="population-counter">0</span>' +
+    '<button id="save-game-button" class="text-button">Save</button>' +
+    '<button id="load-game-button" class="text-button">Load</button>' +
+    '<button id="new-game-button" class="text-button">New Game</button>';
   topbar.appendChild(topbarRightItems);
+
+  document.getElementById('save-game-button')?.addEventListener('click', () => {
+    window.game.saveGame();
+  });
+  document.getElementById('load-game-button')?.addEventListener('click', () => {
+    window.game.loadGame();
+  });
+  document.getElementById('new-game-button')?.addEventListener('click', () => {
+    window.game.newGame();
+  });
 }
 
 export { createTopBar };

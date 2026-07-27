@@ -168,6 +168,23 @@ h1 {
   margin-left: 8px;
 }
 
+.text-button {
+  margin-left: 12px;
+  padding: 4px 10px;
+  font-size: 0.55em;
+  font-family: inherit;
+
+  background-color: #1e2331cd;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.text-button:hover {
+  background-color: #121622d3;
+}
+
 /* EVENT TOAST */
 
 #event-toast {

@@ -12,6 +12,9 @@ import { createTools, GameContext, Tool } from "./tools";
 import { MilestoneTracker } from "./milestones";
 import { MILESTONES, describeReward } from "./milestones/constants";
 import { RandomEventsSystem } from "./randomEvents";
+import { SAVE_KEY, blankSave, serialize, deserialize, SaveGameV1 } from "./saveGame";
+
+const AUTOSAVE_INTERVAL_TICKS = 30;
 
 export interface IGame {
   selectedControl: HTMLElement | null;
@@ -21,6 +24,9 @@ export interface IGame {
   step(): void;
   onToolSelected(event: MouseEvent): void;
   togglePause(): void;
+  saveGame(): void;
+  loadGame(): boolean;
+  newGame(): void;
 }
 
 export class Game implements IGame {
@@ -38,6 +44,7 @@ export class Game implements IGame {
   private randomEventsSystem: RandomEventsSystem = new RandomEventsSystem(this.city);
   private eventToastHideTimer: ReturnType<typeof setTimeout> | null = null;
   private sceneManager: ISceneManager = new SceneManager(this.city, () => {
+    this.loadGame();
     this.sceneManager.start();
     setInterval(this.step.bind(this), 1000);
   });
@@ -76,9 +83,7 @@ export class Game implements IGame {
       cityEvents.on("citizenMovedIn", () => this.updateTitleBar()),
       cityEvents.on("citizenMovedOut", () => this.updateTitleBar()),
       cityEvents.on("moneyChanged", () => this.updateMoneyDisplay()),
-      cityEvents.on("milestoneCompleted", (payload) =>
-        this.onMilestoneCompleted(payload)
-      ),
+      cityEvents.on("milestoneCompleted", () => this.onMilestoneCompleted()),
       cityEvents.on("randomEventTriggered", ({ message }) =>
         this.showEventToast(message)
       ),
@@ -134,6 +139,64 @@ export class Game implements IGame {
     this.city.simulate();
     this.randomEventsSystem.tick();
     this.sceneManager.update(this.city);
+
+    if (this.tickCount % AUTOSAVE_INTERVAL_TICKS === 0) this.saveGame();
+  }
+
+  saveGame(): void {
+    const data = serialize(this.city, this.milestoneTracker);
+    localStorage.setItem(SAVE_KEY, JSON.stringify(data));
+  }
+
+  /** Returns whether a save was found and loaded - never throws, so a
+   * corrupt or missing save just leaves the current (fresh) city as-is. */
+  loadGame(): boolean {
+    const raw = localStorage.getItem(SAVE_KEY);
+    if (!raw) return false;
+
+    let data: SaveGameV1;
+    try {
+      data = JSON.parse(raw);
+    } catch (error) {
+      console.error("Corrupt save data, ignoring:", error);
+      return false;
+    }
+
+    deserialize(data, this.city, this.milestoneTracker);
+    this.onGameStateReplaced();
+    return true;
+  }
+
+  /** The one irreversible action here - confirm before wiping the save. */
+  newGame(): void {
+    if (!window.confirm("Start a new game? This clears your current city.")) {
+      return;
+    }
+    localStorage.removeItem(SAVE_KEY);
+    deserialize(blankSave(), this.city, this.milestoneTracker);
+    this.onGameStateReplaced();
+  }
+
+  /** Loading a save or starting fresh both bulk-replace city/milestone
+   * state outside the normal incremental event flow for population/tool
+   * unlocks - refresh the UI pieces that don't already react to an event. */
+  private onGameStateReplaced(): void {
+    this.updateTitleBar();
+    this.updateMoneyDisplay();
+    this.updateGoalsPanel();
+    this.refreshUnlockedToolButtons();
+    this.sceneManager.update(this.city);
+  }
+
+  private refreshUnlockedToolButtons(): void {
+    for (const milestone of MILESTONES) {
+      if (
+        milestone.reward.type === "unlockTool" &&
+        this.milestoneTracker.isCompleted(milestone.id)
+      ) {
+        document.getElementById(milestone.reward.toolId)?.classList.remove("locked");
+      }
+    }
   }
 
   onToolSelected(event: MouseEvent): void {
@@ -284,13 +347,8 @@ export class Game implements IGame {
     }, 4000);
   }
 
-  private onMilestoneCompleted({ id }: { id: string }): void {
-    const milestone = MILESTONES.find((candidate) => candidate.id === id);
-    if (milestone?.reward.type === "unlockTool") {
-      document
-        .getElementById(milestone.reward.toolId)
-        ?.classList.remove("locked");
-    }
+  private onMilestoneCompleted(): void {
+    this.refreshUnlockedToolButtons();
     this.updateGoalsPanel();
   }
 
