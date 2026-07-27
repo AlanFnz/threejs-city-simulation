@@ -243,9 +243,6 @@ describe('power lines', () => {
     zoneTile.placeBuilding(BUILDING_TYPE.RESIDENTIAL);
     expect(zoneTile.powerAccess?.value).toBe(true);
 
-    // the last link, within SEARCH_DISTANCE of the zone itself, so removing
-    // it directly triggers a recompute for the zone (not the "mid-cable, far
-    // from the edit" limitation noted in City.recomputePowerAccessNear)
     city.getTile(10, chainEnd)!.removeBuilding();
 
     expect(zoneTile.powerAccess?.value).toBe(false);
@@ -259,6 +256,62 @@ describe('power lines', () => {
     zoneTile.placeBuilding(BUILDING_TYPE.RESIDENTIAL);
 
     expect(zoneTile.powerAccess?.value).toBe(true);
+  });
+});
+
+describe('power relay through connected buildings', () => {
+  const SEARCH_DISTANCE = CONFIG.ATTRIBUTES.POWER_ACCESS.SEARCH_DISTANCE;
+  const CAPACITY = CONFIG.ATTRIBUTES.POWER_ACCESS.CAPACITY;
+
+  beforeEach(() => {
+    cityEvents.clear();
+  });
+
+  it('powers a zone far beyond SEARCH_DISTANCE through a chain of adjacent powered zones, with no lines at all', () => {
+    const city = new City(30);
+    city.getTile(10, 0)!.placeBuilding(BUILDING_TYPE.POWER_PLANT);
+
+    const chainEnd = SEARCH_DISTANCE + 4;
+    for (let y = 1; y <= chainEnd; y++) {
+      city.getTile(10, y)!.placeBuilding(BUILDING_TYPE.RESIDENTIAL);
+    }
+
+    const lastZone = city.getTile(10, chainEnd)!;
+    expect(lastZone.distanceTo(city.getTile(10, 0)!)).toBeGreaterThan(SEARCH_DISTANCE);
+    expect(lastZone.powerAccess?.value).toBe(true);
+  });
+
+  it('cascades power loss through the whole zone chain when the plant is removed', () => {
+    const city = new City(30);
+    const plantTile = city.getTile(10, 0)!;
+    plantTile.placeBuilding(BUILDING_TYPE.POWER_PLANT);
+
+    const chainEnd = SEARCH_DISTANCE + 4;
+    for (let y = 1; y <= chainEnd; y++) {
+      city.getTile(10, y)!.placeBuilding(BUILDING_TYPE.RESIDENTIAL);
+    }
+
+    const lastZone = city.getTile(10, chainEnd)!;
+    expect(lastZone.powerAccess?.value).toBe(true);
+
+    plantTile.removeBuilding();
+
+    expect(lastZone.powerAccess?.value).toBe(false);
+  });
+
+  it('still enforces plant CAPACITY across a daisy-chained cluster of zones', () => {
+    const city = new City(50);
+    city.getTile(10, 0)!.placeBuilding(BUILDING_TYPE.POWER_PLANT);
+
+    const zoneTiles = [];
+    for (let y = 1; y <= CAPACITY + 5; y++) {
+      const tile = city.getTile(10, y)!;
+      tile.placeBuilding(BUILDING_TYPE.RESIDENTIAL);
+      zoneTiles.push(tile);
+    }
+
+    const poweredCount = zoneTiles.filter((t) => t.powerAccess?.value).length;
+    expect(poweredCount).toBe(CAPACITY);
   });
 });
 

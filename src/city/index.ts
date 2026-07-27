@@ -55,14 +55,14 @@ export class City implements ICity {
       ),
       cityEvents.on('buildingPlaced', ({ x, y }) => {
         this.getTile(x, y)?.roadAccess?.recompute(this);
-        this.getTile(x, y)?.powerAccess?.recompute(this);
+        this.cascadePowerAccessChange(x, y);
       }),
       cityEvents.on('buildingRemoved', ({ x, y }) => {
         // Releasing this tile's own slot (if it had one) may free capacity a
-        // neighboring zone previously lost out on - recompute nearby power
+        // neighboring zone previously lost out on - cascade nearby power
         // access too, not just this tile, so that zone can pick it up.
         this.powerGrid.release({ x, y });
-        this.recomputePowerAccessNear(x, y);
+        this.cascadePowerAccessChange(x, y);
       }),
     ];
   }
@@ -102,27 +102,50 @@ export class City implements ICity {
     } else {
       this.powerGrid.unregisterPlant(coordinate);
     }
-    this.recomputePowerAccessNear(x, y);
+    this.cascadePowerAccessChange(x, y);
   }
 
   /**
-   * Same bounded-radius idea as recomputeRoadAccessNear, for power access.
-   * Known limitation: a network can extend arbitrarily far through
-   * connected power lines (see findReachablePlants), but this only
-   * re-checks zones within SEARCH_DISTANCE of the *edited* tile - removing
-   * one link in the middle of a long line run can leave zones beyond that
-   * radius showing stale power state until some other nearby edit triggers
-   * a recompute. Precisely tracking this would mean incremental
-   * (union-find style) network-component tracking; not worth the
-   * complexity for what's an edge case (most edits happen near the plant
-   * or near the zone being connected, not mid-cable).
+   * Zones now conduct power to already-connected neighbors (see
+   * isPowerConductive/findReachablePlants), so a single change can ripple
+   * arbitrarily far across a chain of zones - a bounded-radius recompute
+   * around just the edited tile isn't enough. Instead this is an
+   * incremental worklist: seed it with the same bounded-radius
+   * neighborhood the edited tile could possibly affect, then only expand
+   * to a tile's neighbors when that tile's own power access actually
+   * flips - an unchanged tile can't newly affect what its neighbors see.
+   * Cost is proportional to the size of the network region that actually
+   * changes, not the total map size, so this stays cheap regardless of
+   * how large the city grid grows.
    */
-  private recomputePowerAccessNear(x: number, y: number): void {
+  private cascadePowerAccessChange(startX: number, startY: number): void {
     const radius = CONFIG.ATTRIBUTES.POWER_ACCESS.SEARCH_DISTANCE;
+    const queue: ITile[] = [];
+    const queued = new Set<string>();
+    const enqueue = (tile: ITile | null): void => {
+      if (tile && !queued.has(tile.id)) {
+        queue.push(tile);
+        queued.add(tile.id);
+      }
+    };
+
     for (let dx = -radius; dx <= radius; dx++) {
       for (let dy = -radius; dy <= radius; dy++) {
         if (Math.abs(dx) + Math.abs(dy) > radius) continue;
-        this.getTile(x + dx, y + dy)?.powerAccess?.recompute(this);
+        enqueue(this.getTile(startX + dx, startY + dy));
+      }
+    }
+
+    while (queue.length > 0) {
+      const tile = queue.shift();
+      if (!tile) continue;
+      queued.delete(tile.id);
+      if (!tile.powerAccess) continue;
+
+      const before = tile.powerAccess.value;
+      tile.powerAccess.recompute(this);
+      if (tile.powerAccess.value !== before) {
+        this.getTileNeighbors(tile.x, tile.y).forEach(enqueue);
       }
     }
   }
@@ -137,12 +160,8 @@ export class City implements ICity {
    */
   checkPowerAccess(tile: ICoordinate): boolean {
     const building = this.getTileByCoordinate(tile)?.building;
-    const isZone =
-      building?.type === BUILDING_TYPE.RESIDENTIAL ||
-      building?.type === BUILDING_TYPE.COMMERCIAL ||
-      building?.type === BUILDING_TYPE.INDUSTRIAL;
 
-    if (!isZone) {
+    if (!this.isZoneType(building?.type)) {
       this.powerGrid.release(tile);
       return false;
     }
@@ -154,23 +173,47 @@ export class City implements ICity {
     );
   }
 
+  private isZoneType(type: string | undefined): boolean {
+    return (
+      type === BUILDING_TYPE.RESIDENTIAL ||
+      type === BUILDING_TYPE.COMMERCIAL ||
+      type === BUILDING_TYPE.INDUSTRIAL
+    );
+  }
+
   /**
-   * Two-step lookup: first, every power line/plant tile within
-   * SEARCH_DISTANCE of the zone ("can this zone physically reach the
-   * grid" - same radius concept road access uses for "can this tile reach
-   * a road"). Then, from each of those entry points, a BFS through only
-   * connected power-line/plant tiles (unbounded by distance - a cable run
-   * can be as long as the player builds it) collecting every plant the
-   * network reaches.
+   * A tile conducts power if it's a line/plant, or if it's a zone that's
+   * already confirmed powered - once a building is connected, its
+   * already-connected neighbors can relay through it too, so a player only
+   * needs to wire up the edge of a developing cluster rather than every
+   * single lot. Reads powerAccess.value as already-settled (from the last
+   * recompute) rather than re-deriving it recursively here, which is what
+   * keeps this a plain traversal instead of infinite recursion -
+   * cascadePowerAccessChange is what keeps those cached values fresh as
+   * the network changes.
+   */
+  private isPowerConductive = (tile: ITile): boolean => {
+    const type = tile.building?.type;
+    if (type === BUILDING_TYPE.POWER_LINE || type === BUILDING_TYPE.POWER_PLANT) {
+      return true;
+    }
+    return this.isZoneType(type) && tile.powerAccess?.value === true;
+  };
+
+  /**
+   * Two-step lookup: first, every conductive tile (line/plant, or an
+   * already-powered zone) within SEARCH_DISTANCE of the zone ("can this
+   * zone physically reach the grid" - same radius concept road access uses
+   * for "can this tile reach a road"). Then, from each of those entry
+   * points, a BFS through only connected conductive tiles (unbounded by
+   * distance - a cable run, or a chain of powered zones, can be as long as
+   * the player builds it) collecting every plant the network reaches. A
+   * plant is always a traversal endpoint, never a pass-through.
    */
   private findReachablePlants(start: ICoordinate): ICoordinate[] {
-    const isPowerInfrastructure = (tile: ITile): boolean =>
-      tile.building?.type === BUILDING_TYPE.POWER_LINE ||
-      tile.building?.type === BUILDING_TYPE.POWER_PLANT;
-
     const entryPoints = this.findTiles(
       start,
-      isPowerInfrastructure,
+      this.isPowerConductive,
       CONFIG.ATTRIBUTES.POWER_ACCESS.SEARCH_DISTANCE
     );
 
@@ -193,7 +236,7 @@ export class City implements ICity {
 
         networkQueue.push(
           ...this.getTileNeighbors(tile.x, tile.y).filter(
-            (neighbor) => !visited.has(neighbor.id) && isPowerInfrastructure(neighbor)
+            (neighbor) => !visited.has(neighbor.id) && this.isPowerConductive(neighbor)
           )
         );
       }
