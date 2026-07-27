@@ -10,7 +10,7 @@ function isToggleButton(
   return 'iconPlay' in button && 'iconPause' in button;
 }
 
-function createToolBar() {
+function createToolBar(isUnlocked: (toolId: string) => boolean) {
   const toolbar = document.getElementById('ui-toolbar') as HTMLElement;
   if (!toolbar) {
     console.error('Toolbar element not found!');
@@ -44,10 +44,14 @@ function createToolBar() {
         ? toolbarButton.uiTextPause
         : toolbarButton.uiTextPlay;
     } else {
-      button.onclick = (event) => {
-        event.stopPropagation();
-        window.game.onToolSelected(event);
-      };
+      if (isUnlocked(toolbarButton.id)) {
+        button.onclick = (event) => {
+          event.stopPropagation();
+          window.game.onToolSelected(event);
+        };
+      } else {
+        button.classList.add('locked');
+      }
       iconImg.src = getIcon(toolbarButton.icon as IconKey);
       iconImg.alt = toolbarButton.uiText;
     }

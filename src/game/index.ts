@@ -9,6 +9,8 @@ import { TOOLBAR_BUTTONS, ToggleButton } from "../ui/constants";
 import { setupEventListeners } from "./utils";
 import { cityEvents, Unsubscribe } from "../events";
 import { createTools, GameContext, Tool } from "./tools";
+import { MilestoneTracker } from "./milestones";
+import { MILESTONES, describeReward } from "./milestones/constants";
 
 export interface IGame {
   selectedControl: HTMLElement | null;
@@ -31,6 +33,7 @@ export class Game implements IGame {
   private tickCount: number = 0;
   private startTime: number = Date.now();
   private city: ICity = new City(CONFIG.CITY.SIZE);
+  private milestoneTracker: MilestoneTracker = new MilestoneTracker(this.city);
   private sceneManager: ISceneManager = new SceneManager(this.city, () => {
     this.sceneManager.start();
     setInterval(this.step.bind(this), 1000);
@@ -46,7 +49,7 @@ export class Game implements IGame {
   private lastPreviewTile: ITile | null = null;
 
   constructor() {
-    createUi();
+    createUi((toolId) => this.milestoneTracker.isUnlocked(toolId));
 
     this.selectedControl = document.getElementById(TOOLBAR_BUTTONS.SELECT.id);
     this.selectedControl?.classList.add("selected");
@@ -57,6 +60,7 @@ export class Game implements IGame {
       this.onMouseScroll.bind(this)
     );
     this.subscribeToCityEvents();
+    this.updateGoalsPanel();
   }
 
   /**
@@ -69,6 +73,9 @@ export class Game implements IGame {
       cityEvents.on("citizenMovedIn", () => this.updateTitleBar()),
       cityEvents.on("citizenMovedOut", () => this.updateTitleBar()),
       cityEvents.on("moneyChanged", () => this.updateMoneyDisplay()),
+      cityEvents.on("milestoneCompleted", (payload) =>
+        this.onMilestoneCompleted(payload)
+      ),
       cityEvents.on("developmentStateChanged", (payload) =>
         this.refreshInfoOverlayIfFocused(payload)
       ),
@@ -223,6 +230,8 @@ export class Game implements IGame {
     if (typeof tile?.placeBuilding !== "function") return;
     const tool = this.activeToolId ? this.tools[this.activeToolId] : undefined;
     if (!tool) return;
+    // Defense in depth alongside the toolbar's disabled/locked button state.
+    if (this.activeToolId && !this.milestoneTracker.isUnlocked(this.activeToolId)) return;
     const handler = (isDrag && tool.onDrag) || tool.onTileClick;
     handler.call(tool, tile, object, this.gameContext);
   }
@@ -254,6 +263,36 @@ export class Game implements IGame {
     moneyCounter.classList.toggle("low-funds", this.city.money < 0);
   }
 
+  private onMilestoneCompleted({ id }: { id: string }): void {
+    const milestone = MILESTONES.find((candidate) => candidate.id === id);
+    if (milestone?.reward.type === "unlockTool") {
+      document
+        .getElementById(milestone.reward.toolId)
+        ?.classList.remove("locked");
+    }
+    this.updateGoalsPanel();
+  }
+
+  private updateGoalsPanel(): void {
+    const details = document.getElementById("goals-overlay-details");
+    if (!details) return;
+
+    const completedCount = MILESTONES.filter((milestone) =>
+      this.milestoneTracker.isCompleted(milestone.id)
+    ).length;
+    const next = this.milestoneTracker.nextMilestone;
+
+    details.innerHTML = `
+      <div class="goals-line">${completedCount}/${MILESTONES.length} completed</div>
+      ${
+        next
+          ? `<div class="goals-line">Next: ${next.title}</div>
+             <div class="goals-line goals-reward">${describeReward(next.reward)}</div>`
+          : `<div class="goals-line">All goals complete!</div>`
+      }
+    `;
+  }
+
   /**
    * Ticks and elapsed real seconds should stay in lockstep (1 tick/sec).
    * If the rate drifts from ~1.00/s, the tick loop is firing more than once
@@ -270,7 +309,12 @@ export class Game implements IGame {
   }
 
   private isEventFromUiElement(event: Event): boolean {
-    const uiElements = ["ui-topbar", "ui-toolbar", "ui-info-overlay"];
+    const uiElements = [
+      "ui-topbar",
+      "ui-toolbar",
+      "ui-goals-overlay",
+      "ui-info-overlay",
+    ];
     return uiElements.some((id) =>
       (event.target as HTMLElement).closest(`#${id}`)
     );

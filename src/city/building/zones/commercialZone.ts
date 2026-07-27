@@ -4,12 +4,13 @@ import { BUILDING_TYPE } from '../constants';
 import { ICommercialZone } from '../interfaces';
 import { ICity } from '../..';
 import { JobsAttribute } from '../attributes/jobs';
+import { ZONE_LEVEL_CAPS } from './zoneLevelCaps';
 
 export class CommercialZone extends Zone implements ICommercialZone {
   jobs: JobsAttribute;
 
   constructor(x: number, y: number) {
-    super(x, y, 3);
+    super(x, y, ZONE_LEVEL_CAPS.COMMERCIAL);
     this.name = generateCommericalBuildingName();
     this.type = BUILDING_TYPE.COMMERCIAL;
     this.jobs = new JobsAttribute(this);

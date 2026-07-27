@@ -34,6 +34,8 @@ export interface ICity {
   checkPowerAccess(tile: ICoordinate): boolean;
   canAfford(amount: number): boolean;
   spend(amount: number): boolean;
+  earn(amount: number): void;
+  applyUpkeepDiscount(multiplier: number): void;
 }
 
 export class City implements ICity {
@@ -41,6 +43,9 @@ export class City implements ICity {
   tiles: ITile[][];
   private powerGrid: PowerGrid = new PowerGrid();
   private _money: number = CONFIG.ECONOMY.STARTING_MONEY;
+  /** Multiplies upkeep before it's charged - milestone rewards can reduce
+   * this permanently (e.g. 0.9 = 10% off), stacking multiplicatively. */
+  private upkeepDiscount: number = 1;
   private unsubscribers: Unsubscribe[];
 
   constructor(size: number) {
@@ -303,10 +308,16 @@ export class City implements ICity {
     return true;
   }
 
-  private earn(amount: number): void {
+  /** Unlike spend(), this is unconditional - used for tax income as well as
+   * one-off rewards (e.g. milestone bonuses) that aren't gated by balance. */
+  earn(amount: number): void {
     if (amount === 0) return;
     this._money += amount;
     this.emitMoneyChanged(amount);
+  }
+
+  applyUpkeepDiscount(multiplier: number): void {
+    this.upkeepDiscount *= multiplier;
   }
 
   /** Unconditional, unlike spend() - upkeep applies every tick regardless of
@@ -351,7 +362,7 @@ export class City implements ICity {
     }
 
     this.earn(income);
-    this.chargeUpkeep(upkeep);
+    this.chargeUpkeep(upkeep * this.upkeepDiscount);
   }
 
   getTileByCoordinate(coordinate: ICoordinate) {

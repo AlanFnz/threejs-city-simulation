@@ -58,6 +58,7 @@ export interface CityEventMap {
   roadNetworkChanged: { x: number; y: number };
   powerNetworkChanged: { x: number; y: number };
   moneyChanged: { amount: number; balance: number };
+  milestoneCompleted: { id: string };
 }
 
 export const cityEvents = new EventBus<CityEventMap>();

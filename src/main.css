@@ -168,6 +168,35 @@ h1 {
   margin-left: 8px;
 }
 
+/* GOALS PANEL */
+
+#goals-panel {
+  position: fixed;
+  top: 64px;
+  left: 76px;
+  padding: 0;
+  padding-bottom: 16px;
+  width: 280px;
+
+  background-color: #00000048;
+}
+
+.goals-line {
+  margin: 12px;
+  color: white;
+  font-size: 1em;
+}
+
+.goals-reward {
+  color: rgb(193, 193, 193);
+  font-size: 0.9em;
+}
+
+.ui-button.locked {
+  opacity: 0.35;
+  pointer-events: none;
+}
+
 /* INFO PANEL */
 
 #info-panel {
