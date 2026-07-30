@@ -4,12 +4,12 @@
     "strict": true,
     "allowJs": true,
     "checkJs": false,
+    "jsx": "react-jsx",
     "target": "es2017",
     "module": "commonjs",
     "typeRoots": ["./node_modules/@types", "./src"],
     "types": ["assets"]
   },
-  "include": ["**/*.ts"],
+  "include": ["**/*.ts", "**/*.tsx"],
   "exclude": ["node_modules", "dist", "vitest.config.ts", "src/**/*.test.ts"]
 }
-
