@@ -23,7 +23,7 @@ function ToolBar({
   onTogglePause,
 }: ToolBarProps) {
   return (
-    <div id="ui-toolbar" className="container">
+    <nav id="ui-toolbar" aria-label="City building tools">
       {Object.values(TOOLBAR_BUTTONS).map((toolbarButton) => {
         const toggleButton = isToggleButton(toolbarButton);
         const unlocked =
@@ -38,19 +38,23 @@ function ToolBar({
           : getIcon(toolbarButton.icon as IconKey);
         const label = toggleButton
           ? isPaused
-            ? toolbarButton.uiTextPause
-            : toolbarButton.uiTextPlay
+            ? toolbarButton.uiTextPlay
+            : toolbarButton.uiTextPause
           : toolbarButton.uiText;
 
         return (
           <button
             id={toolbarButton.id}
-            className={`ui-button${selected ? ' selected' : ''}${
-              unlocked ? '' : ' locked'
-            }`}
-            style={{ padding: 8 }}
+            className={`ui-button${toggleButton ? ' simulation-control' : ''}${
+              selected ? ' selected' : ''
+            }${unlocked ? '' : ' locked'}`}
             type="button"
             data-type={toolbarButton.id}
+            data-tooltip={`${label}${unlocked ? '' : ' · Locked'}`}
+            title={`${label}${unlocked ? '' : ' · Locked'}`}
+            aria-label={label}
+            aria-pressed={selected}
+            aria-disabled={!unlocked}
             key={toolbarButton.id}
             onClick={(event) => {
               event.stopPropagation();
@@ -62,11 +66,11 @@ function ToolBar({
               onSelectTool(toolbarButton.id);
             }}
           >
-            <img className="toolbar-icon" src={icon} alt={label} />
+            <img className="toolbar-icon" src={icon} alt="" />
           </button>
         );
       })}
-    </div>
+    </nav>
   );
 }
 
