@@ -1,12 +1,12 @@
 import CONFIG from "../config";
-import { getIcon } from "../assetManager/icons";
 import { City, ICity } from "../city";
 import { BuildingEntity } from "../city/building/buildingCreator";
 import { BUILDING_TYPE } from "../city/building/constants";
 import { ITile } from "../city/tile";
 import { ISceneManager, SceneManager } from "../sceneManager";
 import { createUi } from "../ui";
-import { TOOLBAR_BUTTONS, ToggleButton } from "../ui/constants";
+import { TOOLBAR_BUTTONS } from "../ui/constants";
+import { GoalsUiState, UiController, UiState } from "../ui/store";
 import { setupEventListeners } from "./utils";
 import { cityEvents, Unsubscribe } from "../events";
 import { createTools, GameContext, Tool } from "./tools";
@@ -18,12 +18,11 @@ import { SAVE_KEY, blankSave, serialize, deserialize, SaveGameV1 } from "./saveG
 const AUTOSAVE_INTERVAL_TICKS = 30;
 
 export interface IGame {
-  selectedControl: HTMLElement | null;
   activeToolId: string | null;
   isPaused: boolean;
   focusedObject: BuildingEntity | ITile | null;
   step(): void;
-  onToolSelected(event: MouseEvent): void;
+  selectTool(toolId: string): void;
   togglePause(): void;
   saveGame(): void;
   loadGame(): boolean;
@@ -31,9 +30,6 @@ export interface IGame {
 }
 
 export class Game implements IGame {
-  selectedControl: HTMLElement | null = document.getElementById(
-    TOOLBAR_BUTTONS.SELECT.id
-  );
   activeToolId: string | null = TOOLBAR_BUTTONS.SELECT.id;
   isPaused: boolean = false;
   focusedObject: BuildingEntity | ITile | null = null;
@@ -43,7 +39,7 @@ export class Game implements IGame {
   private city: ICity = new City(CONFIG.CITY.SIZE);
   private milestoneTracker: MilestoneTracker = new MilestoneTracker(this.city);
   private randomEventsSystem: RandomEventsSystem = new RandomEventsSystem(this.city);
-  private eventToastHideTimer: ReturnType<typeof setTimeout> | null = null;
+  private ui!: UiController;
   private sceneManager: ISceneManager = new SceneManager(this.city, () => {
     this.loadGame();
     this.sceneManager.start();
@@ -60,10 +56,13 @@ export class Game implements IGame {
   private lastPreviewTile: ITile | null = null;
 
   constructor() {
-    createUi((toolId) => this.milestoneTracker.isUnlocked(toolId));
-
-    this.selectedControl = document.getElementById(TOOLBAR_BUTTONS.SELECT.id);
-    this.selectedControl?.classList.add("selected");
+    this.ui = createUi(this.getInitialUiState(), {
+      selectTool: (toolId) => this.selectTool(toolId),
+      togglePause: () => this.togglePause(),
+      saveGame: () => this.saveGame(),
+      loadGame: () => this.loadGame(),
+      newGame: () => this.newGame(),
+    });
     setupEventListeners(
       this.sceneManager,
       this.onMouseDown.bind(this),
@@ -118,6 +117,7 @@ export class Game implements IGame {
   /** Unsubscribes from the shared event bus. Call when this Game is discarded. */
   dispose(): void {
     this.unsubscribers.forEach((unsubscribe) => unsubscribe());
+    this.ui.dispose();
   }
 
   private refreshInfoOverlayIfFocused(coordinate: {
@@ -190,23 +190,15 @@ export class Game implements IGame {
   }
 
   private refreshUnlockedToolButtons(): void {
-    for (const milestone of MILESTONES) {
-      if (
-        milestone.reward.type === "unlockTool" &&
-        this.milestoneTracker.isCompleted(milestone.id)
-      ) {
-        document.getElementById(milestone.reward.toolId)?.classList.remove("locked");
-      }
-    }
+    this.ui.update({
+      unlockedToolIds: this.milestoneTracker.getState().unlockedToolIds,
+    });
   }
 
-  onToolSelected(event: MouseEvent): void {
-    if (this.selectedControl) {
-      this.selectedControl.classList.remove("selected");
-    }
-    this.selectedControl = event.target as HTMLElement;
-    this.selectedControl.classList.add("selected");
-    this.activeToolId = this.selectedControl.getAttribute("data-type") || null;
+  selectTool(toolId: string): void {
+    if (!this.milestoneTracker.isUnlocked(toolId)) return;
+    this.activeToolId = toolId;
+    this.ui.update({ activeToolId: toolId });
     this.sceneManager.deactivateObject();
     this.sceneManager.hidePreviewMesh();
     this.lastPreviewTile = null;
@@ -214,28 +206,7 @@ export class Game implements IGame {
 
   togglePause(): void {
     this.isPaused = !this.isPaused;
-
-    const toggleButton = document.getElementById(
-      TOOLBAR_BUTTONS.TOGGLE_PAUSE.id
-    ) as HTMLButtonElement;
-
-    if (toggleButton) {
-      const toggleButtonInfo = TOOLBAR_BUTTONS.TOGGLE_PAUSE as ToggleButton;
-      const newState = this.isPaused
-        ? toggleButtonInfo.uiTextPlay
-        : toggleButtonInfo.uiTextPause;
-      const newIcon = getIcon(
-        this.isPaused ? toggleButtonInfo.iconPlay : toggleButtonInfo.iconPause
-      );
-
-      toggleButton.innerHTML = `<img src="${newIcon}" alt="${newState}" class="toolbar-icon" style="width: 100%; height: 100%; pointer-events: none;">`;
-      toggleButton.dataset.state = newState;
-      if (this.isPaused) {
-        toggleButton.classList.add("selected");
-      } else {
-        toggleButton.classList.remove("selected");
-      }
-    }
+    this.ui.update({ isPaused: this.isPaused });
   }
 
   private onMouseDown(event: MouseEvent): void {
@@ -313,23 +284,20 @@ export class Game implements IGame {
   }
 
   private updateInfoOverlay(clear?: boolean): void {
-    const infoPanel = document.getElementById("info-panel");
-    const infoOverlayDetails = document.getElementById("info-overlay-details");
     const tile = clear ? null : this.focusedObject || null;
-    if (infoOverlayDetails) {
-      let html = tile ? tile.toHTML() : "";
-      const plantCoordinate = tile ? this.getFocusedPowerPlantCoordinate(tile) : null;
-      if (plantCoordinate) {
-        const used = this.city.getPowerPlantLoad(plantCoordinate);
-        html += `
+    let html = tile ? tile.toHTML() : "";
+    const plantCoordinate = tile
+      ? this.getFocusedPowerPlantCoordinate(tile)
+      : null;
+    if (plantCoordinate) {
+      const used = this.city.getPowerPlantLoad(plantCoordinate);
+      html += `
           <span class="info-label">Capacity: </span>
           <span class="info-value">${used}/${CONFIG.ATTRIBUTES.POWER_ACCESS.CAPACITY} zones powered</span>
           <br>
         `;
-      }
-      infoOverlayDetails.innerHTML = html;
     }
-    infoPanel?.classList.toggle("visible", !!tile);
+    this.ui.update({ infoHtml: tile ? html : null });
   }
 
   /** focusedObject is either a tile (has .building) or a building entity
@@ -344,30 +312,15 @@ export class Game implements IGame {
   }
 
   private updateTitleBar(): void {
-    const populationCounter = document.getElementById("population-counter");
-    if (populationCounter)
-      populationCounter.textContent = this.city.population.toString();
+    this.ui.update({ population: this.city.population });
   }
 
   private updateMoneyDisplay(): void {
-    const moneyCounter = document.getElementById("money-counter");
-    if (!moneyCounter) return;
-    moneyCounter.textContent = Math.floor(this.city.money).toString();
-    moneyCounter.classList.toggle("low-funds", this.city.money < 0);
+    this.ui.update({ money: this.city.money });
   }
 
   private showEventToast(message: string): void {
-    const toast = document.getElementById("event-toast");
-    if (!toast) return;
-
-    toast.textContent = message;
-    toast.classList.add("visible");
-
-    if (this.eventToastHideTimer) clearTimeout(this.eventToastHideTimer);
-    this.eventToastHideTimer = setTimeout(() => {
-      toast.classList.remove("visible");
-      this.eventToastHideTimer = null;
-    }, 4000);
+    this.ui.showToast(message);
   }
 
   private onMilestoneCompleted(): void {
@@ -376,23 +329,7 @@ export class Game implements IGame {
   }
 
   private updateGoalsPanel(): void {
-    const details = document.getElementById("goals-overlay-details");
-    if (!details) return;
-
-    const completedCount = MILESTONES.filter((milestone) =>
-      this.milestoneTracker.isCompleted(milestone.id)
-    ).length;
-    const next = this.milestoneTracker.nextMilestone;
-
-    details.innerHTML = `
-      <div class="goals-line">${completedCount}/${MILESTONES.length} completed</div>
-      ${
-        next
-          ? `<div class="goals-line">Next: ${next.title}</div>
-             <div class="goals-line goals-reward">${describeReward(next.reward)}</div>`
-          : `<div class="goals-line">All goals complete!</div>`
-      }
-    `;
+    this.ui.update({ goals: this.getGoalsUiState() });
   }
 
   /**
@@ -401,13 +338,40 @@ export class Game implements IGame {
    * per second (e.g. a duplicated setInterval).
    */
   private updateDebugOverlay(): void {
-    const debugTick = document.getElementById("debug-tick");
-    if (!debugTick) return;
     const elapsedSeconds = (Date.now() - this.startTime) / 1000;
     const rate = elapsedSeconds > 0 ? this.tickCount / elapsedSeconds : 0;
-    debugTick.textContent = `tick ${this.tickCount} · ${elapsedSeconds.toFixed(
-      1
-    )}s elapsed · ${rate.toFixed(2)} ticks/s`;
+    this.ui.update({
+      debugText: `tick ${this.tickCount} · ${elapsedSeconds.toFixed(
+        1
+      )}s elapsed · ${rate.toFixed(2)} ticks/s`,
+    });
+  }
+
+  private getInitialUiState(): UiState {
+    return {
+      money: this.city.money,
+      population: this.city.population,
+      activeToolId: this.activeToolId,
+      isPaused: this.isPaused,
+      unlockedToolIds: this.milestoneTracker.getState().unlockedToolIds,
+      infoHtml: null,
+      goals: this.getGoalsUiState(),
+      toastMessage: null,
+      debugText: "",
+    };
+  }
+
+  private getGoalsUiState(): GoalsUiState {
+    const completedCount = MILESTONES.filter((milestone) =>
+      this.milestoneTracker.isCompleted(milestone.id)
+    ).length;
+    const next = this.milestoneTracker.nextMilestone;
+    return {
+      completedCount,
+      totalCount: MILESTONES.length,
+      nextTitle: next?.title ?? null,
+      nextReward: next ? describeReward(next.reward) : null,
+    };
   }
 
   private isEventFromUiElement(event: Event): boolean {

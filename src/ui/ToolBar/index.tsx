@@ -1,11 +1,12 @@
 import { IconKey, getIcon } from '../../assetManager/icons';
-import { CustomWindow } from '../../types';
 import { BaseButton, TOOLBAR_BUTTONS, ToggleButton } from '../constants';
 
-declare let window: CustomWindow;
-
 interface ToolBarProps {
-  isUnlocked: (toolId: string) => boolean;
+  activeToolId: string | null;
+  isPaused: boolean;
+  unlockedToolIds: string[];
+  onSelectTool: (toolId: string) => void;
+  onTogglePause: () => void;
 }
 
 function isToggleButton(
@@ -14,13 +15,22 @@ function isToggleButton(
   return 'iconPlay' in button && 'iconPause' in button;
 }
 
-function ToolBar({ isUnlocked }: ToolBarProps) {
+function ToolBar({
+  activeToolId,
+  isPaused,
+  unlockedToolIds,
+  onSelectTool,
+  onTogglePause,
+}: ToolBarProps) {
   return (
     <div id="ui-toolbar" className="container">
       {Object.values(TOOLBAR_BUTTONS).map((toolbarButton) => {
         const toggleButton = isToggleButton(toolbarButton);
-        const isPaused = window.game?.isPaused ?? false;
-        const unlocked = toggleButton || isUnlocked(toolbarButton.id);
+        const unlocked =
+          toggleButton || unlockedToolIds.includes(toolbarButton.id);
+        const selected = toggleButton
+          ? isPaused
+          : activeToolId === toolbarButton.id;
         const icon = toggleButton
           ? getIcon(
               isPaused ? toolbarButton.iconPlay : toolbarButton.iconPause
@@ -35,7 +45,9 @@ function ToolBar({ isUnlocked }: ToolBarProps) {
         return (
           <button
             id={toolbarButton.id}
-            className={`ui-button${unlocked ? '' : ' locked'}`}
+            className={`ui-button${selected ? ' selected' : ''}${
+              unlocked ? '' : ' locked'
+            }`}
             style={{ padding: 8 }}
             type="button"
             data-type={toolbarButton.id}
@@ -43,11 +55,11 @@ function ToolBar({ isUnlocked }: ToolBarProps) {
             onClick={(event) => {
               event.stopPropagation();
               if (toggleButton) {
-                window.game.togglePause();
+                onTogglePause();
                 return;
               }
-              if (!isUnlocked(toolbarButton.id)) return;
-              window.game.onToolSelected(event.nativeEvent);
+              if (!unlocked) return;
+              onSelectTool(toolbarButton.id);
             }}
           >
             <img className="toolbar-icon" src={icon} alt={label} />

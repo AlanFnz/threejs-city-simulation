@@ -1,17 +1,30 @@
 import personIcon from '../../assetManager/icons/person.png';
-import CONFIG from '../../config';
-import { CustomWindow } from '../../types';
 
-declare let window: CustomWindow;
+interface TopBarProps {
+  money: number;
+  population: number;
+  onSave: () => void;
+  onLoad: () => void;
+  onNewGame: () => void;
+}
 
-function TopBar() {
+function TopBar({
+  money,
+  population,
+  onSave,
+  onLoad,
+  onNewGame,
+}: TopBarProps) {
   return (
     <div id="ui-topbar">
       <div
         id="ui-topbar-left-items"
         className="ui-topbar-items ui-topbar-left-items"
       >
-        $<span id="money-counter">{CONFIG.ECONOMY.STARTING_MONEY}</span>
+        $
+        <span id="money-counter" className={money < 0 ? 'low-funds' : undefined}>
+          {Math.floor(money)}
+        </span>
       </div>
 
       <div
@@ -26,12 +39,12 @@ function TopBar() {
         className="ui-topbar-items ui-topbar-right-items"
       >
         <img id="population-icon" src={personIcon} alt="" />
-        <span id="population-counter">0</span>
+        <span id="population-counter">{population}</span>
         <button
           id="save-game-button"
           className="text-button"
           type="button"
-          onClick={() => window.game.saveGame()}
+          onClick={onSave}
         >
           Save
         </button>
@@ -39,7 +52,7 @@ function TopBar() {
           id="load-game-button"
           className="text-button"
           type="button"
-          onClick={() => window.game.loadGame()}
+          onClick={onLoad}
         >
           Load
         </button>
@@ -47,7 +60,7 @@ function TopBar() {
           id="new-game-button"
           className="text-button"
           type="button"
-          onClick={() => window.game.newGame()}
+          onClick={onNewGame}
         >
           New Game
         </button>
