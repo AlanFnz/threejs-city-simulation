@@ -43,7 +43,8 @@ export class ResidentsAttribute {
       if (this.residents.length < this.maximum) {
         const tile = city.getTile(this.zone.x, this.zone.y);
         let moveInChance = tile?.hospitalCoverage?.value
-          ? CONFIG.ZONE.RESIDENT_MOVE_IN_CHANCE * CONFIG.CIVIC_SERVICES.HOSPITAL.MOVE_IN_CHANCE_MULTIPLIER
+          ? CONFIG.ZONE.RESIDENT_MOVE_IN_CHANCE *
+            CONFIG.CIVIC_SERVICES.HOSPITAL.MOVE_IN_CHANCE_MULTIPLIER
           : CONFIG.ZONE.RESIDENT_MOVE_IN_CHANCE;
         if (!this.hasAvailableJobsNearby(city)) {
           moveInChance *= CONFIG.ZONE.NO_JOBS_MOVE_IN_MULTIPLIER;
@@ -81,7 +82,8 @@ export class ResidentsAttribute {
       (tile) => {
         const building = tile.building;
         return (
-          (building instanceof CommercialZone || building instanceof IndustrialZone) &&
+          (building instanceof CommercialZone ||
+            building instanceof IndustrialZone) &&
           building.jobs.availableJobs > 0
         );
       },
@@ -105,17 +107,5 @@ export class ResidentsAttribute {
 
   dispose(): void {
     this.evictAll();
-  }
-
-  toHTML(): string {
-    let html = `<div class="info-heading">Residents (${this.residents.length}/${this.maximum})</div>`;
-
-    html += '<ul class="info-citizen-list">';
-    for (const resident of this.residents) {
-      html += resident.toHTML();
-    }
-    html += '</ul>';
-
-    return html;
   }
 }

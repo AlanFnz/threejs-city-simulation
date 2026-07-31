@@ -6,7 +6,12 @@ import { InfoPanel } from './InfoPanel';
 import { ToolBar } from './ToolBar';
 import { TopBar } from './TopBar';
 import { TOOLBAR_BUTTONS } from './constants';
-import { createUiStore, GoalsUiState, UiState } from './store';
+import {
+  createUiStore,
+  GoalsUiState,
+  InspectorUiState,
+  UiState,
+} from './store';
 
 afterEach(() => {
   vi.useRealTimers();
@@ -20,6 +25,42 @@ const goals: GoalsUiState = {
 };
 
 const noop = () => undefined;
+
+const inspector: InspectorUiState = {
+  x: 4,
+  y: 7,
+  terrain: 'ground',
+  services: [
+    { id: 'road', label: 'Road', available: true },
+    { id: 'power', label: 'Power', available: false },
+  ],
+  building: {
+    type: 'RESIDENTIAL',
+    title: 'Residential zone',
+    category: 'Residential zone',
+    state: 'developed',
+    level: 2,
+    maximumLevel: 3,
+    buildCost: 100,
+    upkeep: null,
+    roadStyle: null,
+    powerLoad: null,
+    powerCapacity: null,
+    occupancy: {
+      label: 'Residents',
+      current: 1,
+      maximum: 4,
+      people: [
+        {
+          id: 'citizen-1',
+          name: '<img src=x onerror=alert(1)>',
+          age: 31,
+          status: 'employed',
+        },
+      ],
+    },
+  },
+};
 
 describe('React UI shell', () => {
   it('keeps the DOM ids used by Game for status and panel updates', () => {
@@ -45,7 +86,7 @@ describe('React UI shell', () => {
         })
       ),
       renderToStaticMarkup(createElement(GoalsPanel, { goals })),
-      renderToStaticMarkup(createElement(InfoPanel, { html: null })),
+      renderToStaticMarkup(createElement(InfoPanel, { inspector: null })),
     ].join('');
 
     expect(markup).toContain('id="ui-topbar"');
@@ -53,7 +94,20 @@ describe('React UI shell', () => {
     expect(markup).toContain('id="population-counter"');
     expect(markup).toContain('id="ui-toolbar"');
     expect(markup).toContain('id="goals-overlay-details"');
-    expect(markup).toContain('id="info-overlay-details"');
+    expect(markup).toContain('id="info-panel"');
+  });
+
+  it('renders typed inspector data as structured status cards', () => {
+    const markup = renderToStaticMarkup(
+      createElement(InfoPanel, { inspector })
+    );
+
+    expect(markup).toContain('Residential zone');
+    expect(markup).toContain('4, 7');
+    expect(markup).toContain('Road</span><strong>Online');
+    expect(markup).toContain('Power</span><strong>Missing');
+    expect(markup).toContain('&lt;img src=x onerror=alert(1)&gt;');
+    expect(markup).not.toContain('<img src=x onerror=alert(1)>');
   });
 
   it('renders every tool and preserves locked state at mount time', () => {
@@ -90,7 +144,7 @@ describe('UI store', () => {
     activeToolId: 'SELECT',
     isPaused: false,
     unlockedToolIds: ['SELECT'],
-    infoHtml: null,
+    inspector: null,
     goals,
     toastMessage: null,
     debugText: '',

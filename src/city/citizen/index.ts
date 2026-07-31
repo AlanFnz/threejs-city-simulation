@@ -8,9 +8,6 @@ import { CITIZEN_STATE, CitizenState } from './constants';
 import { getRandomFirstName, getRandomSurname } from './utils';
 import { random } from '../../utils/rng';
 
-import calendarIcon from '../../assetManager/icons/calendar.png';
-import jobIcon from '../../assetManager/icons/job.png';
-
 export interface ICitizen {
   id: string;
   firstName: string;
@@ -23,7 +20,6 @@ export interface ICitizen {
   step(city: ICity): void;
   dispose(): void;
   setWorkplace(workplace: CommercialZone | IndustrialZone | null): void;
-  toHTML(): string;
 }
 
 export class Citizen implements ICitizen {
@@ -44,7 +40,13 @@ export class Citizen implements ICitizen {
    */
   constructor(
     residence: ResidentialZone,
-    saved?: { id: string; firstName: string; surname: string; age: number; state: CitizenState }
+    saved?: {
+      id: string;
+      firstName: string;
+      surname: string;
+      age: number;
+      state: CitizenState;
+    }
   ) {
     this.id = saved?.id ?? crypto.randomUUID();
     this.firstName = saved?.firstName ?? getRandomFirstName();
@@ -129,24 +131,4 @@ export class Citizen implements ICitizen {
   setWorkplace(workplace: CommercialZone | IndustrialZone | null): void {
     this.workplace = workplace;
   }
-
-  toHTML(): string {
-    return `
-      <li class="info-citizen">
-        <span class="info-citizen-name">${this.firstName} ${this.surname}</span>
-        <br>
-        <span class="info-citizen-details">
-          <span>
-            <img class="info-citizen-icon" src=${calendarIcon}>
-            ${this.age} 
-          </span>
-          <span>
-            <img class="info-citizen-icon" src=${jobIcon}>
-            ${this.state}
-          </span>
-        </span>
-      </li>
-    `;
-  }
 }
-

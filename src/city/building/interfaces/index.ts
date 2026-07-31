@@ -15,7 +15,6 @@ interface IBuilding {
   update(city: ICity): void;
   simulate(city: ICity): void;
   dispose(): void;
-  toHTML(): string;
 }
 
 interface IZone extends IBuilding {

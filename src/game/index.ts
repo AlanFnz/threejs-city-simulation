@@ -1,26 +1,31 @@
-import CONFIG from "../config";
-import { City, ICity } from "../city";
-import { BuildingEntity } from "../city/building/buildingCreator";
-import { BUILDING_TYPE } from "../city/building/constants";
-import { ITile } from "../city/tile";
-import { ISceneManager, SceneManager } from "../sceneManager";
-import { createUi } from "../ui";
-import { TOOLBAR_BUTTONS } from "../ui/constants";
-import { GoalsUiState, UiController, UiState } from "../ui/store";
-import { setupEventListeners } from "./utils";
-import { cityEvents, Unsubscribe } from "../events";
-import { createTools, GameContext, Tool } from "./tools";
-import { MilestoneTracker } from "./milestones";
-import { MILESTONES, describeReward } from "./milestones/constants";
-import { RandomEventsSystem } from "./randomEvents";
-import { SAVE_KEY, blankSave, serialize, deserialize, SaveGameV1 } from "./saveGame";
+import CONFIG from '../config';
+import { City, ICity } from '../city';
+import { ITile } from '../city/tile';
+import { ISceneManager, SceneManager } from '../sceneManager';
+import { createUi } from '../ui';
+import { TOOLBAR_BUTTONS } from '../ui/constants';
+import { GoalsUiState, UiController, UiState } from '../ui/store';
+import { setupEventListeners } from './utils';
+import { cityEvents, Unsubscribe } from '../events';
+import { createTools, GameContext, Tool } from './tools';
+import { MilestoneTracker } from './milestones';
+import { MILESTONES, describeReward } from './milestones/constants';
+import { RandomEventsSystem } from './randomEvents';
+import {
+  SAVE_KEY,
+  blankSave,
+  serialize,
+  deserialize,
+  SaveGameV1,
+} from './saveGame';
+import { createInspectorUiState } from './inspector';
 
 const AUTOSAVE_INTERVAL_TICKS = 30;
 
 export interface IGame {
   activeToolId: string | null;
   isPaused: boolean;
-  focusedObject: BuildingEntity | ITile | null;
+  focusedObject: ITile | null;
   step(): void;
   selectTool(toolId: string): void;
   togglePause(): void;
@@ -32,13 +37,15 @@ export interface IGame {
 export class Game implements IGame {
   activeToolId: string | null = TOOLBAR_BUTTONS.SELECT.id;
   isPaused: boolean = false;
-  focusedObject: BuildingEntity | ITile | null = null;
+  focusedObject: ITile | null = null;
   lastMove: number = Date.now();
   private tickCount: number = 0;
   private startTime: number = Date.now();
   private city: ICity = new City(CONFIG.CITY.SIZE);
   private milestoneTracker: MilestoneTracker = new MilestoneTracker(this.city);
-  private randomEventsSystem: RandomEventsSystem = new RandomEventsSystem(this.city);
+  private randomEventsSystem: RandomEventsSystem = new RandomEventsSystem(
+    this.city
+  );
   private ui!: UiController;
   private sceneManager: ISceneManager = new SceneManager(this.city, () => {
     this.loadGame();
@@ -80,35 +87,35 @@ export class Game implements IGame {
    */
   private subscribeToCityEvents(): void {
     this.unsubscribers.push(
-      cityEvents.on("citizenMovedIn", () => this.updateTitleBar()),
-      cityEvents.on("citizenMovedOut", () => this.updateTitleBar()),
-      cityEvents.on("moneyChanged", () => this.updateMoneyDisplay()),
-      cityEvents.on("milestoneCompleted", () => this.onMilestoneCompleted()),
-      cityEvents.on("randomEventTriggered", ({ message }) =>
+      cityEvents.on('citizenMovedIn', () => this.updateTitleBar()),
+      cityEvents.on('citizenMovedOut', () => this.updateTitleBar()),
+      cityEvents.on('moneyChanged', () => this.updateMoneyDisplay()),
+      cityEvents.on('milestoneCompleted', () => this.onMilestoneCompleted()),
+      cityEvents.on('randomEventTriggered', ({ message }) =>
         this.showEventToast(message)
       ),
-      cityEvents.on("developmentStateChanged", (payload) =>
+      cityEvents.on('developmentStateChanged', (payload) =>
         this.refreshInfoOverlayIfFocused(payload)
       ),
-      cityEvents.on("levelChanged", (payload) =>
+      cityEvents.on('levelChanged', (payload) =>
         this.refreshInfoOverlayIfFocused(payload)
       ),
-      cityEvents.on("citizenMovedIn", (payload) =>
+      cityEvents.on('citizenMovedIn', (payload) =>
         this.refreshInfoOverlayIfFocused(payload)
       ),
-      cityEvents.on("citizenMovedOut", (payload) =>
+      cityEvents.on('citizenMovedOut', (payload) =>
         this.refreshInfoOverlayIfFocused(payload)
       ),
-      cityEvents.on("citizenEmployed", (payload) =>
+      cityEvents.on('citizenEmployed', (payload) =>
         this.refreshInfoOverlayIfFocused(payload)
       ),
-      cityEvents.on("citizenUnemployed", (payload) =>
+      cityEvents.on('citizenUnemployed', (payload) =>
         this.refreshInfoOverlayIfFocused(payload)
       ),
-      cityEvents.on("buildingPlaced", (payload) =>
+      cityEvents.on('buildingPlaced', (payload) =>
         this.refreshInfoOverlayIfFocused(payload)
       ),
-      cityEvents.on("buildingRemoved", (payload) =>
+      cityEvents.on('buildingRemoved', (payload) =>
         this.refreshInfoOverlayIfFocused(payload)
       )
     );
@@ -159,7 +166,7 @@ export class Game implements IGame {
     try {
       data = JSON.parse(raw);
     } catch (error) {
-      console.error("Corrupt save data, ignoring:", error);
+      console.error('Corrupt save data, ignoring:', error);
       return false;
     }
 
@@ -170,7 +177,7 @@ export class Game implements IGame {
 
   /** The one irreversible action here - confirm before wiping the save. */
   newGame(): void {
-    if (!window.confirm("Start a new game? This clears your current city.")) {
+    if (!window.confirm('Start a new game? This clears your current city.')) {
       return;
     }
     localStorage.removeItem(SAVE_KEY);
@@ -234,7 +241,7 @@ export class Game implements IGame {
 
   private updatePreview(object: THREE.Object3D | null): void {
     const tile = object?.userData as ITile | undefined;
-    const tileIsValid = typeof tile?.placeBuilding === "function";
+    const tileIsValid = typeof tile?.placeBuilding === 'function';
     const tool = this.activeToolId ? this.tools[this.activeToolId] : undefined;
 
     if (!tileIsValid || !tool?.getPreview) {
@@ -269,11 +276,15 @@ export class Game implements IGame {
     const tile = object.userData as ITile;
     // Raycasts can land on non-tile meshes (e.g. a moving vehicle), whose
     // userData is never set to a tile. Ignore those instead of dispatching.
-    if (typeof tile?.placeBuilding !== "function") return;
+    if (typeof tile?.placeBuilding !== 'function') return;
     const tool = this.activeToolId ? this.tools[this.activeToolId] : undefined;
     if (!tool) return;
     // Defense in depth alongside the toolbar's disabled/locked button state.
-    if (this.activeToolId && !this.milestoneTracker.isUnlocked(this.activeToolId)) return;
+    if (
+      this.activeToolId &&
+      !this.milestoneTracker.isUnlocked(this.activeToolId)
+    )
+      return;
     const handler = (isDrag && tool.onDrag) || tool.onTileClick;
     handler.call(tool, tile, object, this.gameContext);
   }
@@ -285,30 +296,9 @@ export class Game implements IGame {
 
   private updateInfoOverlay(clear?: boolean): void {
     const tile = clear ? null : this.focusedObject || null;
-    let html = tile ? tile.toHTML() : "";
-    const plantCoordinate = tile
-      ? this.getFocusedPowerPlantCoordinate(tile)
-      : null;
-    if (plantCoordinate) {
-      const used = this.city.getPowerPlantLoad(plantCoordinate);
-      html += `
-          <span class="info-label">Capacity: </span>
-          <span class="info-value">${used}/${CONFIG.ATTRIBUTES.POWER_ACCESS.CAPACITY} zones powered</span>
-          <br>
-        `;
-    }
-    this.ui.update({ infoHtml: tile ? html : null });
-  }
-
-  /** focusedObject is either a tile (has .building) or a building entity
-   * directly - handles both so the capacity readout shows up regardless of
-   * which one a click happened to focus. */
-  private getFocusedPowerPlantCoordinate(
-    focused: BuildingEntity | ITile
-  ): { x: number; y: number } | null {
-    const building = "building" in focused ? focused.building : focused;
-    if (building?.type !== BUILDING_TYPE.POWER_PLANT) return null;
-    return { x: building.x, y: building.y };
+    this.ui.update({
+      inspector: tile ? createInspectorUiState(tile, this.city) : null,
+    });
   }
 
   private updateTitleBar(): void {
@@ -354,10 +344,10 @@ export class Game implements IGame {
       activeToolId: this.activeToolId,
       isPaused: this.isPaused,
       unlockedToolIds: this.milestoneTracker.getState().unlockedToolIds,
-      infoHtml: null,
+      inspector: null,
       goals: this.getGoalsUiState(),
       toastMessage: null,
-      debugText: "",
+      debugText: '',
     };
   }
 
@@ -376,10 +366,10 @@ export class Game implements IGame {
 
   private isEventFromUiElement(event: Event): boolean {
     const uiElements = [
-      "ui-topbar",
-      "ui-toolbar",
-      "ui-goals-overlay",
-      "ui-info-overlay",
+      'ui-topbar',
+      'ui-toolbar',
+      'ui-goals-overlay',
+      'ui-info-overlay',
     ];
     return uiElements.some((id) =>
       (event.target as HTMLElement).closest(`#${id}`)

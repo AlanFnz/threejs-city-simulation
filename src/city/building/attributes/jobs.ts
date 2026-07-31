@@ -80,18 +80,4 @@ export class JobsAttribute {
   dispose(): void {
     this.layOffWorkers();
   }
-
-  toHTML(): string {
-    let html = `<div class="info-heading">Workers (${this.filledJobs}/${this.maxWorkers})</div>`;
-
-    html += '<ul class="info-citizen-list">';
-    for (const worker of this._workers) {
-      html += worker.toHTML();
-    }
-    html += '</ul>';
-
-    return html;
-  }
 }
-
-

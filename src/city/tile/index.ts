@@ -1,17 +1,20 @@
-import { BuildingEntity, createBuilding } from "../building/buildingCreator";
-import { ICity } from "..";
-import { BUILDING_TYPE, BuildingType } from "../building/constants";
+import { BuildingEntity, createBuilding } from '../building/buildingCreator';
+import { ICity } from '..';
+import { BUILDING_TYPE, BuildingType } from '../building/constants';
 import {
   IRoadAccessAttribute,
   RoadAccessAttribute,
-} from "../building/attributes/roadAccess";
+} from '../building/attributes/roadAccess';
 import {
   IPowerAccessAttribute,
   PowerAccessAttribute,
-} from "../building/attributes/powerAccess";
-import { ICivicCoverageAttribute, CivicCoverageAttribute } from "../building/attributes/civicCoverage";
-import { cityEvents } from "../../events";
-import CONFIG from "../../config";
+} from '../building/attributes/powerAccess';
+import {
+  ICivicCoverageAttribute,
+  CivicCoverageAttribute,
+} from '../building/attributes/civicCoverage';
+import { cityEvents } from '../../events';
+import CONFIG from '../../config';
 
 const CIVIC_BUILDING_TYPES = [
   BUILDING_TYPE.FIRE_STATION,
@@ -37,7 +40,6 @@ export interface ITile {
   refresh(city: ICity): void;
   removeBuilding(): void;
   placeBuilding(type: string | null): void;
-  toHTML(): string;
 }
 
 export class Tile implements ITile {
@@ -57,7 +59,7 @@ export class Tile implements ITile {
     this.id = crypto.randomUUID();
     this.x = x;
     this.y = y;
-    this.terrain = "ground";
+    this.terrain = 'ground';
     this.building = null;
     this.roadAccess = new RoadAccessAttribute(this);
     this.powerAccess = new PowerAccessAttribute(this);
@@ -101,75 +103,42 @@ export class Tile implements ITile {
       const wasPowerInfrastructure =
         this.building.type === BUILDING_TYPE.POWER_PLANT ||
         this.building.type === BUILDING_TYPE.POWER_LINE;
-      const wasCivicBuilding = (CIVIC_BUILDING_TYPES as readonly string[]).includes(
-        this.building.type
-      );
+      const wasCivicBuilding = (
+        CIVIC_BUILDING_TYPES as readonly string[]
+      ).includes(this.building.type);
       this.building.dispose();
       this.building = null;
-      cityEvents.emit("buildingRemoved", { x: this.x, y: this.y });
+      cityEvents.emit('buildingRemoved', { x: this.x, y: this.y });
       if (wasRoad) {
-        cityEvents.emit("roadNetworkChanged", { x: this.x, y: this.y });
+        cityEvents.emit('roadNetworkChanged', { x: this.x, y: this.y });
       }
       if (wasPowerInfrastructure) {
-        cityEvents.emit("powerNetworkChanged", { x: this.x, y: this.y });
+        cityEvents.emit('powerNetworkChanged', { x: this.x, y: this.y });
       }
       if (wasCivicBuilding) {
-        cityEvents.emit("civicCoverageChanged", { x: this.x, y: this.y });
+        cityEvents.emit('civicCoverageChanged', { x: this.x, y: this.y });
       }
     }
   }
 
   placeBuilding(type: BuildingType): void {
     this.building = createBuilding(this.x, this.y, type);
-    cityEvents.emit("buildingPlaced", {
+    cityEvents.emit('buildingPlaced', {
       x: this.x,
       y: this.y,
       buildingType: type,
     });
     if (type === BUILDING_TYPE.ROAD) {
-      cityEvents.emit("roadNetworkChanged", { x: this.x, y: this.y });
+      cityEvents.emit('roadNetworkChanged', { x: this.x, y: this.y });
     }
-    if (type === BUILDING_TYPE.POWER_PLANT || type === BUILDING_TYPE.POWER_LINE) {
-      cityEvents.emit("powerNetworkChanged", { x: this.x, y: this.y });
+    if (
+      type === BUILDING_TYPE.POWER_PLANT ||
+      type === BUILDING_TYPE.POWER_LINE
+    ) {
+      cityEvents.emit('powerNetworkChanged', { x: this.x, y: this.y });
     }
     if ((CIVIC_BUILDING_TYPES as readonly string[]).includes(type)) {
-      cityEvents.emit("civicCoverageChanged", { x: this.x, y: this.y });
+      cityEvents.emit('civicCoverageChanged', { x: this.x, y: this.y });
     }
-  }
-
-  toHTML(): string {
-    let html = `
-      <span class="info-label">Coordinates: </span>
-      <span class="info-value">X: ${this.x}, Y: ${this.y}</span>
-      <br>
-      <span class="info-label">Terrain: </span>
-      <span class="info-value">${this.terrain}</span>
-      <br>
-      <span class="info-label">Road access: </span>
-      <span class="info-value">${this.roadAccess?.value ? "Yes" : "No"}</span>
-      <br>
-      <span class="info-label">Power access: </span>
-      <span class="info-value">${this.powerAccess?.value ? "Yes" : "No"}</span>
-      <br>
-      <span class="info-label">Fire coverage: </span>
-      <span class="info-value">${this.fireStationCoverage?.value ? "Yes" : "No"}</span>
-      <br>
-      <span class="info-label">Police coverage: </span>
-      <span class="info-value">${this.policeStationCoverage?.value ? "Yes" : "No"}</span>
-      <br>
-      <span class="info-label">Hospital coverage: </span>
-      <span class="info-value">${this.hospitalCoverage?.value ? "Yes" : "No"}</span>
-      <br>
-      <span class="info-label">School coverage: </span>
-      <span class="info-value">${this.schoolCoverage?.value ? "Yes" : "No"}</span>
-      <br>
-    `;
-
-    if (this.building) {
-      html += this.building.toHTML();
-    }
-
-    html += "</div>";
-    return html;
   }
 }

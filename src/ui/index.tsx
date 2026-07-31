@@ -5,12 +5,7 @@ import { GoalsPanel } from './GoalsPanel';
 import { InfoPanel } from './InfoPanel';
 import { ToolBar } from './ToolBar';
 import { TopBar } from './TopBar';
-import {
-  createUiStore,
-  UiActions,
-  UiController,
-  UiState,
-} from './store';
+import { createUiStore, UiActions, UiController, UiState } from './store';
 
 let uiRoot: Root | null = null;
 
@@ -43,7 +38,7 @@ function Ui({ actions, store }: UiProps) {
         onTogglePause={actions.togglePause}
       />
       <GoalsPanel goals={state.goals} />
-      <InfoPanel html={state.infoHtml} />
+      <InfoPanel inspector={state.inspector} />
       <div
         id="event-toast"
         className={state.toastMessage ? 'visible' : undefined}

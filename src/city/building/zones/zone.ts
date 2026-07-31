@@ -24,12 +24,6 @@ class Zone extends Building implements IZone {
     super.simulate(city);
     this.development.simulate(city);
   }
-
-  toHTML(): string {
-    let html = super.toHTML();
-    html += this.development.toHTML();
-    return html;
-  }
 }
 
 export { Zone, IZone };

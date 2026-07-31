@@ -5,13 +5,56 @@ export interface GoalsUiState {
   nextReward: string | null;
 }
 
+export interface InspectorPersonUiState {
+  id: string;
+  name: string;
+  age: number;
+  status: string;
+}
+
+export interface InspectorOccupancyUiState {
+  label: string;
+  current: number;
+  maximum: number;
+  people: InspectorPersonUiState[];
+}
+
+export interface InspectorBuildingUiState {
+  type: string;
+  title: string;
+  category: string;
+  state: string | null;
+  level: number | null;
+  maximumLevel: number | null;
+  buildCost: number | null;
+  upkeep: number | null;
+  roadStyle: string | null;
+  powerLoad: number | null;
+  powerCapacity: number | null;
+  occupancy: InspectorOccupancyUiState | null;
+}
+
+export interface InspectorServiceUiState {
+  id: string;
+  label: string;
+  available: boolean;
+}
+
+export interface InspectorUiState {
+  x: number;
+  y: number;
+  terrain: string;
+  services: InspectorServiceUiState[];
+  building: InspectorBuildingUiState | null;
+}
+
 export interface UiState {
   money: number;
   population: number;
   activeToolId: string | null;
   isPaused: boolean;
   unlockedToolIds: string[];
-  infoHtml: string | null;
+  inspector: InspectorUiState | null;
   goals: GoalsUiState;
   toastMessage: string | null;
   debugText: string;

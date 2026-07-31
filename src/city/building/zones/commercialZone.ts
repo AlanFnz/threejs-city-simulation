@@ -25,11 +25,4 @@ export class CommercialZone extends Zone implements ICommercialZone {
     this.jobs.dispose();
     super.dispose();
   }
-
-  toHTML(): string {
-    let html = super.toHTML();
-    html += this.jobs.toHTML();
-    return html;
-  }
 }
-

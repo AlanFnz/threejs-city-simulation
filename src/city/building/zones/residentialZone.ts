@@ -23,11 +23,4 @@ export class ResidentialZone extends Zone implements IResidentialZone {
     this.residents.dispose();
     super.dispose();
   }
-
-  toHTML(): string {
-    let html = super.toHTML();
-    html += this.residents.toHTML();
-    return html;
-  }
 }
-

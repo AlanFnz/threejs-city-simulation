@@ -9,7 +9,7 @@ Built with **Three.js** and **TypeScript**. No framework, no backend - just a si
 
 ## ✨ Features
 
-- **Zoning** - place residential, commercial, and industrial zones from day one. Zones with road *and* power access develop on their own: construction site → building → upgrades through several levels, with randomized building styles for visual variety.
+- **Zoning** - place residential, commercial, and industrial zones from day one. Zones with road _and_ power access develop on their own: construction site → building → upgrades through several levels, with randomized building styles for visual variety.
 - **Roads that connect themselves** - road tiles automatically become straights, corners, T-junctions, and intersections based on their neighbors.
 - **Power grid with relay** - power plants and power lines form a grid; a zone doesn't need to be directly wired in - once connected, it relays power to its neighbors too. Each plant has a capacity, surfaced in its info panel.
 - **A living population** - citizens move into residential zones with names, ages, and an employment lifecycle (school, working age, retirement). Workers search nearby commercial and industrial zones for jobs, and move-in slows down when there's nowhere to work.
@@ -25,15 +25,15 @@ Built with **Three.js** and **TypeScript**. No framework, no backend - just a si
 
 ## 🎮 Controls
 
-| Action | Input |
-|---|---|
-| Use active tool (place / select / bulldoze) | Left click (drag to paint) |
-| Orbit camera | Right click + drag |
-| Pan camera | Ctrl + right click + drag (or two-finger drag on touch) |
-| Zoom | Mouse wheel |
-| Switch tools | Toolbar (select, residential, commercial, industrial, road, power plant, power line, fire station, police station, hospital, school, bulldoze) |
-| Pause / resume | Toolbar pause button |
-| Save / load / new game | Toolbar buttons (autosaves periodically too) |
+| Action                                      | Input                                                                                                                                          |
+| ------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| Use active tool (place / select / bulldoze) | Left click (drag to paint)                                                                                                                     |
+| Orbit camera                                | Right click + drag                                                                                                                             |
+| Pan camera                                  | Ctrl + right click + drag (or two-finger drag on touch)                                                                                        |
+| Zoom                                        | Mouse wheel                                                                                                                                    |
+| Switch tools                                | Toolbar (select, residential, commercial, industrial, road, power plant, power line, fire station, police station, hospital, school, bulldoze) |
+| Pause / resume                              | Toolbar pause button                                                                                                                           |
+| Save / load / new game                      | Toolbar buttons (autosaves periodically too)                                                                                                   |
 
 ## 🚀 Getting started
 
@@ -62,14 +62,14 @@ The code is split into two worlds that only meet at a sync point:
 For the full picture - data flow, the development state machine, the vehicle graph, and step-by-step recipes for adding new building types or mechanics - see:
 
 - [`AGENTS.md`](AGENTS.md) - contributor guide with conventions, commands, and known gotchas (agent-agnostic: usable as CLAUDE.md, Cursor rules, or Copilot instructions).
-- [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) - deep-dive into every system, plus extension recipes.
+- [`ARCHITECTURE.md`](ARCHITECTURE.md) - deep-dive into every system, plus extension recipes.
 
 ## 🛠️ Tech stack
 
 - [Three.js](https://threejs.org/) - rendering (orthographic camera, GLTF models, shadows)
+- [React](https://react.dev/) - typed, event-driven HUD
 - TypeScript (strict mode)
 - Webpack 5 - dev server + production build with Three.js minification
-- Plain DOM for UI - no framework
 
 ## 🗺️ Ideas / roadmap
 

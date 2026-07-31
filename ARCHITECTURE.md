@@ -31,11 +31,11 @@ The codebase is split into a **simulation model** and a **render layer**. They u
 
 Two clocks drive everything (a single, non-duplicated sim tick):
 
-| Clock | Rate | Drives |
-|---|---|---|
-| `setInterval(step, 1000)` in `Game` | 1 Hz | `city.simulate()` (tile pass + economy accrual), `milestoneTracker` event checks, `randomEventsSystem.tick()`, `sceneManager.update(city)`, top bar, info panel, goals panel |
-| `renderer.setAnimationLoop(draw)` | display refresh | `vehicleGraph.updateVehicles()`, `renderer.render()` |
-| `setInterval(spawnVehicle, SPAWN_INTERVAL)` in `VehicleGraph` | 1 Hz | vehicle spawning |
+| Clock                                                         | Rate            | Drives                                                                                                                                                                       |
+| ------------------------------------------------------------- | --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `setInterval(step, 1000)` in `Game`                           | 1 Hz            | `city.simulate()` (tile pass + economy accrual), `milestoneTracker` event checks, `randomEventsSystem.tick()`, `sceneManager.update(city)`, top bar, info panel, goals panel |
+| `renderer.setAnimationLoop(draw)`                             | display refresh | `vehicleGraph.updateVehicles()`, `renderer.render()`                                                                                                                         |
+| `setInterval(spawnVehicle, SPAWN_INTERVAL)` in `VehicleGraph` | 1 Hz            | vehicle spawning                                                                                                                                                             |
 
 A "day" in sim terms = one `step()` = one `simulate()` pass over every tile plus one economy/tax/upkeep collection (§2.10). Sim-affecting randomness (RNG, see §2.7) and event side effects (§2.8/§2.9) both happen inside that same pass, before `sceneManager.update()` reads the results. `Game.step()` also runs `RandomEventsSystem.tick()` (§2.14) right after `city.simulate()` - milestones (§2.13) react to events emitted during either.
 
@@ -49,7 +49,7 @@ A "day" in sim terms = one `step()` = one `simulate()` pass over every tile plus
 
 - `getTile(x, y)` / `getTileByCoordinate({x,y})` - bounds-checked access (the latter logs errors on bad input).
 - `getTileNeighbors(x, y)` - 4-connected neighbors.
-- `findTile(start, filter, maxDistance)` - **the workhorse**: BFS from a start coordinate, Manhattan-distance capped, returns first tile passing `filter`. Used for road-access checks and citizen job search. Note it BFSes through *all* tiles (not just roads), so "distance" is grid distance, not road-network distance. `findTiles` is the same BFS but collects every match instead of stopping at the first (used for power-plant candidate selection, §2.11).
+- `findTile(start, filter, maxDistance)` - **the workhorse**: BFS from a start coordinate, Manhattan-distance capped, returns first tile passing `filter`. Used for road-access checks and citizen job search. Note it BFSes through _all_ tiles (not just roads), so "distance" is grid distance, not road-network distance. `findTiles` is the same BFS but collects every match instead of stopping at the first (used for power-plant candidate selection, §2.11).
 - `population` - a readonly getter, sums residents across ResidentialZones, returns a **number** (not a string - `ui/TopBar` and `VehicleGraph` both consume it directly).
 - `money`/`netIncome`/`upkeepDiscount` (readonly getters), `canAfford`/`spend`/`earn`/`applyUpkeepDiscount`/`loadEconomyState` - the economy API, see §2.10.
 - `checkPowerAccess(tile)`/`getPowerPlantLoad(plant)` - the power grid API, see §2.11.
@@ -58,7 +58,7 @@ A "day" in sim terms = one `step()` = one `simulate()` pass over every tile plus
 
 ### 2.2 Tile
 
-Owns `terrain` (always `'ground'` today), an optional `building`, a `RoadAccessAttribute`, a `PowerAccessAttribute`, and four `CivicCoverageAttribute`s (`fireStationCoverage`/`policeStationCoverage`/`hospitalCoverage`/`schoolCoverage`). `simulate()` forwards to building + roadAccess (power access and civic coverage are recomputed reactively, not every tick - §2.8/§2.11/§2.12). `placeBuilding(type)` delegates to the factory and emits `buildingPlaced`, plus `roadNetworkChanged` if the new building is a road, `powerNetworkChanged` if it's a power plant/line, or `civicCoverageChanged` if it's one of the four civic types; `removeBuilding()` disposes and emits `buildingRemoved` plus the same conditional network event for whatever type was removed. `toHTML()` renders the info-panel content (including road/power/civic access as Yes/No) and appends the building's own `toHTML()`.
+Owns `terrain` (always `'ground'` today), an optional `building`, a `RoadAccessAttribute`, a `PowerAccessAttribute`, and four `CivicCoverageAttribute`s (`fireStationCoverage`/`policeStationCoverage`/`hospitalCoverage`/`schoolCoverage`). `simulate()` forwards to building + roadAccess (power access and civic coverage are recomputed reactively, not every tick - §2.8/§2.11/§2.12). `placeBuilding(type)` delegates to the factory and emits `buildingPlaced`, plus `roadNetworkChanged` if the new building is a road, `powerNetworkChanged` if it's a power plant/line, or `civicCoverageChanged` if it's one of the four civic types; `removeBuilding()` disposes and emits `buildingRemoved` plus the same conditional network event for whatever type was removed. Tiles remain pure model data; `game/inspector.ts` maps a focused tile to the typed UI view model described in §3.4.
 
 ### 2.3 Buildings
 
@@ -85,19 +85,19 @@ Behaviors are composed, not inherited. Each attribute:
 
 - takes its owner (`Zone` or `Tile`) in the constructor,
 - exposes `simulate(city)` or `update(city)` called from the owner's `simulate()`,
-- exposes `dispose()` and `toHTML()`,
+- exposes `dispose()` when it owns resources that need cleanup,
 - mutates owner state through setters that flag `isMeshOutOfDate` when visuals change, and emit a `cityEvents` event when the change is one other systems (UI, other tiles) care about.
 
 Current attributes:
 
-| Attribute | Owner | Responsibility | Events emitted |
-|---|---|---|---|
-| `RoadAccessAttribute` | Tile | `value: boolean`, recomputed reactively (§2.8) rather than every tick | none (a pure value; other code reads `roadNetworkChanged`/`buildingPlaced` to know when to recompute it) |
-| `PowerAccessAttribute` | Tile | `value: boolean`; delegates the actual check to `City.checkPowerAccess` since power is a shared, capacity-limited resource, not a self-contained BFS (§2.11) | none (recomputed via the `powerNetworkChanged`/`buildingPlaced`/`buildingRemoved` cascade) |
-| `CivicCoverageAttribute` | Tile (×4: fire/police/hospital/school) | `value: boolean`; one generic class parameterized by `(tile, buildingType, searchDistance)`, reused for all four civic types (§2.12) | none (recomputed via `civicCoverageChanged`/`buildingPlaced`) |
-| `DevelopmentAttribute` | Zone | State machine: `undeveloped → under-construction → developed ⇄ abandoned`, plus level 1–maxLevel (3 by default, raisable per zone type via a milestone reward, §2.13). All transitions are chance-based via `CONFIG.ZONE.*` and use the seeded `random()` (§2.7); School coverage multiplies the level-up chance, Police coverage skips the abandonment roll entirely (§2.12). Road access is both the development criterion and (absence of it) the abandonment criterion | `developmentStateChanged`, `levelChanged` (both only on an actual transition, not every setter call) |
-| `ResidentsAttribute` | ResidentialZone | Move-in chance per tick up to `MAX_RESIDENTS ^ level`, scaled down (not blocked) when no commercial/industrial zone within `CITIZEN.MAX_JOB_SEARCH_DISTANCE` has an open job, scaled up under Hospital coverage; evicts all on abandonment; steps each `Citizen` | `citizenMovedIn`, `citizenMovedOut` |
-| `JobsAttribute` | Commercial/IndustrialZone | Capacity `MAX_WORKERS ^ level`; `hire(citizen)`/`layOff(citizen)` manage the workers array; `layOffWorkers()` clears everyone on abandonment (also used directly by the Layoffs random event, §2.14) | `citizenEmployed`, `citizenUnemployed` |
+| Attribute                | Owner                                  | Responsibility                                                                                                                                                                                                                                                                                                                                                                                                                                                             | Events emitted                                                                                           |
+| ------------------------ | -------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| `RoadAccessAttribute`    | Tile                                   | `value: boolean`, recomputed reactively (§2.8) rather than every tick                                                                                                                                                                                                                                                                                                                                                                                                      | none (a pure value; other code reads `roadNetworkChanged`/`buildingPlaced` to know when to recompute it) |
+| `PowerAccessAttribute`   | Tile                                   | `value: boolean`; delegates the actual check to `City.checkPowerAccess` since power is a shared, capacity-limited resource, not a self-contained BFS (§2.11)                                                                                                                                                                                                                                                                                                               | none (recomputed via the `powerNetworkChanged`/`buildingPlaced`/`buildingRemoved` cascade)               |
+| `CivicCoverageAttribute` | Tile (×4: fire/police/hospital/school) | `value: boolean`; one generic class parameterized by `(tile, buildingType, searchDistance)`, reused for all four civic types (§2.12)                                                                                                                                                                                                                                                                                                                                       | none (recomputed via `civicCoverageChanged`/`buildingPlaced`)                                            |
+| `DevelopmentAttribute`   | Zone                                   | State machine: `undeveloped → under-construction → developed ⇄ abandoned`, plus level 1–maxLevel (3 by default, raisable per zone type via a milestone reward, §2.13). All transitions are chance-based via `CONFIG.ZONE.*` and use the seeded `random()` (§2.7); School coverage multiplies the level-up chance, Police coverage skips the abandonment roll entirely (§2.12). Road access is both the development criterion and (absence of it) the abandonment criterion | `developmentStateChanged`, `levelChanged` (both only on an actual transition, not every setter call)     |
+| `ResidentsAttribute`     | ResidentialZone                        | Move-in chance per tick up to `MAX_RESIDENTS ^ level`, scaled down (not blocked) when no commercial/industrial zone within `CITIZEN.MAX_JOB_SEARCH_DISTANCE` has an open job, scaled up under Hospital coverage; evicts all on abandonment; steps each `Citizen`                                                                                                                                                                                                           | `citizenMovedIn`, `citizenMovedOut`                                                                      |
+| `JobsAttribute`          | Commercial/IndustrialZone              | Capacity `MAX_WORKERS ^ level`; `hire(citizen)`/`layOff(citizen)` manage the workers array; `layOffWorkers()` clears everyone on abandonment (also used directly by the Layoffs random event, §2.14)                                                                                                                                                                                                                                                                       | `citizenEmployed`, `citizenUnemployed`                                                                   |
 
 **Development state machine** (all thresholds/chances in `config.ts`):
 
@@ -109,7 +109,7 @@ DEVELOPED ──(LEVEL_UP_CHANCE, level < maxLevel)──► level++
 ABANDONED ──(road access restored, REDEVELOP_CHANCE)──► DEVELOPED
 ```
 
-`maxLevel` is read from `ZONE_LEVEL_CAPS` (`src/city/building/zones/zoneLevelCaps.ts`, a plain mutable module-level object keyed by `BuildingType`) at zone-construction time and stored on `DevelopmentAttribute`. Defaults: `RESIDENTIAL: 3`, `COMMERCIAL: 3`, `INDUSTRIAL: 1` ("limiting to one due to lack of industrial models"). A milestone reward (`{ type: 'zoneLevelCap' }`, §2.13) can raise a type's cap - `MilestoneTracker.raiseZoneLevelCap` mutates `ZONE_LEVEL_CAPS` in place (affecting every zone of that type built from then on) *and* walks every already-placed zone of that type to bump its `development.maxLevel` retroactively, so the reward applies immediately rather than only to future construction. Since GLB models only exist for levels 1-3 (see §3.1's model-name fallback), a cap raised beyond 3 doesn't change which model a zone can render at 1-3 - it only lets `level` itself climb past 3, at which point `AssetManager.resolveZoneModelName`'s fallback keeps rendering the level-3 model rather than failing to resolve one.
+`maxLevel` is read from `ZONE_LEVEL_CAPS` (`src/city/building/zones/zoneLevelCaps.ts`, a plain mutable module-level object keyed by `BuildingType`) at zone-construction time and stored on `DevelopmentAttribute`. Defaults: `RESIDENTIAL: 3`, `COMMERCIAL: 3`, `INDUSTRIAL: 1` ("limiting to one due to lack of industrial models"). A milestone reward (`{ type: 'zoneLevelCap' }`, §2.13) can raise a type's cap - `MilestoneTracker.raiseZoneLevelCap` mutates `ZONE_LEVEL_CAPS` in place (affecting every zone of that type built from then on) _and_ walks every already-placed zone of that type to bump its `development.maxLevel` retroactively, so the reward applies immediately rather than only to future construction. Since GLB models only exist for levels 1-3 (see §3.1's model-name fallback), a cap raised beyond 3 doesn't change which model a zone can render at 1-3 - it only lets `level` itself climb past 3, at which point `AssetManager.resolveZoneModelName`'s fallback keeps rendering the level-3 model rather than failing to resolve one.
 
 ### 2.5 Citizens
 
@@ -136,21 +136,31 @@ If you add real traffic (commute simulation), the graph is already directional a
 Sim code calls `random()` from `src/utils/rng.ts` instead of bare `Math.random()`:
 
 ```ts
-export function mulberry32(seed: number): RNG { /* small, fast, deterministic PRNG */ }
+export function mulberry32(seed: number): RNG {
+  /* small, fast, deterministic PRNG */
+}
 let rng: RNG = mulberry32(Date.now());
-export function setSeed(seed: number): void { rng = mulberry32(seed); }
-export function random(): number { return rng(); }
+export function setSeed(seed: number): void {
+  rng = mulberry32(seed);
+}
+export function random(): number {
+  return rng();
+}
 ```
 
-Production defaults to a `Date.now()` seed (nondeterministic per page load, but every draw within a session comes from one shared generator); tests call `setSeed(...)` or mock the module directly for reproducible sequences. Every sim-affecting random choice goes through this - zone style/rotation, citizen age/name generation, and every chance-based transition in `DevelopmentAttribute`/`ResidentsAttribute`. The one known exception is `AssetManager`'s vehicle-model pick (`Math.floor(types.length * Math.random())`) and `VehicleGraphNode`'s next-node walk, both cosmetic/render-side choices rather than sim state, so nondeterminism there doesn't affect simulation reproducibility - if you ever need deterministic *replays* including vehicle visuals, that's the remaining gap to close.
+Production defaults to a `Date.now()` seed (nondeterministic per page load, but every draw within a session comes from one shared generator); tests call `setSeed(...)` or mock the module directly for reproducible sequences. Every sim-affecting random choice goes through this - zone style/rotation, citizen age/name generation, and every chance-based transition in `DevelopmentAttribute`/`ResidentsAttribute`. The one known exception is `AssetManager`'s vehicle-model pick (`Math.floor(types.length * Math.random())`) and `VehicleGraphNode`'s next-node walk, both cosmetic/render-side choices rather than sim state, so nondeterminism there doesn't affect simulation reproducibility - if you ever need deterministic _replays_ including vehicle visuals, that's the remaining gap to close.
 
 ### 2.8 Reactive road access
 
 `RoadAccessAttribute.recompute(city)` runs the same BFS (`city.findTile` capped at `CONFIG.ATTRIBUTES.ROAD_ACCESS.SEARCH_DISTANCE`) it always did, but it's no longer called from `City.simulate()` every tick for every tile. Instead, `City`'s constructor subscribes:
 
 ```ts
-cityEvents.on('roadNetworkChanged', ({ x, y }) => this.recomputeRoadAccessNear(x, y));
-cityEvents.on('buildingPlaced', ({ x, y }) => this.getTile(x, y)?.roadAccess?.recompute(this));
+cityEvents.on('roadNetworkChanged', ({ x, y }) =>
+  this.recomputeRoadAccessNear(x, y)
+);
+cityEvents.on('buildingPlaced', ({ x, y }) =>
+  this.getTile(x, y)?.roadAccess?.recompute(this)
+);
 ```
 
 `recomputeRoadAccessNear(x, y)` recomputes only the tiles within `SEARCH_DISTANCE` (the same Manhattan-distance diamond the BFS itself is bounded to) of the road that was just added or removed - exactly the set of tiles whose own search could possibly have reached that coordinate. A brand-new tile also gets one recompute on `buildingPlaced` since it's never been evaluated. The rest of the time, `tile.roadAccess.value` is just a cached boolean read every tick at zero cost. This closes what used to be the single biggest sim cost driver (O(tiles × search area) per second, unconditionally) down to "only recompute what a road edit could have affected."
@@ -161,8 +171,14 @@ A minimal typed pub/sub, generic over an event map:
 
 ```ts
 export class EventBus<EventMap extends Record<string, unknown>> {
-  on<K extends keyof EventMap>(event: K, listener: (payload: EventMap[K]) => void): Unsubscribe;
-  off<K extends keyof EventMap>(event: K, listener: (payload: EventMap[K]) => void): void;
+  on<K extends keyof EventMap>(
+    event: K,
+    listener: (payload: EventMap[K]) => void
+  ): Unsubscribe;
+  off<K extends keyof EventMap>(
+    event: K,
+    listener: (payload: EventMap[K]) => void
+  ): void;
   emit<K extends keyof EventMap>(event: K, payload: EventMap[K]): void;
 }
 export const cityEvents = new EventBus<CityEventMap>();
@@ -191,26 +207,26 @@ Every balance change emits `moneyChanged({amount, balance})` (`Game` uses it to 
 Unlike road access (a stateless "is there a road nearby" BFS), power is a **capacity-limited shared resource** - one plant can only power `CONFIG.ATTRIBUTES.POWER_ACCESS.CAPACITY` zone tiles (default 20), so the grid needs bookkeeping of which plant is serving which tile, not just a yes/no reachability check.
 
 - **`PowerGrid`** (`src/city/powerGrid.ts`) tracks two maps: `capacityUsed` (plant coordinate → count) and `assignedPlant` (tile coordinate → plant coordinate). `registerPlant`/`unregisterPlant` are called when a `POWER_PLANT` tile is placed/removed (only plants hold capacity - lines never do). `tryAssign(tile, candidates, capacity)` first tries to keep the tile's existing assignment if that plant is still a valid candidate (avoids needless reshuffling), otherwise does first-fit over `candidates` in the order given. `release(tile)` frees a tile's slot (bulldozed, or no longer a zone).
-- **Relay**: a zone doesn't need to be directly adjacent to a plant or line - `City.isPowerConductive(tile)` treats a tile as conducting power if it's a `POWER_LINE`/`POWER_PLANT`, *or* if it's a zone whose `powerAccess.value` is already `true` (an already-connected zone relays to its neighbors). `findReachablePlants(start)` first finds every conductive entry point within `SEARCH_DISTANCE` (same "can this tile physically reach the grid" radius concept as road access), then BFSes outward through connected conductive tiles - unbounded by distance, since a cable run or a chain of powered zones can be as long as the player builds it - collecting every plant reached (a plant is always a traversal endpoint, never a pass-through).
-- **Reactive recompute is an incremental worklist, not a bounded-radius sweep** (this differs from road access, §2.8, and civic coverage, §2.12, both of which *are* plain bounded sweeps): because one tile's power state can ripple through a chain of relaying zones, `City.cascadePowerAccessChange(x, y)` seeds a queue with the bounded neighborhood around the edited tile, then only enqueues a tile's neighbors when that tile's own `powerAccess.value` actually flips (an unchanged tile can't newly affect what its neighbors see). Cost scales with the size of the network region that actually changes, not city size - this was an explicit design correction after an earlier full-grid-relaxation approach was rejected for not scaling to larger maps.
+- **Relay**: a zone doesn't need to be directly adjacent to a plant or line - `City.isPowerConductive(tile)` treats a tile as conducting power if it's a `POWER_LINE`/`POWER_PLANT`, _or_ if it's a zone whose `powerAccess.value` is already `true` (an already-connected zone relays to its neighbors). `findReachablePlants(start)` first finds every conductive entry point within `SEARCH_DISTANCE` (same "can this tile physically reach the grid" radius concept as road access), then BFSes outward through connected conductive tiles - unbounded by distance, since a cable run or a chain of powered zones can be as long as the player builds it - collecting every plant reached (a plant is always a traversal endpoint, never a pass-through).
+- **Reactive recompute is an incremental worklist, not a bounded-radius sweep** (this differs from road access, §2.8, and civic coverage, §2.12, both of which _are_ plain bounded sweeps): because one tile's power state can ripple through a chain of relaying zones, `City.cascadePowerAccessChange(x, y)` seeds a queue with the bounded neighborhood around the edited tile, then only enqueues a tile's neighbors when that tile's own `powerAccess.value` actually flips (an unchanged tile can't newly affect what its neighbors see). Cost scales with the size of the network region that actually changes, not city size - this was an explicit design correction after an earlier full-grid-relaxation approach was rejected for not scaling to larger maps.
 - The info panel surfaces `City.getPowerPlantLoad(plant)` (delegates to `PowerGrid.getCapacityUsed`) next to a focused power plant, so the hard per-plant cap isn't an invisible mystery once a city outgrows one plant.
 
 ### 2.12 Civic services (`CivicCoverageAttribute`, `CONFIG.CIVIC_SERVICES`)
 
 Four civic building types, each with one focused gameplay effect on zones within a fixed radius - all reusing an existing probability roll rather than inventing new mechanics:
 
-| Building | Effect | Hooks into |
-|---|---|---|
-| Fire Station | Covered zones are immune to the Fire random event | `RandomEventsSystem.findDevelopedZoneTiles` excludes covered tiles from the candidate pool (§2.14) |
-| Police Station | Covered zones never abandon | `DevelopmentAttribute`'s abandonment roll is skipped entirely when covered |
-| Hospital | Covered residential zones get a boosted move-in chance | `ResidentsAttribute`'s move-in roll ×`CIVIC_SERVICES.HOSPITAL.MOVE_IN_CHANCE_MULTIPLIER` |
-| School | Covered zones get a boosted level-up chance | `DevelopmentAttribute`'s level-up roll ×`CIVIC_SERVICES.SCHOOL.LEVEL_UP_CHANCE_MULTIPLIER` |
+| Building       | Effect                                                 | Hooks into                                                                                         |
+| -------------- | ------------------------------------------------------ | -------------------------------------------------------------------------------------------------- |
+| Fire Station   | Covered zones are immune to the Fire random event      | `RandomEventsSystem.findDevelopedZoneTiles` excludes covered tiles from the candidate pool (§2.14) |
+| Police Station | Covered zones never abandon                            | `DevelopmentAttribute`'s abandonment roll is skipped entirely when covered                         |
+| Hospital       | Covered residential zones get a boosted move-in chance | `ResidentsAttribute`'s move-in roll ×`CIVIC_SERVICES.HOSPITAL.MOVE_IN_CHANCE_MULTIPLIER`           |
+| School         | Covered zones get a boosted level-up chance            | `DevelopmentAttribute`'s level-up roll ×`CIVIC_SERVICES.SCHOOL.LEVEL_UP_CHANCE_MULTIPLIER`         |
 
 Fire/Police are deterministic immunity (a hard boolean gate, same flavor as road/power access); Hospital/School are probability multipliers (a boost has no natural ceiling the way immunity does for a bad outcome). Implementation is one generic `CivicCoverageAttribute` class (mirroring `RoadAccessAttribute`) parameterized by `(tile, buildingType, searchDistance)`, instantiated four times per `Tile` reading its own `CONFIG.CIVIC_SERVICES.<TYPE>.SEARCH_DISTANCE`. Recompute is a plain bounded-radius sweep (`City.recomputeCivicCoverageNear`, triggered by `civicCoverageChanged`/`buildingPlaced`) using the largest of the four search distances - unlike power access (§2.11), coverage doesn't chain through other coverage, so a one-shot sweep (not an incremental worklist) is enough.
 
 ### 2.13 Milestones (`MilestoneTracker`, `game/milestones`)
 
-`MilestoneTracker` watches the fixed `MILESTONES` list (`game/milestones/constants.ts`) and applies each one's reward the first time its condition is met, tracked via a `completed: Set<string>` (never re-fires). Conditions: `population`/`money` (compared against `City.population`/`City.money`) or `developedZoneCount` (a full grid scan counting developed zones of a given type). Each incoming event only re-checks milestones whose condition category matches that event, so population/money checks are O(1) per milestone and the O(size²) zone-count scan only runs on `developmentStateChanged` rather than every tick. Rewards: `cash` (`City.earn`), `upkeepDiscount` (`City.applyUpkeepDiscount`, stacks multiplicatively), `zoneLevelCap` (bumps `ZONE_LEVEL_CAPS[type]` for future zones *and* retroactively raises `development.maxLevel` on every already-placed zone of that type), `unlockTool` (adds to `unlockedToolIds`, read by `ToolBar`/`Game.useActiveTool` to gate tool selection). Emits `milestoneCompleted({id})`.
+`MilestoneTracker` watches the fixed `MILESTONES` list (`game/milestones/constants.ts`) and applies each one's reward the first time its condition is met, tracked via a `completed: Set<string>` (never re-fires). Conditions: `population`/`money` (compared against `City.population`/`City.money`) or `developedZoneCount` (a full grid scan counting developed zones of a given type). Each incoming event only re-checks milestones whose condition category matches that event, so population/money checks are O(1) per milestone and the O(size²) zone-count scan only runs on `developmentStateChanged` rather than every tick. Rewards: `cash` (`City.earn`), `upkeepDiscount` (`City.applyUpkeepDiscount`, stacks multiplicatively), `zoneLevelCap` (bumps `ZONE_LEVEL_CAPS[type]` for future zones _and_ retroactively raises `development.maxLevel` on every already-placed zone of that type), `unlockTool` (adds to `unlockedToolIds`, read by `ToolBar`/`Game.useActiveTool` to gate tool selection). Emits `milestoneCompleted({id})`.
 
 Current progression (`MILESTONES`, easy to retune): `RESIDENTIAL`/`COMMERCIAL`/`INDUSTRIAL`/`ROAD`/`POWER_PLANT`/`POWER_LINE`/`BULLDOZE`/`SELECT` are in `STARTING_UNLOCKED_TOOLS` from the start (a real city needs shops and jobs from day one) - population milestones (10/15/25/40/60) unlock a cash bonus then the four civic tools in sequence, a money milestone (\$25,000) grants an upkeep discount, and two `developedZoneCount` milestones (5 commercial, 5 industrial) raise the Residential/Commercial level cap to 4. `GoalsPanel` (`ui/GoalsPanel`) shows `nextMilestone` (first uncompleted, in list order).
 
@@ -219,7 +235,7 @@ Current progression (`MILESTONES`, easy to retune): `RESIDENTIAL`/`COMMERCIAL`/`
 Occasional city-wide variance on top of the steady simulation - a windfall grant, a fire, or layoffs - each reusing an existing mechanic (`City.earn`, `DevelopmentAttribute.state`, `JobsAttribute.layOffWorkers`) rather than inventing new state. `Game.step()` calls `tick()` once per unpaused sim tick, right after `city.simulate()`; the three checks run in fixed priority order (windfall, then fire, then layoffs) and stop at the first that fires:
 
 - **Windfall**: flat `RANDOM_EVENTS.WINDFALL.BASE_CHANCE` per tick; grants a random amount in `[MIN_AMOUNT, MAX_AMOUNT]`.
-- **Fire**: chance rises with `CHANCE_PER_ABANDONED_ZONE` per currently-abandoned zone (an already-struggling city is more fire-prone); on success, picks a random developed zone *not* under Fire Station coverage and abandons it.
+- **Fire**: chance rises with `CHANCE_PER_ABANDONED_ZONE` per currently-abandoned zone (an already-struggling city is more fire-prone); on success, picks a random developed zone _not_ under Fire Station coverage and abandons it.
 - **Layoffs**: `BASE_CHANCE`, multiplied by `DEFICIT_MULTIPLIER` while `City.netIncome < 0`; on success, picks a random developed commercial/industrial zone with filled jobs and lays everyone off.
 
 The steady-state per-tick decision stays O(1): `abandonedTileKeys` (a `Set<string>`) is maintained incrementally via `developmentStateChanged`/`buildingRemoved` subscriptions rather than rescanned every tick, and `netIncome` is read pre-computed from `City` (§2.10). Only the rare tick an event actually fires pays for an O(size²) grid scan to pick a target - a cost gated by low probability, not by map size. Each firing emits `randomEventTriggered({message})`, shown as a toast by `Game`.
@@ -231,7 +247,7 @@ One save slot in `localStorage` (key `threejs-city-simulation/save`), versioned 
 - **`serialize(city, milestoneTracker)`** walks every tile and records `{x, y, buildingType}` plus, for zones, `{style, rotation, developmentState, developmentLevel, developmentMaxLevel}` and, for `ResidentialZone`, each citizen `{id, firstName, surname, age, state, workplace?}`. Also captures `city.money`, `city.upkeepDiscount`, a snapshot of `ZONE_LEVEL_CAPS`, and `milestoneTracker.getState()` (`{completed, unlockedToolIds}`).
 - **`deserialize(data, city, milestoneTracker)`** clears every tile, restores `ZONE_LEVEL_CAPS` and economy state directly, then **replays the save through the same public APIs normal play uses** - `tile.placeBuilding(type)`, then patches `style`/`rotation`/`development.maxLevel`/`.state`/`.level` and rehires citizens via `jobs.hire` - rather than a bespoke bulk-hydrate path. Because `developmentStateChanged`/`buildingPlaced`/etc. all still fire during replay, `MilestoneTracker`'s and `RandomEventsSystem`'s own incremental trackers (`completed` set, `abandonedTileKeys`) rebuild themselves as a side effect instead of needing a dedicated restore path - their idempotent guards make the redundant re-checks harmless. `milestoneTracker.restoreState` **unions** `unlockedToolIds` with `STARTING_UNLOCKED_TOOLS` rather than replacing it outright, so a save written by an older build (e.g. predating Commercial/Industrial being unlocked from the start) can't accidentally re-lock a tool the current build guarantees is always available. One extra `city.simulate()` call at the end fixes up road styles immediately rather than waiting up to 1s for the next natural tick.
 - **`newGame()`** confirms via `window.confirm` (the one deliberately irreversible action in the game), then deserializes `blankSave()` (fresh money, default zone caps, empty milestones/tools, no tiles) and clears the save key.
-- Not currently persisted: the RNG seed/draw count (§2.7) - a reload reseeds from `Date.now()` rather than replaying the exact same random sequence, so a loaded city's *future* random draws diverge from what they'd have been in the original session, even though every already-decided piece of state (who moved in, which zone is what level, etc.) is preserved exactly.
+- Not currently persisted: the RNG seed/draw count (§2.7) - a reload reseeds from `Date.now()` rather than replaying the exact same random sequence, so a loaded city's _future_ random draws diverge from what they'd have been in the original session, even though every already-decided piece of state (who moved in, which zone is what level, etc.) is preserved exactly.
 
 ---
 
@@ -256,10 +272,10 @@ One save slot in `localStorage` (key `threejs-city-simulation/save`), versioned 
 
 Terrain and every building are each backed by `InstancedMesh`, not one mesh per tile:
 
-- **Terrain**: one `InstancedMesh` sized `citySize × citySize`, built once in `setupTerrain()`. Per-tile visibility (a building with `hideTerrain` covering the ground) is done by scaling that instance's matrix to zero rather than toggling a `visible` flag (`InstancedMesh` has no per-instance visibility), and only the instances whose hidden-state actually *changed* this tick get their matrix rewritten - not the whole buffer every tick.
+- **Terrain**: one `InstancedMesh` sized `citySize × citySize`, built once in `setupTerrain()`. Per-tile visibility (a building with `hideTerrain` covering the ground) is done by scaling that instance's matrix to zero rather than toggling a `visible` flag (`InstancedMesh` has no per-instance visibility), and only the instances whose hidden-state actually _changed_ this tick get their matrix rewritten - not the whole buffer every tick.
 - **Buildings**: one growable `InstancedMesh` **pool per distinct model** (`Map<ModelKey, BuildingPool>`), since there are ~20 distinct zone/road models rather than one repeated shape like grass. Each pool tracks a free-slot list and a `tileAtSlot` reverse-lookup array. Placing a building allocates a slot (doubling the pool's capacity via a brand-new `InstancedMesh` + copying every existing instance's matrix/color over, if the pool is full); bulldozing frees it (zero-scale + push the slot back onto the free list); a building leveling up or otherwise changing its resolved `ModelKey` frees its old slot and allocates a new one in the different pool. Crucially, `update()` compares the newly-`resolveBuildingInstance`-d model/transform/tint against what a tile's slot record already holds, and skips all of this entirely if nothing actually changed - which matters because `Road.simulate()` sets `isMeshOutOfDate` every tick regardless (§2.3), and without this check every road tile in the city would churn its pool slot every second.
 - **Picking**: `getSelectedObject(event)` raycasts against the whole scene. A hit on an `InstancedMesh` (terrain or any building pool) carries `intersection.instanceId`, which is resolved back to a tile via that pool's `tileAtSlot` array, then stashed as `userData` on the shared mesh just before returning it - valid only because the very next thing the caller does (in the same synchronous mouse-event handler) is read that `userData`, before any other raycast can run and overwrite it. Vehicles are still individual meshes, but aren't tied to a single tile and don't carry tile `userData` at all - a raycast hit on one falls through to the generic non-`InstancedMesh` path with whatever default `userData` it has (which `Game`'s `typeof tile?.placeBuilding === "function"` guard then correctly rejects as "not a tile"). Non-pickable objects (the ground grid overlay, the preview ghost) set `userData.nonInteractive = true` and are skipped.
-- **Highlight/selection**: an `InstancedMesh` has no per-instance emissive, so hover/select tinting is done via `InstancedMesh.setColorAt` - a lerp from the instance's stored *base* tint (white normally, grey `0x707070` if a zone is abandoned) toward a highlight color (pale blue for hover, warm gold for select), tracked as a single shared `(mesh, instanceIndex)` pair rather than a per-object flag. Two things to know if you touch this: a highlight color lerped toward pure white is a no-op against a white base tint (color-management gamma compression makes the shift imperceptible near the top of the range even before that) - pick a saturated color and a strong blend amount instead; and hovering the currently-*selected* tile must not clobber its select tint with the hover tint, which needs an explicit "is this the same (mesh, index) as the active selection" check rather than relying on object-reference equality (every terrain hover and every same-model building hover *is* the same shared mesh object). Vehicles, not being instanced, still use plain `mesh.material.emissive.setHex(color)`.
+- **Highlight/selection**: an `InstancedMesh` has no per-instance emissive, so hover/select tinting is done via `InstancedMesh.setColorAt` - a lerp from the instance's stored _base_ tint (white normally, grey `0x707070` if a zone is abandoned) toward a highlight color (pale blue for hover, warm gold for select), tracked as a single shared `(mesh, instanceIndex)` pair rather than a per-object flag. Two things to know if you touch this: a highlight color lerped toward pure white is a no-op against a white base tint (color-management gamma compression makes the shift imperceptible near the top of the range even before that) - pick a saturated color and a strong blend amount instead; and hovering the currently-_selected_ tile must not clobber its select tint with the hover tint, which needs an explicit "is this the same (mesh, index) as the active selection" check rather than relying on object-reference equality (every terrain hover and every same-model building hover _is_ the same shared mesh object). Vehicles, not being instanced, still use plain `mesh.material.emissive.setHex(color)`.
 - Lights: one shadow-casting directional "sun" + low ambient, both the light's target and its shadow-camera frustum (`left/right/top/bottom/near/far`) derived from `CONFIG.CITY.SIZE` rather than hardcoded for a 16-tile map - grow the map and both scale automatically.
 
 ### 3.3 CameraManager
@@ -268,11 +284,11 @@ Orthographic camera orbiting a `cameraOrigin` on a sphere (azimuth/elevation/rad
 
 ### 3.4 UI (`src/ui`)
 
-Pure DOM, created once by `createUi()`:
+A React root is mounted once by `createUi()`. `Game` owns a small external store of serializable `UiState` and passes typed actions back into the HUD; React components never reach into the simulation or Three.js scene directly.
 
 - **TopBar** - population counter (`#population-counter`) and money display, refreshed on `citizenMovedIn`/`citizenMovedOut`/`moneyChanged` events rather than every tick unconditionally.
-- **ToolBar** - buttons generated from `TOOLBAR_BUTTONS` in `ui/constants.ts`; each carries `data-type` matching a `BUILDING_TYPE` (or SELECT/BULLDOZE/TOGGLE_PAUSE). `Game.onToolSelected` reads `data-type` into `activeToolId`, which is also the lookup key into the `Tool` registry (§3.5). A tool whose `BUILDING_TYPE` isn't yet in `MilestoneTracker.unlockedToolIds` (§2.13) renders greyed-out; the unlocked check happens live inside the click handler (not just once at button creation), so a tool unlocked mid-session - by a milestone completing or a save loading - becomes clickable immediately without re-attaching any handler.
-- **InfoPanel** - `#info-overlay-details`, filled with `tile.toHTML()` for the focused object (includes road/power/civic access and, for a focused power plant, its current capacity via `City.getPowerPlantLoad`), refreshed by the same event subscriptions that drive the top bar (only when the changed tile is the currently-focused one).
+- **ToolBar** - a categorized dock generated from `TOOLBAR_BUTTONS` and `TOOL_CATEGORIES` in `ui/constants.ts`; each leaf action still carries an id matching a `BUILDING_TYPE` (or SELECT/BULLDOZE). Locked milestone tools include their population requirement and remain protected by a second authorization check inside `Game.selectTool`.
+- **InfoPanel** - receives an `InspectorUiState`, built by `game/inspector.ts` from the focused tile. It renders service status, development, costs, power capacity, and citizen/worker occupancy as React elements. No simulation object generates markup and no model data crosses through `innerHTML`.
 - **GoalsPanel** - shows `milestoneTracker.nextMilestone`'s title and reward description (`describeReward`, §2.13), refreshed on `milestoneCompleted`; shows a completion state once every milestone is done.
 
 `Game.isEventFromUiElement` guards world input against clicks on `#ui-topbar`, `#ui-toolbar`, `#ui-info-overlay` - keep new UI containers in that list (or give them one of those ids as ancestor).
@@ -286,12 +302,15 @@ interface GameContext {
   assetManager: IAssetManager;
   setFocusedTile(tile: ITile | null): void;
 }
-interface ToolPreview { mesh: THREE.Object3D; valid: boolean; }
+interface ToolPreview {
+  mesh: THREE.Object3D;
+  valid: boolean;
+}
 interface Tool {
   readonly id: string;
   onTileClick(tile: ITile, object: THREE.Object3D, context: GameContext): void;
-  onDrag?(tile: ITile, object: THREE.Object3D, context: GameContext): void;   // falls back to onTileClick
-  getPreview?(tile: ITile, context: GameContext): ToolPreview | null;         // ghost mesh while hovering
+  onDrag?(tile: ITile, object: THREE.Object3D, context: GameContext): void; // falls back to onTileClick
+  getPreview?(tile: ITile, context: GameContext): ToolPreview | null; // ghost mesh while hovering
 }
 ```
 
@@ -307,7 +326,7 @@ Adding a new tool means implementing `Tool` and registering it in `createTools()
 
 ### 3.6 Placement preview
 
-While hovering with a placement tool active, `Game.updatePreview()` calls `tool.getPreview(tile, context)` (only `BuildingTool` implements it; `SelectTool`/`BulldozeTool` show no ghost) and forwards the result to `sceneManager.showPreviewMesh(mesh, valid)`. For roads, `AssetManager.createPreviewMesh` builds a throwaway `Road` and calls `road.simulate(city)` against the real city *without inserting it into the grid*, so the ghost shows the correct connector style for the tile's actual current neighbors; other zone types show the generic `UNDER-CONSTRUCTION` model. `showPreviewMesh` tints the whole ghost green/red for valid/invalid, makes it translucent with depth-testing disabled and a high `renderOrder` (so an invalid ghost sitting on top of an existing building isn't hidden by it), and flags every descendant `userData.nonInteractive = true` - otherwise the ghost could intercept its own raycast, read as "no tile," hide itself, and reappear the next frame in an infinite flicker loop.
+While hovering with a placement tool active, `Game.updatePreview()` calls `tool.getPreview(tile, context)` (only `BuildingTool` implements it; `SelectTool`/`BulldozeTool` show no ghost) and forwards the result to `sceneManager.showPreviewMesh(mesh, valid)`. For roads, `AssetManager.createPreviewMesh` builds a throwaway `Road` and calls `road.simulate(city)` against the real city _without inserting it into the grid_, so the ghost shows the correct connector style for the tile's actual current neighbors; other zone types show the generic `UNDER-CONSTRUCTION` model. `showPreviewMesh` tints the whole ghost green/red for valid/invalid, makes it translucent with depth-testing disabled and a high `renderOrder` (so an invalid ghost sitting on top of an existing building isn't hidden by it), and flags every descendant `userData.nonInteractive = true` - otherwise the ghost could intercept its own raycast, read as "no tile," hide itself, and reappear the next frame in an infinite flicker loop.
 
 ### 3.7 Input flow
 
@@ -329,27 +348,27 @@ wheel ─► cameraManager.onMouseScroll
 ### 4.1 Add a new building type (e.g. PARK)
 
 1. `src/city/building/constants/index.ts` - add to `BUILDING_TYPE` (and a `ROAD_TYPE`-style sub-enum if it has variants).
-2. Create the class in `src/city/building/` (subclass `Building` directly for a fixed, non-developing building - follow `PowerPlant`/`FireStation`; subclass `Zone` if it should develop/abandon). Implement `simulate`, `dispose`, `toHTML`.
+2. Create the class in `src/city/building/` (subclass `Building` directly for a fixed, non-developing building - follow `PowerPlant`/`FireStation`; subclass `Zone` if it should develop/abandon). Implement `simulate` and `dispose` as needed.
 3. `buildingCreator.ts` - add a `case` and extend the `BuildingEntity` union.
 4. Assets: add `ModelKey` entries (`assetManager/constants`), GLB import in `models/modelsFiles.ts` (only imported GLBs get bundled - don't import ones nothing references), and a `models/index.ts` entry with `type: modelType.ZONE` (or a new type).
 5. `AssetManager.resolveBuildingInstance` - route the new type to a resolver branch (`resolveFixedBuildingInstance` for a fixed model with no style/level - see §3.1 - or `resolveZoneModelName`'s style/level naming for a developing zone). No `SceneManager` changes needed - a new `ModelKey` just gets its own instance pool lazily, the first time a tile resolves to it.
-6. `ui/constants.ts` - add a toolbar button (`id` must equal the `BUILDING_TYPE` value so `activeToolId` flows through unchanged); add icon in `assetManager/icons` if needed. If the new type is placeable, `createTools()` needs a `new BuildingTool(BUILDING_TYPE.YOUR_TYPE)` entry.
+6. `ui/constants.ts` - add a toolbar button (`id` must equal the `BUILDING_TYPE` value so `activeToolId` flows through unchanged), place it in a `TOOL_CATEGORIES` group, and add an icon in `assetManager/icons` if needed. If the new type is placeable, `createTools()` needs a `new BuildingTool(BUILDING_TYPE.YOUR_TYPE)` entry. Extend `game/inspector.ts` if the type has unique details worth surfacing.
 7. `CONFIG.ECONOMY.BUILD_COST`/`UPKEEP` - add entries, or placement/upkeep silently costs/charges nothing.
 8. Decide unlock timing: add to `STARTING_UNLOCKED_TOOLS` (`game/milestones/index.ts`) if it should be available immediately, or gate it behind a new `{ type: 'unlockTool' }` milestone (§2.13) if it's meant to be a progression reward.
 9. If it affects other buildings (e.g. land value, a new coverage effect), model that as a new **attribute** (next recipe) - `CivicCoverageAttribute` (§2.12) is already generic enough to reuse for a fifth "immune/boosted within radius" effect without writing a new class, if that's the shape you need.
 
 ### 4.2 Add a new attribute (e.g. PowerAttribute, LandValueAttribute)
 
-1. New file in `src/city/building/attributes/`, class holding the owner, with `simulate(city)`/`update(city)`, `dispose()`, `toHTML()`.
+1. New file in `src/city/building/attributes/`, class holding the owner, with `simulate(city)`/`update(city)` and `dispose()` as needed.
 2. Read tunables from `config.ts` (add a section to the `Config` interface and the `CONFIG` object, with a JSDoc comment stating each field's unit - ticks, ms, probability 0-1, etc. - matching the existing sections).
-3. Compose it in the relevant zone(s): instantiate in constructor, call from `simulate`, `dispose`, `toHTML`.
+3. Compose it in the relevant zone(s): instantiate in the constructor and call it from `simulate`/`dispose`.
 4. If it changes visuals, mutate via setters that set `owner.isMeshOutOfDate = true`.
 5. If another system (UI, another tile) needs to react to the change, add an event to `CityEventMap` and `emit` it from the setter, rather than having that other system poll.
 6. Mirror `RoadAccessAttribute` if it's tile-level rather than zone-level, and consider whether it needs a reactive-recompute pattern like road access (§2.8) instead of a per-tick pass, if the underlying computation is expensive and rarely-invalidated.
 
 ### 4.3 Add a stat to the top bar
 
-Compute it on `City` as a getter returning a number (see `population`), add a DOM node in `ui/TopBar`, update it from the relevant `cityEvents` subscription in `Game` rather than polling every tick.
+Compute it on `City` as a getter returning a number (see `population`), add it to `UiState` and `ui/TopBar`, then update it from the relevant `cityEvents` subscription in `Game` rather than polling every tick.
 
 ### 4.4 Save/load - already implemented, see §2.15
 

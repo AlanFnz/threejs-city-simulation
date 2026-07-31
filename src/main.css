@@ -698,6 +698,24 @@ button:focus-visible {
     visibility var(--hud-transition);
   visibility: hidden;
   pointer-events: none;
+  scrollbar-color: rgba(123, 220, 243, 0.32) transparent;
+  scrollbar-width: thin;
+}
+
+#info-panel::-webkit-scrollbar,
+.inspector-people::-webkit-scrollbar {
+  width: 5px;
+}
+
+#info-panel::-webkit-scrollbar-track,
+.inspector-people::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+#info-panel::-webkit-scrollbar-thumb,
+.inspector-people::-webkit-scrollbar-thumb {
+  border-radius: 99px;
+  background: rgba(123, 220, 243, 0.28);
 }
 
 #info-panel.visible {
@@ -708,71 +726,331 @@ button:focus-visible {
 }
 
 #info-overlay-details {
-  padding: 4px 0 14px;
+  padding: 14px;
   color: var(--hud-text);
   font-size: 0.82rem;
-  line-height: 1.8;
+  line-height: 1.4;
 }
 
-.info-heading {
-  margin: 13px 14px 8px;
-  padding-bottom: 7px;
-  color: var(--hud-text);
-  font-family: 'Bebas', sans-serif;
-  font-size: 1rem;
-  letter-spacing: 0.07em;
-  border-bottom: 1px solid var(--hud-line);
+.inspector-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
 }
 
-.info-heading:first-of-type {
-  margin-top: 10px;
-}
-
-.info-label {
-  margin-left: 14px;
+.coordinate-badge {
+  padding: 5px 8px;
   color: var(--hud-text-muted);
-}
-
-.info-value {
-  margin-right: 14px;
-  margin-left: 4px;
-  color: var(--hud-text);
-  font-weight: 650;
-}
-
-.info-citizen-list {
-  margin: 8px 0 0;
-  padding: 0 10px;
-  list-style: none;
-}
-
-.info-citizen {
-  margin: 6px 0;
-  padding: 9px 10px;
-  color: var(--hud-text);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.68rem;
+  font-weight: 700;
   border: 1px solid var(--hud-line);
-  border-radius: 9px;
-  background: rgba(31, 52, 67, 0.58);
+  border-radius: 7px;
+  background: rgba(7, 15, 25, 0.42);
 }
 
-.info-citizen-name {
-  font-size: 0.85rem;
+.inspector-section {
+  padding: 12px;
+  border: 1px solid var(--hud-line);
+  border-radius: 11px;
+  background: rgba(22, 41, 56, 0.48);
+}
+
+.inspector-section-heading,
+.occupancy-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.inspector-section-heading h3,
+.inspector-building-title h3 {
+  margin: 0;
+  font-size: 0.88rem;
+}
+
+.inspector-section-heading > span {
+  color: var(--hud-text-dim);
+  font-size: 0.65rem;
+  font-weight: 750;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.service-grid {
+  margin-top: 10px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.service-chip {
+  min-width: 0;
+  padding: 7px 8px;
+  display: grid;
+  grid-template-columns: 7px 1fr auto;
+  align-items: center;
+  gap: 6px;
+  color: var(--hud-text-muted);
+  font-size: 0.68rem;
+  border-radius: 7px;
+  background: rgba(7, 15, 25, 0.33);
+}
+
+.service-chip strong {
+  font-size: 0.59rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.service-indicator {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--hud-danger);
+  box-shadow: 0 0 7px rgba(255, 114, 124, 0.38);
+}
+
+.service-chip.available strong {
+  color: var(--hud-positive);
+}
+
+.service-chip.available .service-indicator {
+  background: var(--hud-positive);
+  box-shadow: 0 0 7px rgba(100, 214, 160, 0.42);
+}
+
+.service-chip.unavailable strong {
+  color: var(--hud-danger);
+}
+
+.inspector-building {
+  --building-color: var(--hud-accent);
+  margin-top: 10px;
+  padding: 12px;
+  border: 1px solid var(--hud-line);
+  border-radius: 11px;
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--building-color) 10%, transparent),
+    rgba(20, 38, 54, 0.56) 48%
+  );
+}
+
+.inspector-building.type-residential {
+  --building-color: var(--hud-zone-residential);
+}
+
+.inspector-building.type-commercial {
+  --building-color: var(--hud-zone-commercial);
+}
+
+.inspector-building.type-industrial {
+  --building-color: var(--hud-zone-industrial);
+}
+
+.inspector-building-title {
+  display: grid;
+  grid-template-columns: 5px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 9px;
+}
+
+.inspector-building-title > div > span {
+  display: block;
+  margin-bottom: 2px;
+  color: var(--hud-text-dim);
+  font-size: 0.6rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.inspector-building-marker {
+  width: 4px;
+  height: 34px;
+  border-radius: 4px;
+  background: var(--building-color);
+  box-shadow: 0 0 10px
+    color-mix(in srgb, var(--building-color) 42%, transparent);
+}
+
+.status-badge {
+  padding: 4px 7px;
+  color: var(--hud-accent-strong);
+  font-size: 0.58rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  border: 1px solid color-mix(in srgb, currentColor 25%, transparent);
+  border-radius: 99px;
+  background: rgba(7, 15, 25, 0.38);
+}
+
+.status-badge.state-developed {
+  color: var(--hud-positive);
+}
+
+.status-badge.state-abandoned {
+  color: var(--hud-danger);
+}
+
+.status-badge.state-under-construction {
+  color: var(--hud-warning);
+}
+
+.inspector-metrics {
+  margin-top: 12px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.inspector-metric {
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  border-radius: 7px;
+  background: rgba(7, 15, 25, 0.35);
+}
+
+.inspector-metric span {
+  color: var(--hud-text-dim);
+  font-size: 0.59rem;
+  font-weight: 750;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.inspector-metric strong {
+  font-size: 0.76rem;
+}
+
+.inspector-occupancy {
+  margin-top: 12px;
+  padding-top: 11px;
+  border-top: 1px solid var(--hud-line);
+}
+
+.occupancy-heading {
+  font-size: 0.7rem;
   font-weight: 750;
 }
 
-.info-citizen-icon {
-  position: relative;
-  top: 2px;
-  width: 16px;
-  height: 16px;
-  margin-right: 3px;
+.occupancy-heading strong {
+  color: var(--hud-text-muted);
+  font-variant-numeric: tabular-nums;
 }
 
-.info-citizen-details {
+.occupancy-track {
+  height: 4px;
+  margin-top: 7px;
+  overflow: hidden;
+  border-radius: 99px;
+  background: rgba(139, 174, 194, 0.15);
+}
+
+.occupancy-track span {
+  height: 100%;
+  display: block;
+  border-radius: inherit;
+  background: var(--building-color);
+}
+
+.inspector-people {
+  max-height: 180px;
+  margin: 9px 0 0;
+  padding: 0;
   display: flex;
-  gap: 14px;
+  flex-direction: column;
+  gap: 5px;
+  overflow-y: auto;
+  list-style: none;
+}
+
+.inspector-people li {
+  padding: 7px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-radius: 8px;
+  background: rgba(7, 15, 25, 0.3);
+}
+
+.person-avatar {
+  width: 28px;
+  height: 28px;
+  flex: 0 0 28px;
+  display: grid;
+  place-items: center;
+  color: #0a1a23;
+  font-size: 0.7rem;
+  font-weight: 850;
+  border-radius: 50%;
+  background: var(--building-color);
+}
+
+.person-details {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.person-details strong {
+  overflow: hidden;
+  font-size: 0.73rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.person-details > span {
   color: var(--hud-text-muted);
+  font-size: 0.63rem;
+  text-transform: capitalize;
+}
+
+.occupancy-empty {
+  margin: 9px 0 0;
+  color: var(--hud-text-dim);
+  font-size: 0.68rem;
+}
+
+.inspector-empty-building {
+  margin-top: 10px;
+  padding: 13px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--hud-text-muted);
+  border: 1px dashed var(--hud-line-strong);
+  border-radius: 11px;
+  background: rgba(20, 38, 54, 0.32);
+}
+
+.inspector-empty-building > span {
+  width: 30px;
+  height: 30px;
+  flex: 0 0 30px;
+  display: grid;
+  place-items: center;
+  color: var(--hud-accent);
+  font-size: 1.2rem;
+  border: 1px solid var(--hud-line-strong);
+  border-radius: 8px;
+}
+
+.inspector-empty-building strong {
+  color: var(--hud-text);
   font-size: 0.75rem;
+}
+
+.inspector-empty-building p {
+  margin: 2px 0 0;
+  font-size: 0.65rem;
 }
 
 /* Feedback and supporting overlays */

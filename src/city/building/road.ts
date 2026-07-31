@@ -22,12 +22,10 @@ export class Road extends Building implements IRoad {
   }
 
   simulate(city: ICity): void {
-    const top =
-      city.getTile(this.x, this.y - 1)?.building?.type === this.type;
+    const top = city.getTile(this.x, this.y - 1)?.building?.type === this.type;
     const bottom =
       city.getTile(this.x, this.y + 1)?.building?.type === this.type;
-    const left =
-      city.getTile(this.x - 1, this.y)?.building?.type === this.type;
+    const left = city.getTile(this.x - 1, this.y)?.building?.type === this.type;
     const right =
       city.getTile(this.x + 1, this.y)?.building?.type === this.type;
 
@@ -79,15 +77,5 @@ export class Road extends Building implements IRoad {
     }
 
     this.isMeshOutOfDate = true;
-  }
-
-  toHTML(): string {
-    let html = super.toHTML();
-    html += `
-    <span class="info-label">Style </span>
-    <span class="info-value">${this.style}</span>
-    <br>
-    `;
-    return html;
   }
 }

@@ -92,13 +92,17 @@ export class DevelopmentAttribute {
           // A nearby Police Station makes a zone immune to abandonment -
           // the roll never happens at all while covered.
           const tile = city.getTile(this.zone.x, this.zone.y);
-          if (!tile?.policeStationCoverage?.value && random() < CONFIG.ZONE.ABANDONMENT_CHANCE) {
+          if (
+            !tile?.policeStationCoverage?.value &&
+            random() < CONFIG.ZONE.ABANDONMENT_CHANCE
+          ) {
             this.state = DevelopmentState.ABANDONED;
           }
         } else {
           const tile = city.getTile(this.zone.x, this.zone.y);
           const levelUpChance = tile?.schoolCoverage?.value
-            ? CONFIG.ZONE.LEVEL_UP_CHANCE * CONFIG.CIVIC_SERVICES.SCHOOL.LEVEL_UP_CHANCE_MULTIPLIER
+            ? CONFIG.ZONE.LEVEL_UP_CHANCE *
+              CONFIG.CIVIC_SERVICES.SCHOOL.LEVEL_UP_CHANCE_MULTIPLIER
             : CONFIG.ZONE.LEVEL_UP_CHANCE;
           if (this.level < this.maxLevel && random() < levelUpChance) {
             this.level++;
@@ -130,15 +134,5 @@ export class DevelopmentAttribute {
     } else {
       this.abandonmentCounter = 0;
     }
-  }
-
-  toHTML(): string {
-    return `
-      <span class="info-label">State </span>
-      <span class="info-value">${this.state}</span>
-      <br>
-      <span class="info-label">Level </span>
-      <span class="info-value">${this.level}</span>
-      <br>`;
   }
 }
