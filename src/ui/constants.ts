@@ -17,6 +17,13 @@ type ToolbarButtons = {
   [key: string]: BaseButton | ToggleButton;
 };
 
+type ToolCategory = {
+  id: string;
+  icon: IconKey;
+  label: string;
+  toolIds: string[];
+};
+
 const TOOLBAR_BUTTONS: ToolbarButtons = {
   SELECT: {
     id: 'SELECT',
@@ -91,12 +98,35 @@ const TOOLBAR_BUTTONS: ToolbarButtons = {
   } as ToggleButton,
 };
 
+const TOOL_CATEGORIES: ToolCategory[] = [
+  {
+    id: 'ZONES',
+    icon: ICON_KEYS.HOUSE_COLOR,
+    label: 'Zones',
+    toolIds: ['RESIDENTIAL', 'COMMERCIAL', 'INDUSTRIAL'],
+  },
+  {
+    id: 'POWER',
+    icon: ICON_KEYS.POWER_COLOR,
+    label: 'Power',
+    toolIds: ['POWER_PLANT', 'POWER_LINE'],
+  },
+  {
+    id: 'SERVICES',
+    icon: ICON_KEYS.HOSPITAL_COLOR,
+    label: 'Services',
+    toolIds: ['FIRE_STATION', 'POLICE_STATION', 'HOSPITAL', 'SCHOOL'],
+  },
+];
+
 const INFO_UI_TEXT = 'INFO';
 
 export {
   BaseButton,
+  ToolCategory,
   ToggleButton,
   ToolbarButtons,
   TOOLBAR_BUTTONS,
+  TOOL_CATEGORIES,
   INFO_UI_TEXT,
 };

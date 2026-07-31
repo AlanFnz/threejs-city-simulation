@@ -61,7 +61,10 @@ describe('React UI shell', () => {
       createElement(ToolBar, {
         activeToolId: TOOLBAR_BUTTONS.SELECT.id,
         isPaused: false,
-        unlockedToolIds: [TOOLBAR_BUTTONS.SELECT.id],
+        unlockedToolIds: [
+          TOOLBAR_BUTTONS.SELECT.id,
+          TOOLBAR_BUTTONS.RESIDENTIAL.id,
+        ],
         onSelectTool: noop,
         onTogglePause: noop,
       })
@@ -71,8 +74,12 @@ describe('React UI shell', () => {
       expect(markup).toContain(`id="${button.id}"`);
       expect(markup).toContain(`data-type="${button.id}"`);
     }
-    expect(markup).toContain('id="RESIDENTIAL" class="ui-button locked"');
+    expect(markup).toContain('id="RESIDENTIAL" class="tool-option"');
+    expect(markup).toContain('id="FIRE_STATION" class="tool-option locked"');
     expect(markup).toContain('id="SELECT" class="ui-button selected"');
+    expect(markup).toContain('aria-label="Zones tools"');
+    expect(markup).toContain('$100');
+    expect(markup).toContain('15 residents');
   });
 });
 
