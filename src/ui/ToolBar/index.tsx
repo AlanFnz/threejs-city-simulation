@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { IconKey, getIcon } from '../../assetManager/icons';
 import CONFIG from '../../config';
 import { MILESTONES } from '../../game/milestones/constants';
@@ -47,6 +47,30 @@ function ToolBar({
   onTogglePause,
 }: ToolBarProps) {
   const [openCategoryId, setOpenCategoryId] = useState<string | null>(null);
+  const toolbar = useRef<HTMLElement>(null);
+  const categoryButtons = useRef<Record<string, HTMLButtonElement | null>>({});
+
+  useEffect(() => {
+    if (!openCategoryId) return;
+
+    const onPointerDown = (event: PointerEvent): void => {
+      if (!toolbar.current?.contains(event.target as Node)) {
+        setOpenCategoryId(null);
+      }
+    };
+    const onKeyDown = (event: KeyboardEvent): void => {
+      if (event.key !== 'Escape') return;
+      setOpenCategoryId(null);
+      categoryButtons.current[openCategoryId]?.focus();
+    };
+
+    document.addEventListener('pointerdown', onPointerDown);
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.removeEventListener('pointerdown', onPointerDown);
+      document.removeEventListener('keydown', onKeyDown);
+    };
+  }, [openCategoryId]);
 
   const selectTool = (toolId: string): void => {
     if (!unlockedToolIds.includes(toolId)) return;
@@ -96,6 +120,9 @@ function ToolBar({
         key={category.id}
       >
         <button
+          ref={(element) => {
+            categoryButtons.current[category.id] = element;
+          }}
           className={`ui-button category-button${isActive ? ' selected' : ''}${
             isOpen ? ' open' : ''
           }`}
@@ -103,6 +130,7 @@ function ToolBar({
           data-tooltip={category.label}
           title={category.label}
           aria-label={`${category.label} tools`}
+          aria-haspopup="dialog"
           aria-expanded={isOpen}
           aria-pressed={isActive}
           aria-controls={trayId}
@@ -118,6 +146,8 @@ function ToolBar({
         <div
           id={trayId}
           className={`tool-tray${isOpen ? ' open' : ''}`}
+          role="dialog"
+          aria-label={`${category.label} tools`}
           aria-hidden={!isOpen}
         >
           <div className="tool-tray-heading">
@@ -189,7 +219,7 @@ function ToolBar({
   );
 
   return (
-    <nav id="ui-toolbar" aria-label="City building tools">
+    <nav ref={toolbar} id="ui-toolbar" aria-label="City building tools">
       {renderDirectTool(DIRECT_TOOL_IDS[0])}
       {renderCategory(TOOL_CATEGORIES[0])}
       {renderDirectTool(DIRECT_TOOL_IDS[1])}

@@ -181,6 +181,8 @@ describe('React UI shell', () => {
     expect(markup).toContain('id="FIRE_STATION" class="tool-option locked"');
     expect(markup).toContain('id="SELECT" class="ui-button selected"');
     expect(markup).toContain('aria-label="Zones tools"');
+    expect(markup).toContain('aria-haspopup="dialog"');
+    expect(markup).toContain('role="dialog"');
     expect(markup).toContain('$100');
     expect(markup).toContain('15 residents');
   });
