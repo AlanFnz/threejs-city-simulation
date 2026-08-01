@@ -22,6 +22,7 @@ export interface IMilestoneTracker {
   isUnlocked(toolId: string): boolean;
   isCompleted(id: string): boolean;
   readonly nextMilestone: Milestone | null;
+  getConditionProgress(condition: MilestoneCondition): number;
   getState(): { completed: string[]; unlockedToolIds: string[] };
   restoreState(state: { completed: string[]; unlockedToolIds: string[] }): void;
   dispose(): void;
@@ -86,6 +87,17 @@ export class MilestoneTracker implements IMilestoneTracker {
     return MILESTONES.find((milestone) => !this.completed.has(milestone.id)) ?? null;
   }
 
+  getConditionProgress(condition: MilestoneCondition): number {
+    switch (condition.type) {
+      case 'population':
+        return this.city.population;
+      case 'money':
+        return this.city.money;
+      case 'developedZoneCount':
+        return this.countDevelopedZones(condition.zoneType);
+    }
+  }
+
   private check(conditionType: MilestoneCondition['type']): void {
     for (const milestone of MILESTONES) {
       if (milestone.condition.type !== conditionType) continue;
@@ -95,14 +107,7 @@ export class MilestoneTracker implements IMilestoneTracker {
   }
 
   private conditionMet(condition: MilestoneCondition): boolean {
-    switch (condition.type) {
-      case 'population':
-        return this.city.population >= condition.atLeast;
-      case 'money':
-        return this.city.money >= condition.atLeast;
-      case 'developedZoneCount':
-        return this.countDevelopedZones(condition.zoneType) >= condition.atLeast;
-    }
+    return this.getConditionProgress(condition) >= condition.atLeast;
   }
 
   private countDevelopedZones(zoneType: string): number {

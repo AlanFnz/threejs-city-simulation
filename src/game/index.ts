@@ -4,12 +4,11 @@ import { ITile } from '../city/tile';
 import { ISceneManager, SceneManager } from '../sceneManager';
 import { createUi } from '../ui';
 import { TOOLBAR_BUTTONS } from '../ui/constants';
-import { GoalsUiState, UiController, UiState } from '../ui/store';
+import { UiController, UiState } from '../ui/store';
 import { setupEventListeners } from './utils';
 import { cityEvents, Unsubscribe } from '../events';
 import { createTools, GameContext, Tool } from './tools';
 import { MilestoneTracker } from './milestones';
-import { MILESTONES, describeReward } from './milestones/constants';
 import { RandomEventsSystem } from './randomEvents';
 import {
   SAVE_KEY,
@@ -19,6 +18,7 @@ import {
   SaveGameV1,
 } from './saveGame';
 import { createInspectorUiState } from './inspector';
+import { createGoalsUiState } from './goals';
 
 const AUTOSAVE_INTERVAL_TICKS = 30;
 
@@ -87,16 +87,17 @@ export class Game implements IGame {
    */
   private subscribeToCityEvents(): void {
     this.unsubscribers.push(
-      cityEvents.on('citizenMovedIn', () => this.updateTitleBar()),
-      cityEvents.on('citizenMovedOut', () => this.updateTitleBar()),
-      cityEvents.on('moneyChanged', () => this.updateMoneyDisplay()),
+      cityEvents.on('citizenMovedIn', () => this.onPopulationChanged()),
+      cityEvents.on('citizenMovedOut', () => this.onPopulationChanged()),
+      cityEvents.on('moneyChanged', () => this.onMoneyChanged()),
       cityEvents.on('milestoneCompleted', () => this.onMilestoneCompleted()),
       cityEvents.on('randomEventTriggered', ({ message }) =>
         this.showEventToast(message)
       ),
-      cityEvents.on('developmentStateChanged', (payload) =>
-        this.refreshInfoOverlayIfFocused(payload)
-      ),
+      cityEvents.on('developmentStateChanged', (payload) => {
+        this.updateGoalsPanel();
+        this.refreshInfoOverlayIfFocused(payload);
+      }),
       cityEvents.on('levelChanged', (payload) =>
         this.refreshInfoOverlayIfFocused(payload)
       ),
@@ -115,9 +116,10 @@ export class Game implements IGame {
       cityEvents.on('buildingPlaced', (payload) =>
         this.refreshInfoOverlayIfFocused(payload)
       ),
-      cityEvents.on('buildingRemoved', (payload) =>
-        this.refreshInfoOverlayIfFocused(payload)
-      )
+      cityEvents.on('buildingRemoved', (payload) => {
+        this.updateGoalsPanel();
+        this.refreshInfoOverlayIfFocused(payload);
+      })
     );
   }
 
@@ -305,8 +307,18 @@ export class Game implements IGame {
     this.ui.update({ population: this.city.population });
   }
 
+  private onPopulationChanged(): void {
+    this.updateTitleBar();
+    this.updateGoalsPanel();
+  }
+
   private updateMoneyDisplay(): void {
     this.ui.update({ money: this.city.money });
+  }
+
+  private onMoneyChanged(): void {
+    this.updateMoneyDisplay();
+    this.updateGoalsPanel();
   }
 
   private showEventToast(message: string): void {
@@ -351,17 +363,8 @@ export class Game implements IGame {
     };
   }
 
-  private getGoalsUiState(): GoalsUiState {
-    const completedCount = MILESTONES.filter((milestone) =>
-      this.milestoneTracker.isCompleted(milestone.id)
-    ).length;
-    const next = this.milestoneTracker.nextMilestone;
-    return {
-      completedCount,
-      totalCount: MILESTONES.length,
-      nextTitle: next?.title ?? null,
-      nextReward: next ? describeReward(next.reward) : null,
-    };
+  private getGoalsUiState() {
+    return createGoalsUiState(this.milestoneTracker);
   }
 
   private isEventFromUiElement(event: Event): boolean {

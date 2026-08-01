@@ -78,14 +78,20 @@ export const MILESTONES: Milestone[] = [
 
 /** Human-readable description of a reward, for the goals panel. */
 export function describeReward(reward: MilestoneReward): string {
+  const formatType = (value: string): string =>
+    value
+      .toLowerCase()
+      .replace(/_/g, ' ')
+      .replace(/\b\w/g, (letter) => letter.toUpperCase());
+
   switch (reward.type) {
     case 'cash':
-      return `$${reward.amount} bonus`;
+      return `$${reward.amount.toLocaleString()} bonus`;
     case 'upkeepDiscount':
       return `${Math.round((1 - reward.multiplier) * 100)}% upkeep discount`;
     case 'zoneLevelCap':
-      return `${reward.zoneType} zones can reach level ${reward.newCap}`;
+      return `${formatType(reward.zoneType)} zones can reach level ${reward.newCap}`;
     case 'unlockTool':
-      return `unlocks ${reward.toolId}`;
+      return `Unlocks ${formatType(reward.toolId)}`;
   }
 }

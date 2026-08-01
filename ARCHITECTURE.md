@@ -289,7 +289,7 @@ A React root is mounted once by `createUi()`. `Game` owns a small external store
 - **TopBar** - population counter (`#population-counter`) and money display, refreshed on `citizenMovedIn`/`citizenMovedOut`/`moneyChanged` events rather than every tick unconditionally.
 - **ToolBar** - a categorized dock generated from `TOOLBAR_BUTTONS` and `TOOL_CATEGORIES` in `ui/constants.ts`; each leaf action still carries an id matching a `BUILDING_TYPE` (or SELECT/BULLDOZE). Locked milestone tools include their population requirement and remain protected by a second authorization check inside `Game.selectTool`.
 - **InfoPanel** - receives an `InspectorUiState`, built by `game/inspector.ts` from the focused tile. It renders service status, development, costs, power capacity, and citizen/worker occupancy as React elements. No simulation object generates markup and no model data crosses through `innerHTML`.
-- **GoalsPanel** - shows `milestoneTracker.nextMilestone`'s title and reward description (`describeReward`, §2.13), refreshed on `milestoneCompleted`; shows a completion state once every milestone is done.
+- **GoalsPanel** - receives a milestone roadmap from `game/goals.ts`, including the active condition's live progress, reward, completion count, and the next three objectives. Population, money, and development events refresh the relevant progress without the component reading `City` directly; once every milestone is done it renders a completion state.
 
 `Game.isEventFromUiElement` guards world input against clicks on `#ui-topbar`, `#ui-toolbar`, `#ui-info-overlay` - keep new UI containers in that list (or give them one of those ids as ancestor).
 

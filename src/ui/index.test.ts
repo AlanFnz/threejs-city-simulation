@@ -20,8 +20,27 @@ afterEach(() => {
 const goals: GoalsUiState = {
   completedCount: 0,
   totalCount: 8,
-  nextTitle: 'Reach 10 residents',
-  nextReward: '$2000 bonus',
+  milestones: [
+    {
+      id: 'pop-10',
+      title: 'Reach 10 residents',
+      reward: '$2,000 bonus',
+      status: 'current',
+      progress: {
+        current: 4,
+        target: 10,
+        kind: 'population',
+        unit: 'residents',
+      },
+    },
+    {
+      id: 'pop-15',
+      title: 'Reach 15 residents',
+      reward: 'Unlocks Fire Station',
+      status: 'upcoming',
+      progress: null,
+    },
+  ],
 };
 
 const noop = () => undefined;
@@ -108,6 +127,16 @@ describe('React UI shell', () => {
     expect(markup).toContain('Power</span><strong>Missing');
     expect(markup).toContain('&lt;img src=x onerror=alert(1)&gt;');
     expect(markup).not.toContain('<img src=x onerror=alert(1)>');
+  });
+
+  it('renders live milestone progress and the upcoming roadmap', () => {
+    const markup = renderToStaticMarkup(createElement(GoalsPanel, { goals }));
+
+    expect(markup).toContain('Active objective');
+    expect(markup).toContain('4 / 10 residents');
+    expect(markup).toContain('aria-valuenow="4"');
+    expect(markup).toContain('Reach 15 residents');
+    expect(markup).toContain('1 / 8');
   });
 
   it('renders every tool and preserves locked state at mount time', () => {

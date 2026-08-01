@@ -1,8 +1,22 @@
+export interface GoalProgressUiState {
+  current: number;
+  target: number;
+  kind: 'population' | 'money' | 'zones';
+  unit: string;
+}
+
+export interface GoalMilestoneUiState {
+  id: string;
+  title: string;
+  reward: string;
+  status: 'completed' | 'current' | 'upcoming';
+  progress: GoalProgressUiState | null;
+}
+
 export interface GoalsUiState {
   completedCount: number;
   totalCount: number;
-  nextTitle: string | null;
-  nextReward: string | null;
+  milestones: GoalMilestoneUiState[];
 }
 
 export interface InspectorPersonUiState {
