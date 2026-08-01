@@ -9,6 +9,7 @@ import { setupEventListeners } from './utils';
 import { cityEvents, Unsubscribe } from '../events';
 import { createTools, GameContext, Tool } from './tools';
 import { MilestoneTracker } from './milestones';
+import { describeReward, MILESTONES } from './milestones/constants';
 import { RandomEventsSystem } from './randomEvents';
 import {
   SAVE_KEY,
@@ -31,7 +32,7 @@ export interface IGame {
   togglePause(): void;
   saveGame(): void;
   loadGame(): boolean;
-  newGame(): void;
+  newGame(): boolean;
 }
 
 export class Game implements IGame {
@@ -66,9 +67,9 @@ export class Game implements IGame {
     this.ui = createUi(this.getInitialUiState(), {
       selectTool: (toolId) => this.selectTool(toolId),
       togglePause: () => this.togglePause(),
-      saveGame: () => this.saveGame(),
-      loadGame: () => this.loadGame(),
-      newGame: () => this.newGame(),
+      saveGame: () => this.saveGameWithFeedback(),
+      loadGame: () => this.loadGameWithFeedback(),
+      newGame: () => this.newGameWithFeedback(),
     });
     setupEventListeners(
       this.sceneManager,
@@ -90,9 +91,11 @@ export class Game implements IGame {
       cityEvents.on('citizenMovedIn', () => this.onPopulationChanged()),
       cityEvents.on('citizenMovedOut', () => this.onPopulationChanged()),
       cityEvents.on('moneyChanged', () => this.onMoneyChanged()),
-      cityEvents.on('milestoneCompleted', () => this.onMilestoneCompleted()),
-      cityEvents.on('randomEventTriggered', ({ message }) =>
-        this.showEventToast(message)
+      cityEvents.on('milestoneCompleted', ({ id }) =>
+        this.onMilestoneCompleted(id)
+      ),
+      cityEvents.on('randomEventTriggered', ({ type, message }) =>
+        this.showEventNotification(type, message)
       ),
       cityEvents.on('developmentStateChanged', (payload) => {
         this.updateGoalsPanel();
@@ -158,6 +161,35 @@ export class Game implements IGame {
     localStorage.setItem(SAVE_KEY, JSON.stringify(data));
   }
 
+  private saveGameWithFeedback(): void {
+    this.saveGame();
+    this.ui.showNotification({
+      tone: 'success',
+      title: 'City saved',
+      message: 'Your latest progress is stored on this device.',
+    });
+  }
+
+  private loadGameWithFeedback(): void {
+    const hadSave = localStorage.getItem(SAVE_KEY) !== null;
+    const loaded = this.loadGame();
+    this.ui.showNotification(
+      loaded
+        ? {
+            tone: 'success',
+            title: 'City loaded',
+            message: 'Your latest saved city has been restored.',
+          }
+        : {
+            tone: 'warning',
+            title: hadSave ? 'Could not load city' : 'No saved city',
+            message: hadSave
+              ? 'The stored save could not be read.'
+              : 'Save your city before trying to restore it.',
+          }
+    );
+  }
+
   /** Returns whether a save was found and loaded - never throws, so a
    * corrupt or missing save just leaves the current (fresh) city as-is. */
   loadGame(): boolean {
@@ -178,13 +210,23 @@ export class Game implements IGame {
   }
 
   /** The one irreversible action here - confirm before wiping the save. */
-  newGame(): void {
+  newGame(): boolean {
     if (!window.confirm('Start a new game? This clears your current city.')) {
-      return;
+      return false;
     }
     localStorage.removeItem(SAVE_KEY);
     deserialize(blankSave(), this.city, this.milestoneTracker);
     this.onGameStateReplaced();
+    return true;
+  }
+
+  private newGameWithFeedback(): void {
+    if (!this.newGame()) return;
+    this.ui.showNotification({
+      tone: 'success',
+      title: 'New city started',
+      message: 'A fresh map is ready for your plans.',
+    });
   }
 
   /** Loading a save or starting fresh both bulk-replace city/milestone
@@ -321,13 +363,32 @@ export class Game implements IGame {
     this.updateGoalsPanel();
   }
 
-  private showEventToast(message: string): void {
-    this.ui.showToast(message);
+  private showEventNotification(
+    type: 'windfall' | 'fire' | 'layoffs',
+    message: string
+  ): void {
+    const titles = {
+      windfall: 'City grant awarded',
+      fire: 'Emergency reported',
+      layoffs: 'Economic disruption',
+    } as const;
+    this.ui.showNotification({
+      tone: type === 'windfall' ? 'success' : 'warning',
+      title: titles[type],
+      message,
+    });
   }
 
-  private onMilestoneCompleted(): void {
+  private onMilestoneCompleted(id: string): void {
     this.refreshUnlockedToolButtons();
     this.updateGoalsPanel();
+    const milestone = MILESTONES.find((candidate) => candidate.id === id);
+    if (!milestone) return;
+    this.ui.showNotification({
+      tone: 'milestone',
+      title: 'Milestone complete',
+      message: `${milestone.title} · ${describeReward(milestone.reward)}`,
+    });
   }
 
   private updateGoalsPanel(): void {
@@ -358,7 +419,7 @@ export class Game implements IGame {
       unlockedToolIds: this.milestoneTracker.getState().unlockedToolIds,
       inspector: null,
       goals: this.getGoalsUiState(),
-      toastMessage: null,
+      notification: null,
       debugText: '',
     };
   }

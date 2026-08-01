@@ -1403,31 +1403,124 @@ button:focus-visible {
 
 /* Feedback and supporting overlays */
 
-#event-toast {
+#notification-center {
   position: fixed;
+  z-index: 7;
   top: 94px;
   left: 50%;
-  max-width: min(480px, calc(100% - 32px));
-  padding: 10px 16px;
-  color: var(--hud-text);
-  font-size: 0.8rem;
-  font-weight: 700;
-  text-align: center;
-  border: 1px solid var(--hud-line-strong);
-  border-radius: 10px;
-  background: var(--hud-bg-strong);
-  box-shadow: var(--hud-shadow);
-  opacity: 0;
-  transform: translate(-50%, -8px);
-  transition:
-    opacity var(--hud-transition),
-    transform var(--hud-transition);
+  width: min(420px, calc(100% - 32px));
+  transform: translateX(-50%);
   pointer-events: none;
 }
 
-#event-toast.visible {
-  opacity: 1;
-  transform: translate(-50%, 0);
+.hud-notification {
+  --notification-color: var(--hud-accent);
+  position: relative;
+  padding: 11px 14px 13px 11px;
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr);
+  align-items: center;
+  gap: 11px;
+  overflow: hidden;
+  color: var(--hud-text);
+  border: 1px solid var(--hud-line-strong);
+  border-radius: 12px;
+  background:
+    linear-gradient(
+      100deg,
+      color-mix(in srgb, var(--notification-color) 12%, transparent),
+      transparent 44%
+    ),
+    var(--hud-bg-strong);
+  box-shadow: var(--hud-shadow);
+  backdrop-filter: var(--hud-blur);
+  -webkit-backdrop-filter: var(--hud-blur);
+  animation: notification-enter 180ms ease-out;
+}
+
+.hud-notification.tone-success {
+  --notification-color: var(--hud-positive);
+}
+
+.hud-notification.tone-warning,
+.hud-notification.tone-event {
+  --notification-color: var(--hud-warning);
+}
+
+.hud-notification.tone-milestone {
+  --notification-color: #c28df4;
+}
+
+@keyframes notification-enter {
+  from {
+    opacity: 0;
+    transform: translateY(-9px) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.notification-icon {
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  color: var(--notification-color);
+  font-size: 1rem;
+  font-weight: 900;
+  border: 1px solid
+    color-mix(in srgb, var(--notification-color) 28%, transparent);
+  border-radius: 10px;
+  background: color-mix(
+    in srgb,
+    var(--notification-color) 10%,
+    transparent
+  );
+  box-shadow: 0 0 12px
+    color-mix(in srgb, var(--notification-color) 15%, transparent);
+}
+
+.notification-copy {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.notification-copy strong {
+  font-size: 0.79rem;
+  letter-spacing: 0.015em;
+}
+
+.notification-copy > span {
+  overflow: hidden;
+  color: var(--hud-text-muted);
+  font-size: 0.67rem;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.notification-timer {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 2px;
+  background: var(--notification-color);
+  box-shadow: 0 0 8px
+    color-mix(in srgb, var(--notification-color) 50%, transparent);
+  transform-origin: left;
+  animation: notification-timer 4.5s linear forwards;
+}
+
+@keyframes notification-timer {
+  to {
+    transform: scaleX(0);
+  }
 }
 
 #instructions {
@@ -1514,6 +1607,11 @@ button:focus-visible {
     width: min(274px, calc(100vw - 16px));
   }
 
+  #notification-center {
+    top: 76px;
+    width: calc(100% - 16px);
+  }
+
   #goals-panel {
     top: 76px;
     left: 8px;
@@ -1589,5 +1687,10 @@ button:focus-visible {
   *::after {
     scroll-behavior: auto !important;
     transition-duration: 0.01ms !important;
+  }
+
+  .hud-notification,
+  .notification-timer {
+    animation-duration: 0.01ms !important;
   }
 }

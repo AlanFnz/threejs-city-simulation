@@ -3,6 +3,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { GoalsPanel } from './GoalsPanel';
 import { InfoPanel } from './InfoPanel';
+import { NotificationCenter } from './NotificationCenter';
 import { ToolBar } from './ToolBar';
 import { TopBar } from './TopBar';
 import { TOOLBAR_BUTTONS } from './constants';
@@ -141,6 +142,23 @@ describe('React UI shell', () => {
     expect(markup).toContain('1 / 8');
   });
 
+  it('renders typed notification tone, title, and detail', () => {
+    const markup = renderToStaticMarkup(
+      createElement(NotificationCenter, {
+        notification: {
+          id: 1,
+          tone: 'milestone',
+          title: 'Milestone complete',
+          message: 'Reach 10 residents · $2,000 bonus',
+        },
+      })
+    );
+
+    expect(markup).toContain('tone-milestone');
+    expect(markup).toContain('Milestone complete');
+    expect(markup).toContain('Reach 10 residents · $2,000 bonus');
+  });
+
   it('renders every tool and preserves locked state at mount time', () => {
     const markup = renderToStaticMarkup(
       createElement(ToolBar, {
@@ -177,7 +195,7 @@ describe('UI store', () => {
     unlockedToolIds: ['SELECT'],
     inspector: null,
     goals,
-    toastMessage: null,
+    notification: null,
     debugText: '',
   };
 
@@ -196,14 +214,22 @@ describe('UI store', () => {
     expect(listener).toHaveBeenCalledOnce();
   });
 
-  it('replaces and automatically clears toast messages', () => {
+  it('replaces and automatically clears typed notifications', () => {
     vi.useFakeTimers();
     const store = createUiStore(initialState);
 
-    store.showToast('Milestone complete');
-    expect(store.getSnapshot().toastMessage).toBe('Milestone complete');
+    store.showNotification({
+      tone: 'success',
+      title: 'City saved',
+      message: 'Progress stored locally',
+    });
+    expect(store.getSnapshot().notification).toMatchObject({
+      id: 1,
+      tone: 'success',
+      title: 'City saved',
+    });
 
-    vi.advanceTimersByTime(4000);
-    expect(store.getSnapshot().toastMessage).toBeNull();
+    vi.advanceTimersByTime(4500);
+    expect(store.getSnapshot().notification).toBeNull();
   });
 });

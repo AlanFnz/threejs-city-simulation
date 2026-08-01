@@ -3,6 +3,7 @@ import { flushSync } from 'react-dom';
 import { createRoot, Root } from 'react-dom/client';
 import { GoalsPanel } from './GoalsPanel';
 import { InfoPanel } from './InfoPanel';
+import { NotificationCenter } from './NotificationCenter';
 import { ToolBar } from './ToolBar';
 import { TopBar } from './TopBar';
 import { createUiStore, UiActions, UiController, UiState } from './store';
@@ -39,14 +40,7 @@ function Ui({ actions, store }: UiProps) {
       />
       <GoalsPanel goals={state.goals} />
       <InfoPanel inspector={state.inspector} />
-      <div
-        id="event-toast"
-        className={state.toastMessage ? 'visible' : undefined}
-        role="status"
-        aria-live="polite"
-      >
-        {state.toastMessage}
-      </div>
+      <NotificationCenter notification={state.notification} />
       <div id="debug-tick">{state.debugText}</div>
     </>
   );

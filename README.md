@@ -77,7 +77,7 @@ For the full picture - data flow, the development state machine, the vehicle gra
 - More building types already sitting in `src/assetManager/models/glb` (parks, skyscrapers, harbors…)
 - More utilities/services: land value, happiness, pollution - the attribute system was designed for exactly this
 - Scenarios/difficulty modes and multiple save slots
-- Audio and more UI feedback (toasts already exist for random events/milestones)
+- Audio and more ambient city feedback beyond the current typed notifications
 - Larger maps, minimap, and further instanced-rendering scaling
 
 ## 📄 License

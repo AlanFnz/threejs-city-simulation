@@ -59,6 +59,7 @@ export class RandomEventsSystem {
     const amount = Math.round(MIN_AMOUNT + random() * (MAX_AMOUNT - MIN_AMOUNT));
     this.city.earn(amount);
     cityEvents.emit('randomEventTriggered', {
+      type: 'windfall',
       message: `The city received a $${amount} grant!`,
     });
     return true;
@@ -75,6 +76,7 @@ export class RandomEventsSystem {
 
     target.building.development.state = DevelopmentState.ABANDONED;
     cityEvents.emit('randomEventTriggered', {
+      type: 'fire',
       message: `A fire damaged ${target.building.name} at (${target.x}, ${target.y})!`,
     });
     return true;
@@ -94,6 +96,7 @@ export class RandomEventsSystem {
 
     building.jobs.layOffWorkers();
     cityEvents.emit('randomEventTriggered', {
+      type: 'layoffs',
       message: `Layoffs hit ${building.name} at (${target!.x}, ${target!.y})!`,
     });
     return true;

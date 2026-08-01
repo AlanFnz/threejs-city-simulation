@@ -60,7 +60,10 @@ export interface CityEventMap {
   civicCoverageChanged: { x: number; y: number };
   moneyChanged: { amount: number; balance: number };
   milestoneCompleted: { id: string };
-  randomEventTriggered: { message: string };
+  randomEventTriggered: {
+    type: 'windfall' | 'fire' | 'layoffs';
+    message: string;
+  };
 }
 
 export const cityEvents = new EventBus<CityEventMap>();

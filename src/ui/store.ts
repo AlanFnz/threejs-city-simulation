@@ -62,6 +62,21 @@ export interface InspectorUiState {
   building: InspectorBuildingUiState | null;
 }
 
+export type NotificationTone =
+  | 'success'
+  | 'warning'
+  | 'milestone'
+  | 'event';
+
+export interface UiNotification {
+  id: number;
+  tone: NotificationTone;
+  title: string;
+  message: string;
+}
+
+export type NewUiNotification = Omit<UiNotification, 'id'>;
+
 export interface UiState {
   money: number;
   population: number;
@@ -70,7 +85,7 @@ export interface UiState {
   unlockedToolIds: string[];
   inspector: InspectorUiState | null;
   goals: GoalsUiState;
-  toastMessage: string | null;
+  notification: UiNotification | null;
   debugText: string;
 }
 
@@ -88,15 +103,16 @@ export interface UiController {
   getSnapshot(): UiState;
   subscribe(listener: UiListener): () => void;
   update(patch: Partial<UiState>): void;
-  showToast(message: string): void;
+  showNotification(notification: NewUiNotification): void;
   dispose(): void;
 }
 
-const TOAST_DURATION_MS = 4000;
+const NOTIFICATION_DURATION_MS = 4500;
 
 export function createUiStore(initialState: UiState): UiController {
   let state = initialState;
-  let toastTimer: ReturnType<typeof setTimeout> | null = null;
+  let notificationTimer: ReturnType<typeof setTimeout> | null = null;
+  let nextNotificationId = 1;
   const listeners = new Set<UiListener>();
 
   const update = (patch: Partial<UiState>): void => {
@@ -111,17 +127,19 @@ export function createUiStore(initialState: UiState): UiController {
       return () => listeners.delete(listener);
     },
     update,
-    showToast(message) {
-      if (toastTimer) clearTimeout(toastTimer);
-      update({ toastMessage: message });
-      toastTimer = setTimeout(() => {
-        update({ toastMessage: null });
-        toastTimer = null;
-      }, TOAST_DURATION_MS);
+    showNotification(notification) {
+      if (notificationTimer) clearTimeout(notificationTimer);
+      update({
+        notification: { ...notification, id: nextNotificationId++ },
+      });
+      notificationTimer = setTimeout(() => {
+        update({ notification: null });
+        notificationTimer = null;
+      }, NOTIFICATION_DURATION_MS);
     },
     dispose() {
-      if (toastTimer) clearTimeout(toastTimer);
-      toastTimer = null;
+      if (notificationTimer) clearTimeout(notificationTimer);
+      notificationTimer = null;
       listeners.clear();
     },
   };
