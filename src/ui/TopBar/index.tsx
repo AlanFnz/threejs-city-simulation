@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from 'react';
 import personIcon from '../../assetManager/icons/person.png';
 
 interface TopBarProps {
@@ -15,6 +16,37 @@ function TopBar({
   onLoad,
   onNewGame,
 }: TopBarProps) {
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuContainer = useRef<HTMLDivElement>(null);
+  const menuButton = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+
+    const onPointerDown = (event: PointerEvent) => {
+      if (!menuContainer.current?.contains(event.target as Node)) {
+        setMenuOpen(false);
+      }
+    };
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
+      setMenuOpen(false);
+      menuButton.current?.focus();
+    };
+
+    document.addEventListener('pointerdown', onPointerDown);
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.removeEventListener('pointerdown', onPointerDown);
+      document.removeEventListener('keydown', onKeyDown);
+    };
+  }, [menuOpen]);
+
+  const runAction = (action: () => void) => {
+    action();
+    setMenuOpen(false);
+  };
+
   return (
     <header id="ui-topbar" aria-label="City status">
       <div
@@ -60,31 +92,82 @@ function TopBar({
             </strong>
           </span>
         </div>
-        <div className="hud-actions" aria-label="Game actions">
+        <div className="city-menu" ref={menuContainer}>
           <button
-            id="save-game-button"
-            className="text-button"
+            id="city-menu-button"
+            ref={menuButton}
+            className={`city-menu-trigger${menuOpen ? ' active' : ''}`}
             type="button"
-            onClick={onSave}
+            aria-label="City management menu"
+            aria-expanded={menuOpen}
+            aria-controls="city-management-menu"
+            onClick={() => setMenuOpen((open) => !open)}
           >
-            Save
+            <span className="menu-trigger-icon" aria-hidden="true">
+              <i />
+              <i />
+              <i />
+            </span>
+            <span className="menu-trigger-label">Menu</span>
           </button>
-          <button
-            id="load-game-button"
-            className="text-button"
-            type="button"
-            onClick={onLoad}
-          >
-            Load
-          </button>
-          <button
-            id="new-game-button"
-            className="text-button"
-            type="button"
-            onClick={onNewGame}
-          >
-            New
-          </button>
+          {menuOpen && (
+            <div
+              id="city-management-menu"
+              className="city-management-menu"
+              role="menu"
+              aria-label="City management"
+            >
+              <header>
+                <span className="panel-eyebrow">City management</span>
+                <strong>Game options</strong>
+              </header>
+              <div className="city-menu-actions">
+                <button
+                  id="save-game-button"
+                  type="button"
+                  role="menuitem"
+                  onClick={() => runAction(onSave)}
+                >
+                  <span className="city-menu-icon" aria-hidden="true">
+                    ↓
+                  </span>
+                  <span>
+                    <strong>Save city</strong>
+                    <small>Store your current progress</small>
+                  </span>
+                </button>
+                <button
+                  id="load-game-button"
+                  type="button"
+                  role="menuitem"
+                  onClick={() => runAction(onLoad)}
+                >
+                  <span className="city-menu-icon" aria-hidden="true">
+                    ↻
+                  </span>
+                  <span>
+                    <strong>Load city</strong>
+                    <small>Restore your latest save</small>
+                  </span>
+                </button>
+                <button
+                  id="new-game-button"
+                  className="destructive-menu-action"
+                  type="button"
+                  role="menuitem"
+                  onClick={() => runAction(onNewGame)}
+                >
+                  <span className="city-menu-icon" aria-hidden="true">
+                    +
+                  </span>
+                  <span>
+                    <strong>Start a new city</strong>
+                    <small>Clear this city and begin again</small>
+                  </span>
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </header>

@@ -96,6 +96,7 @@ button:focus-visible {
 
 #ui-topbar {
   position: fixed;
+  z-index: 8;
   top: 14px;
   left: 50%;
   width: min(1120px, calc(100% - 28px));
@@ -207,21 +208,118 @@ button:focus-visible {
   filter: brightness(1.4) saturate(0.7);
 }
 
-.hud-actions {
-  display: flex;
-  gap: 5px;
+.city-menu {
+  position: relative;
   padding-left: 10px;
   border-left: 1px solid var(--hud-line);
 }
 
-.text-button {
-  min-height: 34px;
-  padding: 0 11px;
+.city-menu-trigger {
+  min-height: 38px;
+  padding: 0 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
   cursor: pointer;
   color: var(--hud-text-muted);
-  font-size: 0.72rem;
-  font-weight: 750;
-  letter-spacing: 0.035em;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  border: 1px solid var(--hud-line);
+  border-radius: 10px;
+  background: rgba(20, 38, 54, 0.54);
+  transition:
+    color var(--hud-transition),
+    border-color var(--hud-transition),
+    background-color var(--hud-transition);
+}
+
+.city-menu-trigger:hover,
+.city-menu-trigger.active {
+  color: var(--hud-text);
+  border-color: var(--hud-line-strong);
+  background: rgba(42, 75, 94, 0.64);
+}
+
+.menu-trigger-icon {
+  width: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.menu-trigger-icon i {
+  height: 2px;
+  display: block;
+  border-radius: 3px;
+  background: currentColor;
+}
+
+.menu-trigger-icon i:nth-child(2) {
+  width: 13px;
+}
+
+.city-management-menu {
+  position: absolute;
+  z-index: 12;
+  top: calc(100% + 14px);
+  right: 0;
+  width: 274px;
+  overflow: hidden;
+  color: var(--hud-text);
+  border: 1px solid var(--hud-line-strong);
+  border-radius: 13px;
+  background:
+    linear-gradient(145deg, rgba(42, 75, 94, 0.22), transparent 44%),
+    var(--hud-bg-strong);
+  box-shadow: var(--hud-shadow);
+  backdrop-filter: var(--hud-blur);
+  -webkit-backdrop-filter: var(--hud-blur);
+  animation: city-menu-enter 140ms ease-out;
+}
+
+@keyframes city-menu-enter {
+  from {
+    opacity: 0;
+    transform: translateY(-5px) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.city-management-menu header {
+  padding: 13px 14px 11px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  border-bottom: 1px solid var(--hud-line);
+  background: rgba(28, 51, 67, 0.5);
+}
+
+.city-management-menu header strong {
+  font-family: 'Bebas', sans-serif;
+  font-size: 1.1rem;
+  font-weight: 400;
+  letter-spacing: 0.06em;
+}
+
+.city-menu-actions {
+  padding: 7px;
+}
+
+.city-menu-actions button {
+  width: 100%;
+  padding: 9px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  color: var(--hud-text-muted);
+  text-align: left;
   border: 1px solid transparent;
   border-radius: 9px;
   background: transparent;
@@ -231,10 +329,54 @@ button:focus-visible {
     background-color var(--hud-transition);
 }
 
-.text-button:hover {
+.city-menu-actions button:hover,
+.city-menu-actions button:focus-visible {
   color: var(--hud-text);
   border-color: var(--hud-line);
   background: var(--hud-bg-soft);
+}
+
+.city-menu-icon {
+  width: 32px;
+  height: 32px;
+  flex: 0 0 32px;
+  display: grid;
+  place-items: center;
+  color: var(--hud-accent-strong);
+  font-size: 1rem;
+  font-weight: 800;
+  border: 1px solid rgba(83, 199, 232, 0.2);
+  border-radius: 8px;
+  background: rgba(83, 199, 232, 0.08);
+}
+
+.city-menu-actions button > span:last-child {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.city-menu-actions strong {
+  color: inherit;
+  font-size: 0.75rem;
+}
+
+.city-menu-actions small {
+  color: var(--hud-text-dim);
+  font-size: 0.62rem;
+}
+
+.city-menu-actions .destructive-menu-action {
+  margin-top: 4px;
+  border-top-color: var(--hud-line);
+  border-radius: 0 0 9px 9px;
+}
+
+.destructive-menu-action .city-menu-icon {
+  color: var(--hud-danger);
+  border-color: rgba(255, 114, 124, 0.2);
+  background: rgba(255, 114, 124, 0.08);
 }
 
 /* Tool dock */
@@ -1353,14 +1495,23 @@ button:focus-visible {
     flex-basis: 32px;
   }
 
-  .hud-actions {
+  .city-menu {
     padding-left: 6px;
   }
 
-  .text-button {
-    min-height: 30px;
-    padding: 0 7px;
-    font-size: 0.66rem;
+  .city-menu-trigger {
+    width: 38px;
+    min-height: 34px;
+    padding: 0;
+    justify-content: center;
+  }
+
+  .menu-trigger-label {
+    display: none;
+  }
+
+  .city-management-menu {
+    width: min(274px, calc(100vw - 16px));
   }
 
   #goals-panel {
