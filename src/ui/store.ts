@@ -81,6 +81,7 @@ export type NewUiNotification = Omit<UiNotification, 'id'>;
 
 export interface UiState {
   cityName: string;
+  simulationDay: number;
   money: number;
   income: number;
   upkeep: number;

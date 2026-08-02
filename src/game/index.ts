@@ -26,11 +26,16 @@ import {
   SimulationSpeed,
 } from './simulationSpeed';
 import { DEFAULT_CITY_NAME, normalizeCityName } from './cityName';
+import {
+  normalizeSimulationDay,
+  STARTING_SIMULATION_DAY,
+} from './simulationDay';
 
 const AUTOSAVE_INTERVAL_TICKS = 30;
 
 export interface IGame {
   cityName: string;
+  simulationDay: number;
   activeToolId: string | null;
   isPaused: boolean;
   simulationSpeed: SimulationSpeed;
@@ -47,6 +52,7 @@ export interface IGame {
 
 export class Game implements IGame {
   cityName: string = DEFAULT_CITY_NAME;
+  simulationDay: number = STARTING_SIMULATION_DAY;
   activeToolId: string | null = TOOLBAR_BUTTONS.SELECT.id;
   isPaused: boolean = false;
   simulationSpeed: SimulationSpeed = 1;
@@ -185,6 +191,8 @@ export class Game implements IGame {
   step(): void {
     if (this.isPaused) return;
     this.tickCount++;
+    this.simulationDay++;
+    this.ui.update({ simulationDay: this.simulationDay });
     this.updateDebugOverlay();
     this.city.simulate();
     this.randomEventsSystem.tick();
@@ -194,7 +202,12 @@ export class Game implements IGame {
   }
 
   saveGame(): void {
-    const data = serialize(this.city, this.milestoneTracker, this.cityName);
+    const data = serialize(
+      this.city,
+      this.milestoneTracker,
+      this.cityName,
+      this.simulationDay
+    );
     localStorage.setItem(SAVE_KEY, JSON.stringify(data));
   }
 
@@ -242,6 +255,7 @@ export class Game implements IGame {
     }
 
     this.cityName = normalizeCityName(data.cityName);
+    this.simulationDay = normalizeSimulationDay(data.simulationDay);
     deserialize(data, this.city, this.milestoneTracker);
     this.onGameStateReplaced();
     return true;
@@ -255,6 +269,7 @@ export class Game implements IGame {
     localStorage.removeItem(SAVE_KEY);
     const freshSave = blankSave();
     this.cityName = normalizeCityName(freshSave.cityName);
+    this.simulationDay = normalizeSimulationDay(freshSave.simulationDay);
     deserialize(freshSave, this.city, this.milestoneTracker);
     this.onGameStateReplaced();
     return true;
@@ -401,6 +416,7 @@ export class Game implements IGame {
   private updateTitleBar(): void {
     this.ui.update({
       cityName: this.cityName,
+      simulationDay: this.simulationDay,
       population: this.city.population,
     });
   }
@@ -469,6 +485,7 @@ export class Game implements IGame {
   private getInitialUiState(): UiState {
     return {
       cityName: this.cityName,
+      simulationDay: this.simulationDay,
       money: this.city.money,
       income: 0,
       upkeep: 0,

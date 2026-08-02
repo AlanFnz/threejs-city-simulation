@@ -5,6 +5,7 @@ import { DEFAULT_ZONE_LEVEL_CAPS } from '../../city/building/zones/zoneLevelCaps
 import { STARTING_UNLOCKED_TOOLS } from '../milestones';
 import CONFIG from '../../config';
 import { DEFAULT_CITY_NAME } from '../cityName';
+import { STARTING_SIMULATION_DAY } from '../simulationDay';
 
 export interface SavedCitizen {
   id: string;
@@ -35,6 +36,8 @@ export interface SaveGameV1 {
   version: 1;
   /** Optional so saves created before city naming remain loadable. */
   cityName?: string;
+  /** Optional so saves created before the calendar remain loadable. */
+  simulationDay?: number;
   money: number;
   upkeepDiscount: number;
   zoneLevelCaps: { RESIDENTIAL: number; COMMERCIAL: number; INDUSTRIAL: number };
@@ -48,6 +51,7 @@ export function blankSave(): SaveGameV1 {
   return {
     version: 1,
     cityName: DEFAULT_CITY_NAME,
+    simulationDay: STARTING_SIMULATION_DAY,
     money: CONFIG.ECONOMY.STARTING_MONEY,
     upkeepDiscount: 1,
     zoneLevelCaps: { ...DEFAULT_ZONE_LEVEL_CAPS },

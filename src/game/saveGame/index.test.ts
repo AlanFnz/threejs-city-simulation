@@ -42,17 +42,19 @@ describe('saveGame - serialize/deserialize', () => {
     expect(ZONE_LEVEL_CAPS.RESIDENTIAL).toBe(4);
   });
 
-  it('stores a normalized city name while remaining compatible with legacy saves', () => {
+  it('stores normalized game metadata while remaining compatible with legacy saves', () => {
     const city = new City(10);
     const tracker = new MilestoneTracker(city);
+    const data = serialize(city, tracker, '  Harbor Heights  ', 18.9);
 
-    expect(serialize(city, tracker, '  Harbor Heights  ').cityName).toBe(
-      'Harbor Heights'
-    );
+    expect(data.cityName).toBe('Harbor Heights');
+    expect(data.simulationDay).toBe(18);
     expect(blankSave().cityName).toBe('My City');
+    expect(blankSave().simulationDay).toBe(1);
 
     const legacySave = blankSave();
     delete legacySave.cityName;
+    delete legacySave.simulationDay;
     expect(normalizeCityName(legacySave.cityName)).toBe('My City');
     expect(() => deserialize(legacySave, city, tracker)).not.toThrow();
   });
@@ -64,6 +66,7 @@ describe('saveGame - serialize/deserialize', () => {
     const zone = tile.building as ResidentialZone;
     zone.development.state = DevelopmentState.DEVELOPED;
     zone.development.level = 2;
+    zone.development.maxLevel = 2;
     const originalStyle = zone.style;
     const originalRotation = { ...zone.rotation };
 

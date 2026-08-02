@@ -2,16 +2,20 @@ import { useEffect, useRef, useState } from 'react';
 import personIcon from '../../assetManager/icons/person.png';
 import { BudgetPanel } from './BudgetPanel';
 import { CityName } from './CityName';
+import type { SimulationSpeed } from '../../game/simulationSpeed';
 
 type OpenTopBarPanel = 'budget' | 'menu' | null;
 
 interface TopBarProps {
   cityName: string;
+  simulationDay: number;
   money: number;
   income: number;
   upkeep: number;
   netIncome: number;
   population: number;
+  isPaused: boolean;
+  simulationSpeed: SimulationSpeed;
   onRenameCity: (name: string) => void;
   onSave: () => void;
   onLoad: () => void;
@@ -20,11 +24,14 @@ interface TopBarProps {
 
 function TopBar({
   cityName,
+  simulationDay,
   money,
   income,
   upkeep,
   netIncome,
   population,
+  isPaused,
+  simulationSpeed,
   onRenameCity,
   onSave,
   onLoad,
@@ -133,7 +140,15 @@ function TopBar({
         className="ui-topbar-items ui-topbar-center-items"
       >
         <CityName name={cityName} onRename={onRenameCity} />
-        <span className="city-status">City operations</span>
+        <span className={`city-status${isPaused ? ' paused' : ''}`}>
+          <span>Day {simulationDay.toLocaleString()}</span>
+          <span className="city-status-separator" aria-hidden="true">
+            ·
+          </span>
+          <span>
+            {isPaused ? 'Simulation paused' : `${simulationSpeed}× speed`}
+          </span>
+        </span>
       </div>
 
       <div

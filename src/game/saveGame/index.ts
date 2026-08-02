@@ -8,6 +8,10 @@ import { Citizen } from '../../city/citizen';
 import { MilestoneTracker } from '../milestones';
 import { SaveGameV1, SavedTile } from './constants';
 import { DEFAULT_CITY_NAME, normalizeCityName } from '../cityName';
+import {
+  normalizeSimulationDay,
+  STARTING_SIMULATION_DAY,
+} from '../simulationDay';
 
 export { SAVE_KEY, blankSave } from './constants';
 export type { SaveGameV1 } from './constants';
@@ -15,7 +19,8 @@ export type { SaveGameV1 } from './constants';
 export function serialize(
   city: ICity,
   milestoneTracker: MilestoneTracker,
-  cityName: string = DEFAULT_CITY_NAME
+  cityName: string = DEFAULT_CITY_NAME,
+  simulationDay: number = STARTING_SIMULATION_DAY
 ): SaveGameV1 {
   const tiles: SavedTile[] = [];
 
@@ -54,6 +59,7 @@ export function serialize(
   return {
     version: 1,
     cityName: normalizeCityName(cityName),
+    simulationDay: normalizeSimulationDay(simulationDay),
     money: city.money,
     upkeepDiscount: city.upkeepDiscount,
     zoneLevelCaps: { ...ZONE_LEVEL_CAPS },

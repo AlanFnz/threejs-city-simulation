@@ -209,6 +209,18 @@ button:focus-visible {
 
 .city-status {
   margin-top: 5px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-variant-numeric: tabular-nums;
+}
+
+.city-status.paused {
+  color: var(--hud-warning);
+}
+
+.city-status-separator {
+  color: var(--hud-text-dim);
 }
 
 .hud-stat {

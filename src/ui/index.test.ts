@@ -90,11 +90,14 @@ describe('React UI shell', () => {
       renderToStaticMarkup(
         createElement(TopBar, {
           cityName: 'Harbor Heights',
+          simulationDay: 27,
           money: 10000,
           income: 138,
           upkeep: 12.5,
           netIncome: 125.5,
           population: 12,
+          isPaused: false,
+          simulationSpeed: 2,
           onRenameCity: noop,
           onSave: noop,
           onLoad: noop,
@@ -128,6 +131,8 @@ describe('React UI shell', () => {
     expect(markup).toContain('id="city-menu-button"');
     expect(markup).toContain('Harbor Heights');
     expect(markup).toContain('aria-label="Rename Harbor Heights"');
+    expect(markup).toContain('Day 27');
+    expect(markup).toContain('2× speed');
     expect(markup).toContain('aria-expanded="false"');
     expect(markup).toContain('id="ui-toolbar"');
     expect(markup).toContain('id="goals-overlay-details"');
@@ -229,6 +234,7 @@ describe('React UI shell', () => {
 describe('UI store', () => {
   const initialState: UiState = {
     cityName: 'My City',
+    simulationDay: 1,
     money: 10000,
     income: 0,
     upkeep: 0,

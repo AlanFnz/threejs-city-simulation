@@ -27,11 +27,14 @@ function Ui({ actions, store }: UiProps) {
     <>
       <TopBar
         cityName={state.cityName}
+        simulationDay={state.simulationDay}
         money={state.money}
         income={state.income}
         upkeep={state.upkeep}
         netIncome={state.netIncome}
         population={state.population}
+        isPaused={state.isPaused}
+        simulationSpeed={state.simulationSpeed}
         onRenameCity={actions.renameCity}
         onSave={actions.saveGame}
         onLoad={actions.loadGame}
