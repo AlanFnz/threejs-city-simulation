@@ -14,6 +14,7 @@ Built with **Three.js** and **TypeScript**. No framework, no backend - just a si
 - **Power grid with relay** - power plants and power lines form a grid; a zone doesn't need to be directly wired in - once connected, it relays power to its neighbors too. Each plant has a capacity, surfaced in its info panel.
 - **A living population** - citizens move into residential zones with names, ages, and an employment lifecycle (school, working age, retirement). Workers search nearby commercial and industrial zones for jobs, and move-in slows down when there's nowhere to work.
 - **Live census** - the population HUD opens into an employment and life-stage breakdown sourced directly from current residents and workplace links.
+- **Zone capacity** - a compact desktop overview shows real residential occupancy and commercial/industrial staffing for developed zones, without inventing a separate demand simulation.
 - **Traffic** - vehicles spawn on the road network and drive it lane-by-lane, scaled to your population.
 - **Urban decay** - cut off a neighborhood from the road network (or power grid) and buildings will eventually be abandoned. Reconnect it and they can redevelop.
 - **Civic services** - fire stations, police stations, hospitals, and schools each protect or boost nearby zones (fire immunity, abandonment immunity, faster move-in, faster level-ups), unlocked as your population grows.

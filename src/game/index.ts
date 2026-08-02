@@ -32,6 +32,7 @@ import {
 } from './simulationDay';
 import { createCensusUiState } from './census';
 import { createToolRejectionNotification } from './toolFeedback';
+import { createZoneCapacityUiState } from './zoneCapacity';
 
 const AUTOSAVE_INTERVAL_TICKS = 30;
 
@@ -86,7 +87,7 @@ export class Game implements IGame {
     setFocusedTile: (tile) => this.setFocusedTile(tile),
   };
   private lastPreviewTile: ITile | null = null;
-  private censusUpdateQueued: boolean = false;
+  private cityMetricsUpdateQueued: boolean = false;
 
   constructor() {
     this.ui = createUi(this.getInitialUiState(), {
@@ -130,12 +131,14 @@ export class Game implements IGame {
         this.showEventNotification(type, message)
       ),
       cityEvents.on('developmentStateChanged', (payload) => {
+        this.scheduleCityMetricsUpdate();
         this.updateGoalsPanel();
         this.refreshInfoOverlayIfFocused(payload);
       }),
-      cityEvents.on('levelChanged', (payload) =>
-        this.refreshInfoOverlayIfFocused(payload)
-      ),
+      cityEvents.on('levelChanged', (payload) => {
+        this.scheduleCityMetricsUpdate();
+        this.refreshInfoOverlayIfFocused(payload);
+      }),
       cityEvents.on('citizenMovedIn', (payload) =>
         this.refreshInfoOverlayIfFocused(payload)
       ),
@@ -143,17 +146,19 @@ export class Game implements IGame {
         this.refreshInfoOverlayIfFocused(payload)
       ),
       cityEvents.on('citizenEmployed', (payload) => {
-        this.scheduleCensusUpdate();
+        this.scheduleCityMetricsUpdate();
         this.refreshInfoOverlayIfFocused(payload);
       }),
       cityEvents.on('citizenUnemployed', (payload) => {
-        this.scheduleCensusUpdate();
+        this.scheduleCityMetricsUpdate();
         this.refreshInfoOverlayIfFocused(payload);
       }),
-      cityEvents.on('buildingPlaced', (payload) =>
-        this.refreshInfoOverlayIfFocused(payload)
-      ),
+      cityEvents.on('buildingPlaced', (payload) => {
+        this.scheduleCityMetricsUpdate();
+        this.refreshInfoOverlayIfFocused(payload);
+      }),
       cityEvents.on('buildingRemoved', (payload) => {
+        this.scheduleCityMetricsUpdate();
         this.updateGoalsPanel();
         this.refreshInfoOverlayIfFocused(payload);
       })
@@ -429,18 +434,22 @@ export class Game implements IGame {
       simulationDay: this.simulationDay,
       population: this.city.population,
       census: createCensusUiState(this.city),
+      zoneCapacity: createZoneCapacityUiState(this.city),
     });
   }
 
-  /** Employment events can fire before the citizen's step stack has fully
-   * unwound. Batch them into one microtask so workplace links are final and
-   * a mass layoff still causes only one census scan/UI update. */
-  private scheduleCensusUpdate(): void {
-    if (this.censusUpdateQueued) return;
-    this.censusUpdateQueued = true;
+  /** City events can arrive in bursts while a simulation step is still
+   * unwinding. Batch them into one microtask so resident/workplace links are
+   * final and each burst causes only one derived-metrics scan/UI update. */
+  private scheduleCityMetricsUpdate(): void {
+    if (this.cityMetricsUpdateQueued) return;
+    this.cityMetricsUpdateQueued = true;
     queueMicrotask(() => {
-      this.censusUpdateQueued = false;
-      this.ui.update({ census: createCensusUiState(this.city) });
+      this.cityMetricsUpdateQueued = false;
+      this.ui.update({
+        census: createCensusUiState(this.city),
+        zoneCapacity: createZoneCapacityUiState(this.city),
+      });
     });
   }
 
@@ -515,6 +524,7 @@ export class Game implements IGame {
       netIncome: this.city.netIncome,
       population: this.city.population,
       census: createCensusUiState(this.city),
+      zoneCapacity: createZoneCapacityUiState(this.city),
       activeToolId: this.activeToolId,
       isPaused: this.isPaused,
       simulationSpeed: this.simulationSpeed,

@@ -88,6 +88,19 @@ export interface CensusUiState {
   employmentRate: number | null;
 }
 
+export interface ZoneCapacityMetricUiState {
+  id: 'residential' | 'commercial' | 'industrial';
+  occupied: number;
+  capacity: number;
+  utilization: number | null;
+}
+
+export interface ZoneCapacityUiState {
+  residential: ZoneCapacityMetricUiState;
+  commercial: ZoneCapacityMetricUiState;
+  industrial: ZoneCapacityMetricUiState;
+}
+
 export interface UiState {
   cityName: string;
   simulationDay: number;
@@ -97,6 +110,7 @@ export interface UiState {
   netIncome: number;
   population: number;
   census: CensusUiState;
+  zoneCapacity: ZoneCapacityUiState;
   activeToolId: string | null;
   isPaused: boolean;
   simulationSpeed: SimulationSpeed;

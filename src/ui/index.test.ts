@@ -7,6 +7,7 @@ import { InfoPanel } from './InfoPanel';
 import { NotificationCenter } from './NotificationCenter';
 import { ToolBar } from './ToolBar';
 import { TopBar } from './TopBar';
+import { ZoneCapacityPanel } from './ZoneCapacityPanel';
 import { BudgetPanel } from './TopBar/BudgetPanel';
 import { PopulationPanel } from './TopBar/PopulationPanel';
 import { TOOLBAR_BUTTONS } from './constants';
@@ -16,6 +17,7 @@ import {
   GoalsUiState,
   InspectorUiState,
   UiState,
+  ZoneCapacityUiState,
 } from './store';
 
 afterEach(() => {
@@ -57,6 +59,27 @@ const census: CensusUiState = {
   students: 3,
   retired: 1,
   employmentRate: 75,
+};
+
+const zoneCapacity: ZoneCapacityUiState = {
+  residential: {
+    id: 'residential',
+    occupied: 8,
+    capacity: 12,
+    utilization: 67,
+  },
+  commercial: {
+    id: 'commercial',
+    occupied: 4,
+    capacity: 8,
+    utilization: 50,
+  },
+  industrial: {
+    id: 'industrial',
+    occupied: 0,
+    capacity: 0,
+    utilization: null,
+  },
 };
 
 const inspector: InspectorUiState = {
@@ -133,6 +156,9 @@ describe('React UI shell', () => {
       renderToStaticMarkup(createElement(GoalsPanel, { goals })),
       renderToStaticMarkup(createElement(InfoPanel, { inspector: null })),
       renderToStaticMarkup(createElement(ControlsLegend)),
+      renderToStaticMarkup(
+        createElement(ZoneCapacityPanel, { capacity: zoneCapacity })
+      ),
     ].join('');
 
     expect(markup).toContain('id="ui-topbar"');
@@ -154,6 +180,7 @@ describe('React UI shell', () => {
     expect(markup).toContain('id="goals-overlay-details"');
     expect(markup).toContain('id="info-panel"');
     expect(markup).toContain('id="controls-legend"');
+    expect(markup).toContain('id="zone-capacity-panel"');
     expect(markup).toContain('Ctrl + right drag');
   });
 
@@ -227,6 +254,18 @@ describe('React UI shell', () => {
     expect(markup).toContain('aria-valuenow="75"');
   });
 
+  it('renders real zone capacity without inventing demand values', () => {
+    const markup = renderToStaticMarkup(
+      createElement(ZoneCapacityPanel, { capacity: zoneCapacity })
+    );
+
+    expect(markup).toContain('City zone capacity');
+    expect(markup).toContain('Residential');
+    expect(markup).toContain('8 / 12');
+    expect(markup).toContain('aria-valuenow="67"');
+    expect(markup).toContain('No active zones');
+  });
+
   it('renders every tool and preserves locked state at mount time', () => {
     const markup = renderToStaticMarkup(
       createElement(ToolBar, {
@@ -297,6 +336,11 @@ describe('UI store', () => {
       students: 0,
       retired: 0,
       employmentRate: null,
+    },
+    zoneCapacity: {
+      residential: { ...zoneCapacity.residential, occupied: 0 },
+      commercial: { ...zoneCapacity.commercial, occupied: 0 },
+      industrial: { ...zoneCapacity.industrial },
     },
     activeToolId: 'SELECT',
     isPaused: false,

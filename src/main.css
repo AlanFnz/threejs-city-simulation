@@ -2113,11 +2113,117 @@ button:focus-visible {
 #debug-tick {
   position: absolute;
   right: 18px;
-  bottom: 18px;
+  bottom: 174px;
   color: rgba(178, 244, 208, 0.72);
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 0.65rem;
   pointer-events: none;
+}
+
+/* City capacity */
+
+#zone-capacity-panel {
+  position: fixed;
+  z-index: 3;
+  right: 18px;
+  bottom: 18px;
+  width: 238px;
+  overflow: hidden;
+  color: var(--hud-text);
+  border: 1px solid var(--hud-line);
+  border-radius: 13px;
+  background: var(--hud-bg-strong);
+  box-shadow: var(--hud-shadow);
+  backdrop-filter: var(--hud-blur);
+  -webkit-backdrop-filter: var(--hud-blur);
+  pointer-events: none;
+}
+
+#zone-capacity-panel header {
+  padding: 10px 11px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  border-bottom: 1px solid var(--hud-line);
+  background: rgba(28, 51, 67, 0.42);
+}
+
+#zone-capacity-panel header strong {
+  font-family: 'Bebas', sans-serif;
+  font-size: 1rem;
+  font-weight: 400;
+  letter-spacing: 0.07em;
+}
+
+.capacity-rows {
+  padding: 7px 9px 9px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.capacity-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 4px 10px;
+}
+
+.capacity-label,
+.capacity-value {
+  font-size: 0.57rem;
+  font-weight: 750;
+}
+
+.capacity-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--hud-text-muted);
+  letter-spacing: 0.045em;
+  text-transform: uppercase;
+}
+
+.capacity-label i {
+  width: 6px;
+  height: 6px;
+  flex: 0 0 6px;
+  border-radius: 2px;
+  background: var(--capacity-color);
+  box-shadow: 0 0 6px color-mix(in srgb, var(--capacity-color) 45%, transparent);
+}
+
+.capacity-value {
+  color: var(--hud-text-dim);
+  font-variant-numeric: tabular-nums;
+}
+
+.capacity-progress {
+  height: 4px;
+  grid-column: 1 / -1;
+  overflow: hidden;
+  border-radius: 99px;
+  background: rgba(151, 191, 215, 0.1);
+}
+
+.capacity-progress span {
+  height: 100%;
+  display: block;
+  border-radius: inherit;
+  background: var(--capacity-color);
+  box-shadow: 0 0 7px color-mix(in srgb, var(--capacity-color) 38%, transparent);
+}
+
+.capacity-row.residential {
+  --capacity-color: var(--hud-zone-residential);
+}
+
+.capacity-row.commercial {
+  --capacity-color: var(--hud-zone-commercial);
+}
+
+.capacity-row.industrial {
+  --capacity-color: var(--hud-zone-industrial);
 }
 
 @media (max-width: 900px) {
@@ -2132,6 +2238,14 @@ button:focus-visible {
   .city-status,
   .hud-stat-label {
     display: none;
+  }
+
+  #zone-capacity-panel {
+    display: none;
+  }
+
+  #debug-tick {
+    bottom: 18px;
   }
 
   #goals-panel {
@@ -2337,6 +2451,7 @@ button:focus-visible {
 
 @media (max-height: 640px), (pointer: coarse) {
   #controls-legend,
+  #zone-capacity-panel,
   #debug-tick {
     display: none;
   }

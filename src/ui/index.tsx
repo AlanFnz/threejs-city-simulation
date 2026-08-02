@@ -7,6 +7,7 @@ import { InfoPanel } from './InfoPanel';
 import { NotificationCenter } from './NotificationCenter';
 import { ToolBar } from './ToolBar';
 import { TopBar } from './TopBar';
+import { ZoneCapacityPanel } from './ZoneCapacityPanel';
 import { createUiStore, UiActions, UiController, UiState } from './store';
 
 let uiRoot: Root | null = null;
@@ -54,6 +55,7 @@ function Ui({ actions, store }: UiProps) {
       <GoalsPanel goals={state.goals} />
       <InfoPanel inspector={state.inspector} />
       <NotificationCenter notification={state.notification} />
+      <ZoneCapacityPanel capacity={state.zoneCapacity} />
       <ControlsLegend />
       <div id="debug-tick">{state.debugText}</div>
     </>
