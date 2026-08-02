@@ -3,6 +3,8 @@ const CONTROL_HINTS = [
   { action: 'Orbit camera', input: 'Right drag' },
   { action: 'Pan camera', input: 'Ctrl + right drag' },
   { action: 'Zoom camera', input: 'Wheel' },
+  { action: 'Build tools', input: '1–9 · R · B' },
+  { action: 'Pause / speed', input: 'Space · .' },
 ] as const;
 
 function ControlsLegend() {

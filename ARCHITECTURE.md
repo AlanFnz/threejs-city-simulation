@@ -293,6 +293,7 @@ A React root is mounted once by `createUi()`. `Game` owns a small external store
 - **NotificationCenter** - receives one typed success, warning, milestone, or event notification from the UI store. New notifications replace the current one, restart its timer, and dismiss after 4.5 seconds. Save/load/new-city actions, completed milestones, random events, and rejected placement clicks provide the title and detail without components reaching back into `Game`.
 - **ZoneCapacityPanel** - shows developed residential occupancy and developed commercial/industrial staffing as three compact utilization bars. `game/zoneCapacity.ts` derives these values from real resident and job attributes; zero-capacity rows explicitly say there are no active zones rather than presenting synthetic demand.
 - **ControlsLegend** - renders the desktop mouse/camera quick reference inside the React HUD rather than leaving UI markup in the HTML shell. It is non-interactive and hidden on touch or short displays so it never competes with city controls.
+- **Keyboard shortcuts** - `ui/keyboardShortcuts.ts` maps Esc/1–9/R/B/Space/`.` into typed HUD actions. `ToolBar` owns the document listener, ignores modified keystrokes and editable fields, respects milestone locks, and exposes the bindings through `aria-keyshortcuts`, dock badges, and the controls legend.
 
 `Game.isEventFromUiElement` guards world input against clicks on `#ui-topbar`, `#ui-toolbar`, `#ui-info-overlay` - keep new UI containers in that list (or give them one of those ids as ancestor).
 

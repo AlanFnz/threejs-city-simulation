@@ -10,6 +10,7 @@ import {
   ToggleButton,
   ToolCategory,
 } from '../constants';
+import { getKeyboardShortcutAction } from '../keyboardShortcuts';
 
 interface ToolBarProps {
   activeToolId: string | null;
@@ -41,6 +42,10 @@ function getLockedHint(toolId: string): string {
     return `${milestone.condition.atLeast} residents`;
   }
   return milestone?.title ?? 'Locked';
+}
+
+function formatShortcut(shortcut: string): string {
+  return shortcut === 'Escape' ? 'Esc' : shortcut;
 }
 
 function ToolBar({
@@ -79,6 +84,38 @@ function ToolBar({
     };
   }, [openCategoryId]);
 
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent): void => {
+      const target = event.target;
+      if (
+        event.altKey ||
+        event.ctrlKey ||
+        event.metaKey ||
+        (target instanceof Element &&
+          target.closest('input, textarea, select, [contenteditable="true"]'))
+      ) {
+        return;
+      }
+
+      const action = getKeyboardShortcutAction(event.key, event.repeat);
+      if (!action) return;
+      event.preventDefault();
+
+      if (action.type === 'selectTool') {
+        if (!unlockedToolIds.includes(action.toolId)) return;
+        onSelectTool(action.toolId);
+        setOpenCategoryId(null);
+      } else if (action.type === 'togglePause') {
+        onTogglePause();
+      } else {
+        onCycleSimulationSpeed();
+      }
+    };
+
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, [onCycleSimulationSpeed, onSelectTool, onTogglePause, unlockedToolIds]);
+
   const selectTool = (toolId: string): void => {
     if (!unlockedToolIds.includes(toolId)) return;
     onSelectTool(toolId);
@@ -90,6 +127,9 @@ function ToolBar({
     const unlocked = unlockedToolIds.includes(toolId);
     const selected = activeToolId === toolId;
     const label = button.uiText;
+    const tooltip = `${label}${
+      button.shortcut ? ` · ${formatShortcut(button.shortcut)}` : ''
+    }${unlocked ? '' : ' · Locked'}`;
 
     return (
       <button
@@ -99,9 +139,10 @@ function ToolBar({
         }`}
         type="button"
         data-type={button.id}
-        data-tooltip={`${label}${unlocked ? '' : ' · Locked'}`}
-        title={`${label}${unlocked ? '' : ' · Locked'}`}
+        data-tooltip={tooltip}
+        title={tooltip}
         aria-label={label}
+        aria-keyshortcuts={button.shortcut}
         aria-pressed={selected}
         aria-disabled={!unlocked}
         key={button.id}
@@ -111,6 +152,11 @@ function ToolBar({
         }}
       >
         <img className="toolbar-icon" src={getIcon(button.icon)} alt="" />
+        {button.shortcut && (
+          <kbd className="tool-shortcut-badge">
+            {formatShortcut(button.shortcut)}
+          </kbd>
+        )}
       </button>
     );
   };
@@ -183,9 +229,13 @@ function ToolBar({
                   type="button"
                   data-type={button.id}
                   title={`${button.uiText}${
-                    unlocked ? '' : ` · Unlock: ${lockedHint}`
+                    button.shortcut
+                      ? ` · ${formatShortcut(button.shortcut)}`
+                      : ''
+                  }${unlocked ? '' : ` · Unlock: ${lockedHint}`
                   }`}
                   aria-label={button.uiText}
+                  aria-keyshortcuts={button.shortcut}
                   aria-pressed={selected}
                   aria-disabled={!unlocked}
                   tabIndex={isOpen ? 0 : -1}
@@ -197,6 +247,11 @@ function ToolBar({
                 >
                   <span className="tool-option-icon">
                     <img src={getIcon(button.icon as IconKey)} alt="" />
+                    {button.shortcut && (
+                      <kbd className="tool-shortcut-badge">
+                        {formatShortcut(button.shortcut)}
+                      </kbd>
+                    )}
                   </span>
                   <strong>{button.uiText}</strong>
                   <small className={unlocked ? 'tool-cost' : 'tool-locked'}>
@@ -285,6 +340,7 @@ function ToolBar({
           data-tooltip={pauseLabel}
           title={pauseLabel}
           aria-label={pauseLabel}
+          aria-keyshortcuts="Space"
           aria-pressed={isPaused}
           onClick={(event) => {
             event.stopPropagation();
@@ -302,6 +358,7 @@ function ToolBar({
           data-tooltip={`Simulation speed · ${simulationSpeed}×`}
           title={`Cycle simulation speed · Currently ${simulationSpeed}×`}
           aria-label={`Cycle simulation speed. Currently ${simulationSpeed} times`}
+          aria-keyshortcuts="."
           onClick={(event) => {
             event.stopPropagation();
             onCycleSimulationSpeed();

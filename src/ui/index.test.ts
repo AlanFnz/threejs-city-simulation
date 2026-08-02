@@ -182,6 +182,7 @@ describe('React UI shell', () => {
     expect(markup).toContain('id="controls-legend"');
     expect(markup).toContain('id="zone-capacity-panel"');
     expect(markup).toContain('Ctrl + right drag');
+    expect(markup).toContain('1–9 · R · B');
   });
 
   it('renders typed inspector data as structured status cards', () => {
@@ -297,6 +298,9 @@ describe('React UI shell', () => {
     expect(markup).toContain('role="dialog"');
     expect(markup).toContain('$100');
     expect(markup).toContain('15 residents');
+    expect(markup).toContain('aria-keyshortcuts="Escape"');
+    expect(markup).toContain('aria-keyshortcuts="1"');
+    expect(markup).toContain('aria-keyshortcuts="Space"');
   });
 
   it('shows selected placement cost and insufficient-funds context', () => {
