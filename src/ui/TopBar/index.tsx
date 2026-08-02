@@ -3,6 +3,7 @@ import personIcon from '../../assetManager/icons/person.png';
 
 interface TopBarProps {
   money: number;
+  netIncome: number;
   population: number;
   onSave: () => void;
   onLoad: () => void;
@@ -11,6 +12,7 @@ interface TopBarProps {
 
 function TopBar({
   money,
+  netIncome,
   population,
   onSave,
   onLoad,
@@ -46,6 +48,11 @@ function TopBar({
     action();
     setMenuOpen(false);
   };
+  const incomeTone =
+    netIncome > 0 ? 'positive' : netIncome < 0 ? 'negative' : 'neutral';
+  const formattedNetIncome = `${netIncome > 0 ? '+' : netIncome < 0 ? '−' : ''}$${Math.abs(
+    netIncome
+  ).toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
 
   return (
     <header id="ui-topbar" aria-label="City status">
@@ -65,6 +72,16 @@ function TopBar({
             >
               ${Math.floor(money).toLocaleString()}
             </strong>
+            <small
+              id="net-income-counter"
+              className={`income-trend ${incomeTone}`}
+              aria-label={`Net income ${formattedNetIncome} per simulation tick`}
+            >
+              <span aria-hidden="true">
+                {netIncome > 0 ? '▲' : netIncome < 0 ? '▼' : '—'}
+              </span>
+              {formattedNetIncome} / tick
+            </small>
           </span>
         </div>
       </div>

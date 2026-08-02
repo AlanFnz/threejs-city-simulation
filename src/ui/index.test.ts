@@ -89,6 +89,7 @@ describe('React UI shell', () => {
       renderToStaticMarkup(
         createElement(TopBar, {
           money: 10000,
+          netIncome: 125.5,
           population: 12,
           onSave: noop,
           onLoad: noop,
@@ -113,6 +114,8 @@ describe('React UI shell', () => {
 
     expect(markup).toContain('id="ui-topbar"');
     expect(markup).toContain('id="money-counter"');
+    expect(markup).toContain('id="net-income-counter"');
+    expect(markup).toContain('+$125.5 / tick');
     expect(markup).toContain('id="population-counter"');
     expect(markup).toContain('id="city-menu-button"');
     expect(markup).toContain('aria-expanded="false"');
@@ -195,6 +198,7 @@ describe('React UI shell', () => {
 describe('UI store', () => {
   const initialState: UiState = {
     money: 10000,
+    netIncome: 0,
     population: 0,
     activeToolId: 'SELECT',
     isPaused: false,

@@ -59,6 +59,12 @@ export interface CityEventMap {
   powerNetworkChanged: { x: number; y: number };
   civicCoverageChanged: { x: number; y: number };
   moneyChanged: { amount: number; balance: number };
+  economyUpdated: {
+    income: number;
+    upkeep: number;
+    netIncome: number;
+    balance: number;
+  };
   milestoneCompleted: { id: string };
   randomEventTriggered: {
     type: 'windfall' | 'fire' | 'layoffs';

@@ -448,6 +448,24 @@ describe('economy', () => {
     expect(city.money).toBeCloseTo(balanceAfterBuilding - expectedUpkeep);
   });
 
+  it('publishes one economy summary after each simulate() tick', () => {
+    const listener = vi.fn();
+    cityEvents.on('economyUpdated', listener);
+    const city = new City(5);
+    city.getTile(2, 2)!.placeBuilding(BUILDING_TYPE.ROAD);
+
+    city.simulate();
+
+    const upkeep = CONFIG.ECONOMY.UPKEEP.ROAD;
+    expect(listener).toHaveBeenCalledOnce();
+    expect(listener).toHaveBeenCalledWith({
+      income: 0,
+      upkeep,
+      netIncome: -upkeep,
+      balance: city.money,
+    });
+  });
+
   it('charges no upkeep for a tile with no building', () => {
     const city = new City(5);
     const balance = city.money;

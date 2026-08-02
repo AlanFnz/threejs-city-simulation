@@ -431,6 +431,12 @@ export class City implements ICity {
     this.lastNetIncome = income - discountedUpkeep;
     this.earn(income);
     this.chargeUpkeep(discountedUpkeep);
+    cityEvents.emit('economyUpdated', {
+      income,
+      upkeep: discountedUpkeep,
+      netIncome: this.lastNetIncome,
+      balance: this._money,
+    });
   }
 
   getTileByCoordinate(coordinate: ICoordinate) {

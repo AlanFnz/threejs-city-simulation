@@ -201,6 +201,33 @@ button:focus-visible {
   color: var(--hud-danger);
 }
 
+.income-trend {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.59rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.025em;
+  white-space: nowrap;
+}
+
+.income-trend.positive {
+  color: var(--hud-positive);
+}
+
+.income-trend.negative {
+  color: var(--hud-danger);
+}
+
+.income-trend.neutral {
+  color: var(--hud-text-dim);
+}
+
+.income-trend > span {
+  font-size: 0.48rem;
+}
+
 #population-icon {
   width: 23px;
   height: 23px;
