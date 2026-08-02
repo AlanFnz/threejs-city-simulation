@@ -1,6 +1,7 @@
 import { useSyncExternalStore } from 'react';
 import { flushSync } from 'react-dom';
 import { createRoot, Root } from 'react-dom/client';
+import { ControlsLegend } from './ControlsLegend';
 import { GoalsPanel } from './GoalsPanel';
 import { InfoPanel } from './InfoPanel';
 import { NotificationCenter } from './NotificationCenter';
@@ -41,6 +42,7 @@ function Ui({ actions, store }: UiProps) {
       <GoalsPanel goals={state.goals} />
       <InfoPanel inspector={state.inspector} />
       <NotificationCenter notification={state.notification} />
+      <ControlsLegend />
       <div id="debug-tick">{state.debugText}</div>
     </>
   );

@@ -1,6 +1,7 @@
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { ControlsLegend } from './ControlsLegend';
 import { GoalsPanel } from './GoalsPanel';
 import { InfoPanel } from './InfoPanel';
 import { NotificationCenter } from './NotificationCenter';
@@ -107,6 +108,7 @@ describe('React UI shell', () => {
       ),
       renderToStaticMarkup(createElement(GoalsPanel, { goals })),
       renderToStaticMarkup(createElement(InfoPanel, { inspector: null })),
+      renderToStaticMarkup(createElement(ControlsLegend)),
     ].join('');
 
     expect(markup).toContain('id="ui-topbar"');
@@ -117,6 +119,8 @@ describe('React UI shell', () => {
     expect(markup).toContain('id="ui-toolbar"');
     expect(markup).toContain('id="goals-overlay-details"');
     expect(markup).toContain('id="info-panel"');
+    expect(markup).toContain('id="controls-legend"');
+    expect(markup).toContain('Ctrl + right drag');
   });
 
   it('renders typed inspector data as structured status cards', () => {

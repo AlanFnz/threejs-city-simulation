@@ -291,6 +291,7 @@ A React root is mounted once by `createUi()`. `Game` owns a small external store
 - **InfoPanel** - receives an `InspectorUiState`, built by `game/inspector.ts` from the focused tile. It renders service status, development, costs, power capacity, and citizen/worker occupancy as React elements. No simulation object generates markup and no model data crosses through `innerHTML`.
 - **GoalsPanel** - receives a milestone roadmap from `game/goals.ts`, including the active condition's live progress, reward, completion count, and the next three objectives. Population, money, and development events refresh the relevant progress without the component reading `City` directly; once every milestone is done it renders a completion state.
 - **NotificationCenter** - receives one typed success, warning, milestone, or event notification from the UI store. New notifications replace the current one, restart its timer, and dismiss after 4.5 seconds. Save/load/new-city actions, completed milestones, and random events provide the title and detail without components reaching back into `Game`.
+- **ControlsLegend** - renders the desktop mouse/camera quick reference inside the React HUD rather than leaving UI markup in the HTML shell. It is non-interactive and hidden on touch or short displays so it never competes with city controls.
 
 `Game.isEventFromUiElement` guards world input against clicks on `#ui-topbar`, `#ui-toolbar`, `#ui-info-overlay` - keep new UI containers in that list (or give them one of those ids as ancestor).
 

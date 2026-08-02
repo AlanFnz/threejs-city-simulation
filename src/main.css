@@ -1523,22 +1523,92 @@ button:focus-visible {
   }
 }
 
-#instructions {
-  position: absolute;
+#controls-legend {
+  position: fixed;
   z-index: 2;
   bottom: 18px;
   left: 18px;
-  padding: 9px 11px;
-  color: rgba(239, 247, 251, 0.72);
-  font-size: 0.62rem;
-  font-weight: 700;
-  line-height: 1.55;
-  letter-spacing: 0.045em;
-  border: 1px solid rgba(205, 228, 239, 0.12);
-  border-radius: 9px;
-  background: rgba(8, 17, 27, 0.48);
-  backdrop-filter: blur(10px);
+  width: 196px;
   pointer-events: none;
+}
+
+.controls-heading {
+  padding: 10px 11px 9px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  border-bottom: 1px solid var(--hud-line);
+  background: rgba(28, 51, 67, 0.5);
+}
+
+.controls-heading-icon {
+  width: 27px;
+  height: 27px;
+  flex: 0 0 27px;
+  display: grid;
+  place-items: center;
+  color: var(--hud-accent-strong);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.72rem;
+  font-weight: 900;
+  border: 1px solid var(--hud-line-strong);
+  border-radius: 8px;
+  background: rgba(83, 199, 232, 0.08);
+}
+
+.controls-heading > span:last-child {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.controls-heading small {
+  color: var(--hud-text-dim);
+  font-size: 0.52rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.controls-heading strong {
+  font-family: 'Bebas', sans-serif;
+  font-size: 1rem;
+  font-weight: 400;
+  letter-spacing: 0.07em;
+}
+
+.control-hint-list {
+  margin: 0;
+  padding: 8px 10px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  list-style: none;
+}
+
+.control-hint-list li {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  color: var(--hud-text-muted);
+  font-size: 0.58rem;
+  font-weight: 700;
+}
+
+.control-hint-list kbd {
+  padding: 3px 5px;
+  flex: 0 0 auto;
+  color: var(--hud-text);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.52rem;
+  font-weight: 700;
+  border: 1px solid var(--hud-line);
+  border-bottom-color: var(--hud-line-strong);
+  border-radius: 5px;
+  background: rgba(7, 15, 25, 0.52);
+  box-shadow: inset 0 -1px rgba(151, 191, 215, 0.08);
 }
 
 #debug-tick {
@@ -1675,7 +1745,7 @@ button:focus-visible {
     transform: translate(-50%, 0);
   }
 
-  #instructions,
+  #controls-legend,
   #debug-tick {
     display: none;
   }
@@ -1717,7 +1787,7 @@ button:focus-visible {
 }
 
 @media (max-height: 640px), (pointer: coarse) {
-  #instructions,
+  #controls-legend,
   #debug-tick {
     display: none;
   }
