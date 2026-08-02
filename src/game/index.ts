@@ -104,8 +104,10 @@ export class Game implements IGame {
       cityEvents.on('citizenMovedIn', () => this.onPopulationChanged()),
       cityEvents.on('citizenMovedOut', () => this.onPopulationChanged()),
       cityEvents.on('moneyChanged', () => this.onMoneyChanged()),
-      cityEvents.on('economyUpdated', ({ balance, netIncome }) =>
-        this.ui.update({ money: balance, netIncome })
+      cityEvents.on(
+        'economyUpdated',
+        ({ balance, income, upkeep, netIncome }) =>
+          this.ui.update({ money: balance, income, upkeep, netIncome })
       ),
       cityEvents.on('milestoneCompleted', ({ id }) =>
         this.onMilestoneCompleted(id)
@@ -448,6 +450,8 @@ export class Game implements IGame {
   private getInitialUiState(): UiState {
     return {
       money: this.city.money,
+      income: 0,
+      upkeep: 0,
       netIncome: this.city.netIncome,
       population: this.city.population,
       activeToolId: this.activeToolId,

@@ -1,8 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
 import personIcon from '../../assetManager/icons/person.png';
+import { BudgetPanel } from './BudgetPanel';
+
+type OpenTopBarPanel = 'budget' | 'menu' | null;
 
 interface TopBarProps {
   money: number;
+  income: number;
+  upkeep: number;
   netIncome: number;
   population: number;
   onSave: () => void;
@@ -12,28 +17,34 @@ interface TopBarProps {
 
 function TopBar({
   money,
+  income,
+  upkeep,
   netIncome,
   population,
   onSave,
   onLoad,
   onNewGame,
 }: TopBarProps) {
-  const [menuOpen, setMenuOpen] = useState(false);
+  const [openPanel, setOpenPanel] = useState<OpenTopBarPanel>(null);
+  const budgetContainer = useRef<HTMLDivElement>(null);
+  const budgetButton = useRef<HTMLButtonElement>(null);
   const menuContainer = useRef<HTMLDivElement>(null);
   const menuButton = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
-    if (!menuOpen) return;
+    if (!openPanel) return;
 
     const onPointerDown = (event: PointerEvent) => {
-      if (!menuContainer.current?.contains(event.target as Node)) {
-        setMenuOpen(false);
+      const activeContainer =
+        openPanel === 'budget' ? budgetContainer.current : menuContainer.current;
+      if (!activeContainer?.contains(event.target as Node)) {
+        setOpenPanel(null);
       }
     };
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key !== 'Escape') return;
-      setMenuOpen(false);
-      menuButton.current?.focus();
+      setOpenPanel(null);
+      (openPanel === 'budget' ? budgetButton : menuButton).current?.focus();
     };
 
     document.addEventListener('pointerdown', onPointerDown);
@@ -42,11 +53,11 @@ function TopBar({
       document.removeEventListener('pointerdown', onPointerDown);
       document.removeEventListener('keydown', onKeyDown);
     };
-  }, [menuOpen]);
+  }, [openPanel]);
 
   const runAction = (action: () => void) => {
     action();
-    setMenuOpen(false);
+    setOpenPanel(null);
   };
   const incomeTone =
     netIncome > 0 ? 'positive' : netIncome < 0 ? 'negative' : 'neutral';
@@ -60,29 +71,55 @@ function TopBar({
         id="ui-topbar-left-items"
         className="ui-topbar-items ui-topbar-left-items"
       >
-        <div className="hud-stat hud-stat-money">
-          <span className="hud-stat-icon" aria-hidden="true">
-            $
-          </span>
-          <span className="hud-stat-copy">
-            <span className="hud-stat-label">City funds</span>
-            <strong
-              id="money-counter"
-              className={money < 0 ? 'low-funds' : undefined}
-            >
-              ${Math.floor(money).toLocaleString()}
-            </strong>
-            <small
-              id="net-income-counter"
-              className={`income-trend ${incomeTone}`}
-              aria-label={`Net income ${formattedNetIncome} per simulation tick`}
-            >
-              <span aria-hidden="true">
-                {netIncome > 0 ? '▲' : netIncome < 0 ? '▼' : '—'}
-              </span>
-              {formattedNetIncome} / tick
-            </small>
-          </span>
+        <div className="city-budget" ref={budgetContainer}>
+          <button
+            id="city-budget-button"
+            ref={budgetButton}
+            className={`hud-stat hud-stat-money budget-trigger${
+              openPanel === 'budget' ? ' active' : ''
+            }`}
+            type="button"
+            aria-label="Open city budget"
+            aria-haspopup="dialog"
+            aria-expanded={openPanel === 'budget'}
+            aria-controls="city-budget-panel"
+            onClick={() =>
+              setOpenPanel((current) =>
+                current === 'budget' ? null : 'budget'
+              )
+            }
+          >
+            <span className="hud-stat-icon" aria-hidden="true">
+              $
+            </span>
+            <span className="hud-stat-copy">
+              <span className="hud-stat-label">City funds</span>
+              <strong
+                id="money-counter"
+                className={money < 0 ? 'low-funds' : undefined}
+              >
+                ${Math.floor(money).toLocaleString()}
+              </strong>
+              <small
+                id="net-income-counter"
+                className={`income-trend ${incomeTone}`}
+                aria-label={`Net income ${formattedNetIncome} per simulation tick`}
+              >
+                <span aria-hidden="true">
+                  {netIncome > 0 ? '▲' : netIncome < 0 ? '▼' : '—'}
+                </span>
+                {formattedNetIncome} / tick
+              </small>
+            </span>
+          </button>
+          {openPanel === 'budget' && (
+            <BudgetPanel
+              money={money}
+              income={income}
+              upkeep={upkeep}
+              netIncome={netIncome}
+            />
+          )}
         </div>
       </div>
 
@@ -113,12 +150,16 @@ function TopBar({
           <button
             id="city-menu-button"
             ref={menuButton}
-            className={`city-menu-trigger${menuOpen ? ' active' : ''}`}
+            className={`city-menu-trigger${
+              openPanel === 'menu' ? ' active' : ''
+            }`}
             type="button"
             aria-label="City management menu"
-            aria-expanded={menuOpen}
+            aria-expanded={openPanel === 'menu'}
             aria-controls="city-management-menu"
-            onClick={() => setMenuOpen((open) => !open)}
+            onClick={() =>
+              setOpenPanel((current) => (current === 'menu' ? null : 'menu'))
+            }
           >
             <span className="menu-trigger-icon" aria-hidden="true">
               <i />
@@ -127,7 +168,7 @@ function TopBar({
             </span>
             <span className="menu-trigger-label">Menu</span>
           </button>
-          {menuOpen && (
+          {openPanel === 'menu' && (
             <div
               id="city-management-menu"
               className="city-management-menu"

@@ -81,6 +81,8 @@ export type NewUiNotification = Omit<UiNotification, 'id'>;
 
 export interface UiState {
   money: number;
+  income: number;
+  upkeep: number;
   netIncome: number;
   population: number;
   activeToolId: string | null;

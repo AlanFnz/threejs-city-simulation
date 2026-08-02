@@ -27,6 +27,8 @@ function Ui({ actions, store }: UiProps) {
     <>
       <TopBar
         money={state.money}
+        income={state.income}
+        upkeep={state.upkeep}
         netIncome={state.netIncome}
         population={state.population}
         onSave={actions.saveGame}

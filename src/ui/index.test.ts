@@ -7,6 +7,7 @@ import { InfoPanel } from './InfoPanel';
 import { NotificationCenter } from './NotificationCenter';
 import { ToolBar } from './ToolBar';
 import { TopBar } from './TopBar';
+import { BudgetPanel } from './TopBar/BudgetPanel';
 import { TOOLBAR_BUTTONS } from './constants';
 import {
   createUiStore,
@@ -89,6 +90,8 @@ describe('React UI shell', () => {
       renderToStaticMarkup(
         createElement(TopBar, {
           money: 10000,
+          income: 138,
+          upkeep: 12.5,
           netIncome: 125.5,
           population: 12,
           onSave: noop,
@@ -116,6 +119,7 @@ describe('React UI shell', () => {
 
     expect(markup).toContain('id="ui-topbar"');
     expect(markup).toContain('id="money-counter"');
+    expect(markup).toContain('id="city-budget-button"');
     expect(markup).toContain('id="net-income-counter"');
     expect(markup).toContain('+$125.5 / tick');
     expect(markup).toContain('id="population-counter"');
@@ -168,6 +172,23 @@ describe('React UI shell', () => {
     expect(markup).toContain('Reach 10 residents · $2,000 bonus');
   });
 
+  it('renders a typed city budget breakdown', () => {
+    const markup = renderToStaticMarkup(
+      createElement(BudgetPanel, {
+        money: 9825,
+        income: 40,
+        upkeep: 15.5,
+        netIncome: 24.5,
+      })
+    );
+
+    expect(markup).toContain('City budget overview');
+    expect(markup).toContain('Tax revenue');
+    expect(markup).toContain('+$40');
+    expect(markup).toContain('−$15.5');
+    expect(markup).toContain('+$24.5 / tick');
+  });
+
   it('renders every tool and preserves locked state at mount time', () => {
     const markup = renderToStaticMarkup(
       createElement(ToolBar, {
@@ -204,6 +225,8 @@ describe('React UI shell', () => {
 describe('UI store', () => {
   const initialState: UiState = {
     money: 10000,
+    income: 0,
+    upkeep: 0,
     netIncome: 0,
     population: 0,
     activeToolId: 'SELECT',

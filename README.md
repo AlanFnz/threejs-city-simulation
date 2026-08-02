@@ -16,7 +16,7 @@ Built with **Three.js** and **TypeScript**. No framework, no backend - just a si
 - **Traffic** - vehicles spawn on the road network and drive it lane-by-lane, scaled to your population.
 - **Urban decay** - cut off a neighborhood from the road network (or power grid) and buildings will eventually be abandoned. Reconnect it and they can redevelop.
 - **Civic services** - fire stations, police stations, hospitals, and schools each protect or boost nearby zones (fire immunity, abandonment immunity, faster move-in, faster level-ups), unlocked as your population grows.
-- **Economy** - every building costs money to place and money to maintain; residents and workers pay tax. Milestones grant cash bonuses, upkeep discounts, and raised zone level caps as your city grows.
+- **Economy** - every building costs money to place and money to maintain; residents and workers pay tax. The HUD surfaces live revenue, upkeep, and net cash flow, while milestones grant cash bonuses, upkeep discounts, and raised zone level caps as your city grows.
 - **Random events** - occasional windfalls, fires, and layoffs add variance on top of the steady simulation.
 - **Goals** - a running list of population/money/zone-count milestones with real rewards (cash, discounts, unlocked civic tools, raised level caps).
 - **Save & load** - your city persists in the browser (autosave + manual save/load/new game).
