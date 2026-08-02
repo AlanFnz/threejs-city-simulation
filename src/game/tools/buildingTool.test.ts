@@ -27,8 +27,9 @@ describe('BuildingTool', () => {
     const context = fakeContext();
     const object = { userData: tile } as unknown as THREE.Object3D;
 
-    tool.onTileClick(tile, object, context);
+    const result = tool.onTileClick(tile, object, context);
 
+    expect(result).toEqual({ status: 'applied' });
     expect(tile.building?.type).toBe(BUILDING_TYPE.COMMERCIAL);
     expect(context.city.simulate).toHaveBeenCalledTimes(1);
     expect(context.sceneManager.update).toHaveBeenCalledWith(context.city);
@@ -41,8 +42,9 @@ describe('BuildingTool', () => {
     const context = fakeContext();
     const object = { userData: tile } as unknown as THREE.Object3D;
 
-    tool.onTileClick(tile, object, context);
+    const result = tool.onTileClick(tile, object, context);
 
+    expect(result).toEqual({ status: 'rejected', reason: 'occupiedTile' });
     expect(tile.building?.type).toBe(BUILDING_TYPE.RESIDENTIAL);
     expect(context.city.simulate).not.toHaveBeenCalled();
   });
@@ -59,8 +61,12 @@ describe('BuildingTool', () => {
     const context = fakeContext(false);
     const object = { userData: tile } as unknown as THREE.Object3D;
 
-    tool.onTileClick(tile, object, context);
+    const result = tool.onTileClick(tile, object, context);
 
+    expect(result).toEqual({
+      status: 'rejected',
+      reason: 'insufficientFunds',
+    });
     expect(tile.building).toBeFalsy();
     expect(context.city.spend).toHaveBeenCalled();
     expect(context.city.simulate).not.toHaveBeenCalled();

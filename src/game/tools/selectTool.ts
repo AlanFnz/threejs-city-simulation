@@ -1,6 +1,6 @@
 import { ITile } from "../../city/tile";
 import { TOOLBAR_BUTTONS } from "../../ui/constants";
-import { GameContext, Tool } from "./tool";
+import { GameContext, Tool, ToolUseResult } from "./tool";
 
 export class SelectTool implements Tool {
   readonly id = TOOLBAR_BUTTONS.SELECT.id;
@@ -9,8 +9,9 @@ export class SelectTool implements Tool {
     tile: ITile,
     object: THREE.Object3D,
     context: GameContext
-  ): void {
+  ): ToolUseResult {
     context.sceneManager.setActiveObject(object);
     context.setFocusedTile(tile);
+    return { status: 'applied' };
   }
 }

@@ -1,7 +1,7 @@
 import { ITile } from "../../city/tile";
 import { BuildingType } from "../../city/building/constants";
 import CONFIG from "../../config";
-import { GameContext, Tool, ToolPreview } from "./tool";
+import { GameContext, Tool, ToolPreview, ToolUseResult } from "./tool";
 
 /** One instance per placeable building type (residential, commercial, industrial, road). */
 export class BuildingTool implements Tool {
@@ -15,12 +15,21 @@ export class BuildingTool implements Tool {
     );
   }
 
-  onTileClick(tile: ITile, _object: THREE.Object3D, context: GameContext): void {
-    if (tile.building) return;
-    if (!context.city.spend(this.cost())) return;
+  onTileClick(
+    tile: ITile,
+    _object: THREE.Object3D,
+    context: GameContext
+  ): ToolUseResult {
+    if (tile.building) {
+      return { status: 'rejected', reason: 'occupiedTile' };
+    }
+    if (!context.city.spend(this.cost())) {
+      return { status: 'rejected', reason: 'insufficientFunds' };
+    }
     tile.placeBuilding(this.id);
     context.city.simulate();
     context.sceneManager.update(context.city);
+    return { status: 'applied' };
   }
 
   getPreview(tile: ITile, context: GameContext): ToolPreview | null {

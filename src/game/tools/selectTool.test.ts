@@ -23,8 +23,9 @@ describe('SelectTool', () => {
     const context = fakeContext();
     const object = { userData: tile } as unknown as THREE.Object3D;
 
-    tool.onTileClick(tile, object, context);
+    const result = tool.onTileClick(tile, object, context);
 
+    expect(result).toEqual({ status: 'applied' });
     expect(context.sceneManager.setActiveObject).toHaveBeenCalledWith(object);
     expect(context.setFocusedTile).toHaveBeenCalledWith(tile);
   });

@@ -22,21 +22,23 @@ describe('BulldozeTool', () => {
     const context = fakeContext();
     const object = { userData: tile } as unknown as THREE.Object3D;
 
-    tool.onTileClick(tile, object, context);
+    const result = tool.onTileClick(tile, object, context);
 
+    expect(result).toEqual({ status: 'applied' });
     expect(tile.building).toBeNull();
     expect(context.city.simulate).toHaveBeenCalledTimes(1);
     expect(context.sceneManager.update).toHaveBeenCalledWith(context.city);
   });
 
-  it('does nothing on an empty tile', () => {
+  it('rejects an empty tile without simulating or rendering', () => {
     const tool = new BulldozeTool();
     const tile = new Tile(0, 0);
     const context = fakeContext();
     const object = { userData: tile } as unknown as THREE.Object3D;
 
-    tool.onTileClick(tile, object, context);
+    const result = tool.onTileClick(tile, object, context);
 
+    expect(result).toEqual({ status: 'rejected', reason: 'emptyTile' });
     expect(context.city.simulate).not.toHaveBeenCalled();
     expect(context.sceneManager.update).not.toHaveBeenCalled();
   });

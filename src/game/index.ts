@@ -31,6 +31,7 @@ import {
   STARTING_SIMULATION_DAY,
 } from './simulationDay';
 import { createCensusUiState } from './census';
+import { createToolRejectionNotification } from './toolFeedback';
 
 const AUTOSAVE_INTERVAL_TICKS = 30;
 
@@ -402,7 +403,12 @@ export class Game implements IGame {
     )
       return;
     const handler = (isDrag && tool.onDrag) || tool.onTileClick;
-    handler.call(tool, tile, object, this.gameContext);
+    const result = handler.call(tool, tile, object, this.gameContext);
+    if (!isDrag && result.status === 'rejected') {
+      this.ui.showNotification(
+        createToolRejectionNotification(result.reason, tool.id)
+      );
+    }
   }
 
   private setFocusedTile(tile: ITile | null): void {

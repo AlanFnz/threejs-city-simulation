@@ -290,7 +290,7 @@ A React root is mounted once by `createUi()`. `Game` owns a small external store
 - **ToolBar** - a categorized dock generated from `TOOLBAR_BUTTONS` and `TOOL_CATEGORIES` in `ui/constants.ts`; each leaf action still carries an id matching a `BUILDING_TYPE` (or SELECT/BULLDOZE). A contextual strip above the dock identifies the active tool, its placement gesture, configured per-tile cost, and whether the current balance can afford it; it hides while a category tray is open so the two surfaces never overlap. Locked milestone tools include their population requirement and remain protected by a second authorization check inside `Game.selectTool`. A separate compact control group pauses/resumes the scheduler and cycles its 1×/2×/3× speed.
 - **InfoPanel** - receives an `InspectorUiState`, built by `game/inspector.ts` from the focused tile. It renders service status, development, costs, power capacity, and citizen/worker occupancy as React elements. No simulation object generates markup and no model data crosses through `innerHTML`.
 - **GoalsPanel** - receives a milestone roadmap from `game/goals.ts`, including the active condition's live progress, reward, completion count, and the next three objectives. Population, money, and development events refresh the relevant progress without the component reading `City` directly; once every milestone is done it renders a completion state.
-- **NotificationCenter** - receives one typed success, warning, milestone, or event notification from the UI store. New notifications replace the current one, restart its timer, and dismiss after 4.5 seconds. Save/load/new-city actions, completed milestones, and random events provide the title and detail without components reaching back into `Game`.
+- **NotificationCenter** - receives one typed success, warning, milestone, or event notification from the UI store. New notifications replace the current one, restart its timer, and dismiss after 4.5 seconds. Save/load/new-city actions, completed milestones, random events, and rejected placement clicks provide the title and detail without components reaching back into `Game`.
 - **ControlsLegend** - renders the desktop mouse/camera quick reference inside the React HUD rather than leaving UI markup in the HTML shell. It is non-interactive and hidden on touch or short displays so it never competes with city controls.
 
 `Game.isEventFromUiElement` guards world input against clicks on `#ui-topbar`, `#ui-toolbar`, `#ui-info-overlay` - keep new UI containers in that list (or give them one of those ids as ancestor).
@@ -308,10 +308,13 @@ interface ToolPreview {
   mesh: THREE.Object3D;
   valid: boolean;
 }
+type ToolUseResult =
+  | { status: 'applied' }
+  | { status: 'rejected'; reason: 'occupiedTile' | 'insufficientFunds' | 'emptyTile' };
 interface Tool {
   readonly id: string;
-  onTileClick(tile: ITile, object: THREE.Object3D, context: GameContext): void;
-  onDrag?(tile: ITile, object: THREE.Object3D, context: GameContext): void; // falls back to onTileClick
+  onTileClick(tile: ITile, object: THREE.Object3D, context: GameContext): ToolUseResult;
+  onDrag?(tile: ITile, object: THREE.Object3D, context: GameContext): ToolUseResult; // falls back to onTileClick
   getPreview?(tile: ITile, context: GameContext): ToolPreview | null; // ghost mesh while hovering
 }
 ```
@@ -321,10 +324,10 @@ interface Tool {
 ```ts
 const tool = this.activeToolId ? this.tools[this.activeToolId] : undefined;
 const handler = (isDrag && tool.onDrag) || tool.onTileClick;
-handler.call(tool, tile, object, this.gameContext);
+const result = handler.call(tool, tile, object, this.gameContext);
 ```
 
-Adding a new tool means implementing `Tool` and registering it in `createTools()` - `Game` needs no changes.
+Adding a new tool means implementing `Tool` and registering it in `createTools()` - `Game` needs no dispatch changes. Successful actions return `applied`; rejected actions return a typed reason. `Game` maps rejected clicks through `toolFeedback.ts` into a warning notification, while rejected drag-paint attempts stay silent so moving across occupied tiles cannot flood the HUD.
 
 ### 3.6 Placement preview
 
