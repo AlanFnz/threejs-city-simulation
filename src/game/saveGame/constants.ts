@@ -4,6 +4,7 @@ import { CitizenState } from '../../city/citizen/constants';
 import { DEFAULT_ZONE_LEVEL_CAPS } from '../../city/building/zones/zoneLevelCaps';
 import { STARTING_UNLOCKED_TOOLS } from '../milestones';
 import CONFIG from '../../config';
+import { DEFAULT_CITY_NAME } from '../cityName';
 
 export interface SavedCitizen {
   id: string;
@@ -32,6 +33,8 @@ export interface SavedTile {
 
 export interface SaveGameV1 {
   version: 1;
+  /** Optional so saves created before city naming remain loadable. */
+  cityName?: string;
   money: number;
   upkeepDiscount: number;
   zoneLevelCaps: { RESIDENTIAL: number; COMMERCIAL: number; INDUSTRIAL: number };
@@ -44,6 +47,7 @@ export const SAVE_KEY = 'threejs-city-simulation/save';
 export function blankSave(): SaveGameV1 {
   return {
     version: 1,
+    cityName: DEFAULT_CITY_NAME,
     money: CONFIG.ECONOMY.STARTING_MONEY,
     upkeepDiscount: 1,
     zoneLevelCaps: { ...DEFAULT_ZONE_LEVEL_CAPS },

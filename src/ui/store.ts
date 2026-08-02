@@ -80,6 +80,7 @@ export interface UiNotification {
 export type NewUiNotification = Omit<UiNotification, 'id'>;
 
 export interface UiState {
+  cityName: string;
   money: number;
   income: number;
   upkeep: number;
@@ -96,6 +97,7 @@ export interface UiState {
 }
 
 export interface UiActions {
+  renameCity(name: string): void;
   selectTool(toolId: string): void;
   togglePause(): void;
   cycleSimulationSpeed(): void;

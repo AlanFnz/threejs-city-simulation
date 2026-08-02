@@ -25,10 +25,12 @@ import {
   getScheduledStepCount,
   SimulationSpeed,
 } from './simulationSpeed';
+import { DEFAULT_CITY_NAME, normalizeCityName } from './cityName';
 
 const AUTOSAVE_INTERVAL_TICKS = 30;
 
 export interface IGame {
+  cityName: string;
   activeToolId: string | null;
   isPaused: boolean;
   simulationSpeed: SimulationSpeed;
@@ -37,12 +39,14 @@ export interface IGame {
   selectTool(toolId: string): void;
   togglePause(): void;
   cycleSimulationSpeed(): void;
+  renameCity(name: string): void;
   saveGame(): void;
   loadGame(): boolean;
   newGame(): boolean;
 }
 
 export class Game implements IGame {
+  cityName: string = DEFAULT_CITY_NAME;
   activeToolId: string | null = TOOLBAR_BUTTONS.SELECT.id;
   isPaused: boolean = false;
   simulationSpeed: SimulationSpeed = 1;
@@ -80,6 +84,7 @@ export class Game implements IGame {
       selectTool: (toolId) => this.selectTool(toolId),
       togglePause: () => this.togglePause(),
       cycleSimulationSpeed: () => this.cycleSimulationSpeed(),
+      renameCity: (name) => this.renameCity(name),
       saveGame: () => this.saveGameWithFeedback(),
       loadGame: () => this.loadGameWithFeedback(),
       newGame: () => this.newGameWithFeedback(),
@@ -189,7 +194,7 @@ export class Game implements IGame {
   }
 
   saveGame(): void {
-    const data = serialize(this.city, this.milestoneTracker);
+    const data = serialize(this.city, this.milestoneTracker, this.cityName);
     localStorage.setItem(SAVE_KEY, JSON.stringify(data));
   }
 
@@ -236,6 +241,7 @@ export class Game implements IGame {
       return false;
     }
 
+    this.cityName = normalizeCityName(data.cityName);
     deserialize(data, this.city, this.milestoneTracker);
     this.onGameStateReplaced();
     return true;
@@ -247,7 +253,9 @@ export class Game implements IGame {
       return false;
     }
     localStorage.removeItem(SAVE_KEY);
-    deserialize(blankSave(), this.city, this.milestoneTracker);
+    const freshSave = blankSave();
+    this.cityName = normalizeCityName(freshSave.cityName);
+    deserialize(freshSave, this.city, this.milestoneTracker);
     this.onGameStateReplaced();
     return true;
   }
@@ -295,6 +303,14 @@ export class Game implements IGame {
   cycleSimulationSpeed(): void {
     this.simulationSpeed = getNextSimulationSpeed(this.simulationSpeed);
     this.ui.update({ simulationSpeed: this.simulationSpeed });
+  }
+
+  renameCity(name: string): void {
+    const cityName = normalizeCityName(name);
+    if (cityName === this.cityName) return;
+    this.cityName = cityName;
+    this.ui.update({ cityName });
+    this.saveGame();
   }
 
   private onMouseDown(event: MouseEvent): void {
@@ -383,7 +399,10 @@ export class Game implements IGame {
   }
 
   private updateTitleBar(): void {
-    this.ui.update({ population: this.city.population });
+    this.ui.update({
+      cityName: this.cityName,
+      population: this.city.population,
+    });
   }
 
   private onPopulationChanged(): void {
@@ -449,6 +468,7 @@ export class Game implements IGame {
 
   private getInitialUiState(): UiState {
     return {
+      cityName: this.cityName,
       money: this.city.money,
       income: 0,
       upkeep: 0,

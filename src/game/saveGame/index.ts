@@ -7,11 +7,16 @@ import { ZONE_LEVEL_CAPS } from '../../city/building/zones/zoneLevelCaps';
 import { Citizen } from '../../city/citizen';
 import { MilestoneTracker } from '../milestones';
 import { SaveGameV1, SavedTile } from './constants';
+import { DEFAULT_CITY_NAME, normalizeCityName } from '../cityName';
 
 export { SAVE_KEY, blankSave } from './constants';
 export type { SaveGameV1 } from './constants';
 
-export function serialize(city: ICity, milestoneTracker: MilestoneTracker): SaveGameV1 {
+export function serialize(
+  city: ICity,
+  milestoneTracker: MilestoneTracker,
+  cityName: string = DEFAULT_CITY_NAME
+): SaveGameV1 {
   const tiles: SavedTile[] = [];
 
   for (let x = 0; x < city.size; x++) {
@@ -48,6 +53,7 @@ export function serialize(city: ICity, milestoneTracker: MilestoneTracker): Save
 
   return {
     version: 1,
+    cityName: normalizeCityName(cityName),
     money: city.money,
     upkeepDiscount: city.upkeepDiscount,
     zoneLevelCaps: { ...ZONE_LEVEL_CAPS },

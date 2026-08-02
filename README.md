@@ -19,7 +19,7 @@ Built with **Three.js** and **TypeScript**. No framework, no backend - just a si
 - **Economy** - every building costs money to place and money to maintain; residents and workers pay tax. The HUD surfaces live revenue, upkeep, and net cash flow, while milestones grant cash bonuses, upkeep discounts, and raised zone level caps as your city grows.
 - **Random events** - occasional windfalls, fires, and layoffs add variance on top of the steady simulation.
 - **Goals** - a running list of population/money/zone-count milestones with real rewards (cash, discounts, unlocked civic tools, raised level caps).
-- **Save & load** - your city persists in the browser (autosave + manual save/load/new game).
+- **Save & load** - your named city persists in the browser (autosave + manual save/load/new game).
 - **Inspection tools** - select any tile to see its building state, level, road/power/civic access, and a list of its residents or workers. Pause the simulation at any time.
 - **Isometric-style camera** - orbit, pan, and zoom over your city (orthographic projection, soft shadows).
 
@@ -33,7 +33,8 @@ Built with **Three.js** and **TypeScript**. No framework, no backend - just a si
 | Zoom                                        | Mouse wheel                                                                                                                                    |
 | Switch tools                                | Toolbar (select, residential, commercial, industrial, road, power plant, power line, fire station, police station, hospital, school, bulldoze) |
 | Pause / resume and simulation speed         | Toolbar pause button + 1×/2×/3× speed control                                                                                                  |
-| Save / load / new game                      | Toolbar buttons (autosaves periodically too)                                                                                                   |
+| Rename city                                 | Click the city name in the top bar                                                                                                             |
+| Save / load / new game                      | Top-bar management menu (autosaves periodically too)                                                                                           |
 
 ## 🚀 Getting started
 

@@ -1,26 +1,31 @@
 import { useEffect, useRef, useState } from 'react';
 import personIcon from '../../assetManager/icons/person.png';
 import { BudgetPanel } from './BudgetPanel';
+import { CityName } from './CityName';
 
 type OpenTopBarPanel = 'budget' | 'menu' | null;
 
 interface TopBarProps {
+  cityName: string;
   money: number;
   income: number;
   upkeep: number;
   netIncome: number;
   population: number;
+  onRenameCity: (name: string) => void;
   onSave: () => void;
   onLoad: () => void;
   onNewGame: () => void;
 }
 
 function TopBar({
+  cityName,
   money,
   income,
   upkeep,
   netIncome,
   population,
+  onRenameCity,
   onSave,
   onLoad,
   onNewGame,
@@ -127,7 +132,7 @@ function TopBar({
         id="ui-topbar-center-items"
         className="ui-topbar-items ui-topbar-center-items"
       >
-        <span className="city-name">My City</span>
+        <CityName name={cityName} onRename={onRenameCity} />
         <span className="city-status">City operations</span>
       </div>
 

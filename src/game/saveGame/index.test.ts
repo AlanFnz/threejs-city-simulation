@@ -11,6 +11,7 @@ import { MilestoneTracker } from '../milestones';
 import { cityEvents } from '../../events';
 import { serialize, deserialize } from '.';
 import { blankSave } from './constants';
+import { normalizeCityName } from '../cityName';
 
 describe('saveGame - serialize/deserialize', () => {
   beforeEach(() => {
@@ -39,6 +40,21 @@ describe('saveGame - serialize/deserialize', () => {
     expect(loadedCity.money).toBe(7777);
     expect(loadedCity.upkeepDiscount).toBeCloseTo(0.81);
     expect(ZONE_LEVEL_CAPS.RESIDENTIAL).toBe(4);
+  });
+
+  it('stores a normalized city name while remaining compatible with legacy saves', () => {
+    const city = new City(10);
+    const tracker = new MilestoneTracker(city);
+
+    expect(serialize(city, tracker, '  Harbor Heights  ').cityName).toBe(
+      'Harbor Heights'
+    );
+    expect(blankSave().cityName).toBe('My City');
+
+    const legacySave = blankSave();
+    delete legacySave.cityName;
+    expect(normalizeCityName(legacySave.cityName)).toBe('My City');
+    expect(() => deserialize(legacySave, city, tracker)).not.toThrow();
   });
 
   it('round-trips a developed zone exactly - no re-randomized style/rotation', () => {

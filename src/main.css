@@ -143,9 +143,59 @@ button:focus-visible {
 }
 
 .city-name {
+  max-width: 230px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  overflow: hidden;
+  color: var(--hud-text);
   font-family: 'Bebas', sans-serif;
   font-size: 1.55rem;
   letter-spacing: 0.08em;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.city-name > span:first-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.city-name-edit-icon {
+  flex: 0 0 auto;
+  color: var(--hud-text-dim);
+  font-family: sans-serif;
+  font-size: 0.68rem;
+  opacity: 0;
+  transition: opacity var(--hud-transition);
+}
+
+.city-name:hover .city-name-edit-icon,
+.city-name:focus-visible .city-name-edit-icon {
+  opacity: 1;
+}
+
+.city-name-editor {
+  width: 230px;
+  display: flex;
+}
+
+#city-name-input {
+  width: 100%;
+  padding: 2px 7px;
+  color: var(--hud-text);
+  font-family: 'Bebas', sans-serif;
+  font-size: 1.32rem;
+  letter-spacing: 0.06em;
+  text-align: center;
+  border: 1px solid rgba(123, 220, 243, 0.5);
+  border-radius: 6px;
+  outline: none;
+  background: rgba(7, 15, 25, 0.72);
+  box-shadow: 0 0 0 2px rgba(83, 199, 232, 0.1);
 }
 
 .city-status,

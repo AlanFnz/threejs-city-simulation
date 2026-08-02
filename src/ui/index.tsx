@@ -26,11 +26,13 @@ function Ui({ actions, store }: UiProps) {
   return (
     <>
       <TopBar
+        cityName={state.cityName}
         money={state.money}
         income={state.income}
         upkeep={state.upkeep}
         netIncome={state.netIncome}
         population={state.population}
+        onRenameCity={actions.renameCity}
         onSave={actions.saveGame}
         onLoad={actions.loadGame}
         onNewGame={actions.newGame}

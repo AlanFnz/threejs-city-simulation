@@ -89,11 +89,13 @@ describe('React UI shell', () => {
     const markup = [
       renderToStaticMarkup(
         createElement(TopBar, {
+          cityName: 'Harbor Heights',
           money: 10000,
           income: 138,
           upkeep: 12.5,
           netIncome: 125.5,
           population: 12,
+          onRenameCity: noop,
           onSave: noop,
           onLoad: noop,
           onNewGame: noop,
@@ -124,6 +126,8 @@ describe('React UI shell', () => {
     expect(markup).toContain('+$125.5 / tick');
     expect(markup).toContain('id="population-counter"');
     expect(markup).toContain('id="city-menu-button"');
+    expect(markup).toContain('Harbor Heights');
+    expect(markup).toContain('aria-label="Rename Harbor Heights"');
     expect(markup).toContain('aria-expanded="false"');
     expect(markup).toContain('id="ui-toolbar"');
     expect(markup).toContain('id="goals-overlay-details"');
@@ -224,6 +228,7 @@ describe('React UI shell', () => {
 
 describe('UI store', () => {
   const initialState: UiState = {
+    cityName: 'My City',
     money: 10000,
     income: 0,
     upkeep: 0,
