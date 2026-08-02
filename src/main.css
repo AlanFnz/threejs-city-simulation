@@ -290,11 +290,13 @@ button:focus-visible {
   font-size: 0.48rem;
 }
 
-.city-budget {
+.city-budget,
+.city-population {
   position: relative;
 }
 
-.budget-trigger {
+.budget-trigger,
+.population-trigger {
   margin: 0;
   padding: 0;
   cursor: pointer;
@@ -304,7 +306,8 @@ button:focus-visible {
   background: transparent;
 }
 
-.budget-trigger .hud-stat-icon {
+.budget-trigger .hud-stat-icon,
+.population-trigger .hud-stat-icon {
   transition:
     color var(--hud-transition),
     border-color var(--hud-transition),
@@ -312,13 +315,16 @@ button:focus-visible {
 }
 
 .budget-trigger:hover .hud-stat-icon,
-.budget-trigger.active .hud-stat-icon {
+.budget-trigger.active .hud-stat-icon,
+.population-trigger:hover .hud-stat-icon,
+.population-trigger.active .hud-stat-icon {
   color: var(--hud-text);
   border-color: var(--hud-line-strong);
   background: rgba(83, 199, 232, 0.16);
 }
 
-.city-budget-panel {
+.city-budget-panel,
+.city-population-panel {
   position: absolute;
   z-index: 12;
   top: calc(100% + 18px);
@@ -337,7 +343,8 @@ button:focus-visible {
   animation: city-menu-enter 140ms ease-out;
 }
 
-.city-budget-panel header {
+.city-budget-panel header,
+.city-population-panel header {
   padding: 13px 14px 11px;
   display: flex;
   align-items: flex-end;
@@ -347,14 +354,16 @@ button:focus-visible {
   background: rgba(28, 51, 67, 0.5);
 }
 
-.city-budget-panel header > span {
+.city-budget-panel header > span,
+.city-population-panel header > span {
   min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 2px;
 }
 
-.city-budget-panel header small {
+.city-budget-panel header small,
+.city-population-panel header small {
   color: var(--hud-text-dim);
   font-size: 0.55rem;
   font-weight: 800;
@@ -362,7 +371,8 @@ button:focus-visible {
   text-transform: uppercase;
 }
 
-.city-budget-panel header strong {
+.city-budget-panel header strong,
+.city-population-panel header strong {
   font-family: 'Bebas', sans-serif;
   font-size: 1.1rem;
   font-weight: 400;
@@ -458,6 +468,110 @@ button:focus-visible {
 
 .budget-net.neutral strong {
   color: var(--hud-text-muted);
+}
+
+.city-population-panel {
+  right: 0;
+  left: auto;
+}
+
+.city-population-panel .census-total {
+  align-items: flex-end;
+}
+
+.city-population-panel .census-total strong {
+  font-family: inherit;
+  font-size: 0.9rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0;
+}
+
+.census-content {
+  padding: 9px;
+}
+
+.census-employment {
+  padding: 9px 10px;
+  border: 1px solid var(--hud-line);
+  border-radius: 9px;
+  background: rgba(7, 15, 25, 0.3);
+}
+
+.census-employment > span {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.census-employment small,
+.census-stat small {
+  color: var(--hud-text-muted);
+  font-size: 0.59rem;
+  font-weight: 750;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.census-employment strong {
+  font-size: 0.68rem;
+}
+
+.census-progress {
+  height: 5px;
+  margin-top: 8px;
+  overflow: hidden;
+  border-radius: 99px;
+  background: rgba(151, 191, 215, 0.1);
+}
+
+.census-progress > span {
+  height: 100%;
+  display: block;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--hud-accent), var(--hud-positive));
+  box-shadow: 0 0 8px rgba(100, 214, 160, 0.3);
+}
+
+.census-grid {
+  margin-top: 7px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 5px;
+}
+
+.census-stat {
+  min-width: 0;
+  padding: 8px;
+  display: grid;
+  grid-template-columns: 7px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 6px;
+  border-radius: 8px;
+  background: rgba(7, 15, 25, 0.3);
+}
+
+.census-stat > span {
+  color: var(--hud-accent);
+  font-size: 0.5rem;
+}
+
+.census-stat strong {
+  font-size: 0.71rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.census-stat.unemployed > span {
+  color: var(--hud-warning);
+}
+
+.census-stat.students > span {
+  color: var(--hud-zone-commercial);
+}
+
+.census-stat.retired > span {
+  color: var(--hud-text-dim);
 }
 
 #population-icon {
@@ -1958,7 +2072,8 @@ button:focus-visible {
     width: min(274px, calc(100vw - 16px));
   }
 
-  .city-budget-panel {
+  .city-budget-panel,
+  .city-population-panel {
     top: calc(100% + 14px);
     width: min(292px, calc(100vw - 16px));
   }

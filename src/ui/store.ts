@@ -79,6 +79,15 @@ export interface UiNotification {
 
 export type NewUiNotification = Omit<UiNotification, 'id'>;
 
+export interface CensusUiState {
+  total: number;
+  employed: number;
+  unemployed: number;
+  students: number;
+  retired: number;
+  employmentRate: number | null;
+}
+
 export interface UiState {
   cityName: string;
   simulationDay: number;
@@ -87,6 +96,7 @@ export interface UiState {
   upkeep: number;
   netIncome: number;
   population: number;
+  census: CensusUiState;
   activeToolId: string | null;
   isPaused: boolean;
   simulationSpeed: SimulationSpeed;

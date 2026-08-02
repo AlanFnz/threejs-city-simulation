@@ -8,9 +8,11 @@ import { NotificationCenter } from './NotificationCenter';
 import { ToolBar } from './ToolBar';
 import { TopBar } from './TopBar';
 import { BudgetPanel } from './TopBar/BudgetPanel';
+import { PopulationPanel } from './TopBar/PopulationPanel';
 import { TOOLBAR_BUTTONS } from './constants';
 import {
   createUiStore,
+  CensusUiState,
   GoalsUiState,
   InspectorUiState,
   UiState,
@@ -47,6 +49,15 @@ const goals: GoalsUiState = {
 };
 
 const noop = () => undefined;
+
+const census: CensusUiState = {
+  total: 12,
+  employed: 6,
+  unemployed: 2,
+  students: 3,
+  retired: 1,
+  employmentRate: 75,
+};
 
 const inspector: InspectorUiState = {
   x: 4,
@@ -96,6 +107,7 @@ describe('React UI shell', () => {
           upkeep: 12.5,
           netIncome: 125.5,
           population: 12,
+          census,
           isPaused: false,
           simulationSpeed: 2,
           onRenameCity: noop,
@@ -128,6 +140,7 @@ describe('React UI shell', () => {
     expect(markup).toContain('id="net-income-counter"');
     expect(markup).toContain('+$125.5 / tick');
     expect(markup).toContain('id="population-counter"');
+    expect(markup).toContain('id="city-population-button"');
     expect(markup).toContain('id="city-menu-button"');
     expect(markup).toContain('Harbor Heights');
     expect(markup).toContain('aria-label="Rename Harbor Heights"');
@@ -198,6 +211,19 @@ describe('React UI shell', () => {
     expect(markup).toContain('+$24.5 / tick');
   });
 
+  it('renders a typed city census breakdown', () => {
+    const markup = renderToStaticMarkup(
+      createElement(PopulationPanel, { census })
+    );
+
+    expect(markup).toContain('City population overview');
+    expect(markup).toContain('Census overview');
+    expect(markup).toContain('Employment');
+    expect(markup).toContain('75%');
+    expect(markup).toContain('Job seekers');
+    expect(markup).toContain('aria-valuenow="75"');
+  });
+
   it('renders every tool and preserves locked state at mount time', () => {
     const markup = renderToStaticMarkup(
       createElement(ToolBar, {
@@ -240,6 +266,14 @@ describe('UI store', () => {
     upkeep: 0,
     netIncome: 0,
     population: 0,
+    census: {
+      total: 0,
+      employed: 0,
+      unemployed: 0,
+      students: 0,
+      retired: 0,
+      employmentRate: null,
+    },
     activeToolId: 'SELECT',
     isPaused: false,
     simulationSpeed: 1,

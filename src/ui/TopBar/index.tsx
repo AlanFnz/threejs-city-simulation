@@ -3,8 +3,10 @@ import personIcon from '../../assetManager/icons/person.png';
 import { BudgetPanel } from './BudgetPanel';
 import { CityName } from './CityName';
 import type { SimulationSpeed } from '../../game/simulationSpeed';
+import type { CensusUiState } from '../store';
+import { PopulationPanel } from './PopulationPanel';
 
-type OpenTopBarPanel = 'budget' | 'menu' | null;
+type OpenTopBarPanel = 'budget' | 'population' | 'menu' | null;
 
 interface TopBarProps {
   cityName: string;
@@ -14,6 +16,7 @@ interface TopBarProps {
   upkeep: number;
   netIncome: number;
   population: number;
+  census: CensusUiState;
   isPaused: boolean;
   simulationSpeed: SimulationSpeed;
   onRenameCity: (name: string) => void;
@@ -30,6 +33,7 @@ function TopBar({
   upkeep,
   netIncome,
   population,
+  census,
   isPaused,
   simulationSpeed,
   onRenameCity,
@@ -40,6 +44,8 @@ function TopBar({
   const [openPanel, setOpenPanel] = useState<OpenTopBarPanel>(null);
   const budgetContainer = useRef<HTMLDivElement>(null);
   const budgetButton = useRef<HTMLButtonElement>(null);
+  const populationContainer = useRef<HTMLDivElement>(null);
+  const populationButton = useRef<HTMLButtonElement>(null);
   const menuContainer = useRef<HTMLDivElement>(null);
   const menuButton = useRef<HTMLButtonElement>(null);
 
@@ -48,7 +54,11 @@ function TopBar({
 
     const onPointerDown = (event: PointerEvent) => {
       const activeContainer =
-        openPanel === 'budget' ? budgetContainer.current : menuContainer.current;
+        openPanel === 'budget'
+          ? budgetContainer.current
+          : openPanel === 'population'
+            ? populationContainer.current
+            : menuContainer.current;
       if (!activeContainer?.contains(event.target as Node)) {
         setOpenPanel(null);
       }
@@ -56,7 +66,12 @@ function TopBar({
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key !== 'Escape') return;
       setOpenPanel(null);
-      (openPanel === 'budget' ? budgetButton : menuButton).current?.focus();
+      (openPanel === 'budget'
+        ? budgetButton
+        : openPanel === 'population'
+          ? populationButton
+          : menuButton
+      ).current?.focus();
     };
 
     document.addEventListener('pointerdown', onPointerDown);
@@ -155,16 +170,37 @@ function TopBar({
         id="ui-topbar-right-items"
         className="ui-topbar-items ui-topbar-right-items"
       >
-        <div className="hud-stat hud-stat-population">
-          <span className="hud-stat-icon">
-            <img id="population-icon" src={personIcon} alt="" />
-          </span>
-          <span className="hud-stat-copy">
-            <span className="hud-stat-label">Population</span>
-            <strong id="population-counter">
-              {population.toLocaleString()}
-            </strong>
-          </span>
+        <div className="city-population" ref={populationContainer}>
+          <button
+            id="city-population-button"
+            ref={populationButton}
+            className={`hud-stat hud-stat-population population-trigger${
+              openPanel === 'population' ? ' active' : ''
+            }`}
+            type="button"
+            aria-label="Open city population"
+            aria-haspopup="dialog"
+            aria-expanded={openPanel === 'population'}
+            aria-controls="city-population-panel"
+            onClick={() =>
+              setOpenPanel((current) =>
+                current === 'population' ? null : 'population'
+              )
+            }
+          >
+            <span className="hud-stat-icon">
+              <img id="population-icon" src={personIcon} alt="" />
+            </span>
+            <span className="hud-stat-copy">
+              <span className="hud-stat-label">Population</span>
+              <strong id="population-counter">
+                {population.toLocaleString()}
+              </strong>
+            </span>
+          </button>
+          {openPanel === 'population' && (
+            <PopulationPanel census={census} />
+          )}
         </div>
         <div className="city-menu" ref={menuContainer}>
           <button

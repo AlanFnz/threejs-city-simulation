@@ -30,6 +30,7 @@ import {
   normalizeSimulationDay,
   STARTING_SIMULATION_DAY,
 } from './simulationDay';
+import { createCensusUiState } from './census';
 
 const AUTOSAVE_INTERVAL_TICKS = 30;
 
@@ -84,6 +85,7 @@ export class Game implements IGame {
     setFocusedTile: (tile) => this.setFocusedTile(tile),
   };
   private lastPreviewTile: ITile | null = null;
+  private censusUpdateQueued: boolean = false;
 
   constructor() {
     this.ui = createUi(this.getInitialUiState(), {
@@ -139,12 +141,14 @@ export class Game implements IGame {
       cityEvents.on('citizenMovedOut', (payload) =>
         this.refreshInfoOverlayIfFocused(payload)
       ),
-      cityEvents.on('citizenEmployed', (payload) =>
-        this.refreshInfoOverlayIfFocused(payload)
-      ),
-      cityEvents.on('citizenUnemployed', (payload) =>
-        this.refreshInfoOverlayIfFocused(payload)
-      ),
+      cityEvents.on('citizenEmployed', (payload) => {
+        this.scheduleCensusUpdate();
+        this.refreshInfoOverlayIfFocused(payload);
+      }),
+      cityEvents.on('citizenUnemployed', (payload) => {
+        this.scheduleCensusUpdate();
+        this.refreshInfoOverlayIfFocused(payload);
+      }),
       cityEvents.on('buildingPlaced', (payload) =>
         this.refreshInfoOverlayIfFocused(payload)
       ),
@@ -418,6 +422,19 @@ export class Game implements IGame {
       cityName: this.cityName,
       simulationDay: this.simulationDay,
       population: this.city.population,
+      census: createCensusUiState(this.city),
+    });
+  }
+
+  /** Employment events can fire before the citizen's step stack has fully
+   * unwound. Batch them into one microtask so workplace links are final and
+   * a mass layoff still causes only one census scan/UI update. */
+  private scheduleCensusUpdate(): void {
+    if (this.censusUpdateQueued) return;
+    this.censusUpdateQueued = true;
+    queueMicrotask(() => {
+      this.censusUpdateQueued = false;
+      this.ui.update({ census: createCensusUiState(this.city) });
     });
   }
 
@@ -491,6 +508,7 @@ export class Game implements IGame {
       upkeep: 0,
       netIncome: this.city.netIncome,
       population: this.city.population,
+      census: createCensusUiState(this.city),
       activeToolId: this.activeToolId,
       isPaused: this.isPaused,
       simulationSpeed: this.simulationSpeed,
