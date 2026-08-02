@@ -780,6 +780,110 @@ button:focus-visible {
   display: none;
 }
 
+.active-tool-context {
+  position: absolute;
+  bottom: calc(100% + 12px);
+  left: 50%;
+  width: min(390px, calc(100vw - 24px));
+  min-height: 42px;
+  padding: 6px 8px;
+  display: grid;
+  grid-template-columns: 32px minmax(88px, auto) 1fr;
+  align-items: center;
+  gap: 8px;
+  color: var(--hud-text);
+  border: 1px solid var(--hud-line);
+  border-radius: 12px;
+  background:
+    linear-gradient(90deg, rgba(45, 103, 126, 0.18), transparent 42%),
+    var(--hud-bg-strong);
+  box-shadow: 0 10px 26px rgba(3, 10, 16, 0.34);
+  opacity: 1;
+  transform: translateX(-50%);
+  transition:
+    opacity var(--hud-transition),
+    transform var(--hud-transition),
+    visibility var(--hud-transition);
+  visibility: visible;
+  pointer-events: none;
+}
+
+.active-tool-context.category-open {
+  opacity: 0;
+  transform: translate(-50%, 6px);
+  visibility: hidden;
+}
+
+.active-tool-icon {
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--hud-line);
+  border-radius: 8px;
+  background: rgba(8, 18, 29, 0.42);
+}
+
+.active-tool-icon img {
+  width: 23px;
+  height: 23px;
+  object-fit: contain;
+}
+
+.active-tool-copy,
+.active-tool-detail {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.active-tool-copy small,
+.active-tool-detail small {
+  overflow: hidden;
+  color: var(--hud-text-dim);
+  font-size: 0.52rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.active-tool-copy strong {
+  overflow: hidden;
+  font-family: 'Bebas', sans-serif;
+  font-size: 0.95rem;
+  font-weight: 400;
+  letter-spacing: 0.06em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.active-tool-detail {
+  padding-left: 9px;
+  align-items: flex-end;
+  border-left: 1px solid var(--hud-line);
+}
+
+.active-tool-detail strong {
+  color: var(--hud-positive);
+  font-size: 0.62rem;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.active-tool-context.insufficient-funds {
+  border-color: rgba(255, 114, 124, 0.32);
+  background:
+    linear-gradient(90deg, rgba(255, 114, 124, 0.12), transparent 48%),
+    var(--hud-bg-strong);
+}
+
+.active-tool-context.insufficient-funds .active-tool-detail strong {
+  color: var(--hud-danger);
+}
+
 .ui-button {
   position: relative;
   width: 48px;
@@ -2184,6 +2288,17 @@ button:focus-visible {
     flex-basis: 32px;
   }
 
+  .active-tool-context {
+    width: min(330px, calc(100vw - 16px));
+    grid-template-columns: 30px minmax(72px, auto) 1fr;
+    gap: 6px;
+  }
+
+  .active-tool-icon {
+    width: 30px;
+    height: 30px;
+  }
+
   #info-panel {
     bottom: calc(72px + env(safe-area-inset-bottom));
   }
@@ -2194,6 +2309,10 @@ button:focus-visible {
 }
 
 @media (max-width: 350px) {
+  .active-tool-context {
+    display: none;
+  }
+
   .simulation-controls {
     position: absolute;
     right: 0;

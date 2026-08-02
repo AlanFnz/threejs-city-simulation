@@ -43,6 +43,7 @@ function Ui({ actions, store }: UiProps) {
       />
       <ToolBar
         activeToolId={state.activeToolId}
+        money={state.money}
         isPaused={state.isPaused}
         simulationSpeed={state.simulationSpeed}
         unlockedToolIds={state.unlockedToolIds}

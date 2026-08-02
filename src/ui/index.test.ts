@@ -119,6 +119,7 @@ describe('React UI shell', () => {
       renderToStaticMarkup(
         createElement(ToolBar, {
           activeToolId: TOOLBAR_BUTTONS.SELECT.id,
+          money: 10000,
           isPaused: false,
           simulationSpeed: 1,
           unlockedToolIds: Object.values(TOOLBAR_BUTTONS).map(
@@ -148,6 +149,8 @@ describe('React UI shell', () => {
     expect(markup).toContain('2× speed');
     expect(markup).toContain('aria-expanded="false"');
     expect(markup).toContain('id="ui-toolbar"');
+    expect(markup).toContain('id="active-tool-context"');
+    expect(markup).toContain('Inspect city tiles');
     expect(markup).toContain('id="goals-overlay-details"');
     expect(markup).toContain('id="info-panel"');
     expect(markup).toContain('id="controls-legend"');
@@ -228,6 +231,7 @@ describe('React UI shell', () => {
     const markup = renderToStaticMarkup(
       createElement(ToolBar, {
         activeToolId: TOOLBAR_BUTTONS.SELECT.id,
+        money: 10000,
         isPaused: false,
         simulationSpeed: 2,
         unlockedToolIds: [
@@ -254,6 +258,26 @@ describe('React UI shell', () => {
     expect(markup).toContain('role="dialog"');
     expect(markup).toContain('$100');
     expect(markup).toContain('15 residents');
+  });
+
+  it('shows selected placement cost and insufficient-funds context', () => {
+    const markup = renderToStaticMarkup(
+      createElement(ToolBar, {
+        activeToolId: TOOLBAR_BUTTONS.ROAD.id,
+        money: 0,
+        isPaused: false,
+        simulationSpeed: 1,
+        unlockedToolIds: [TOOLBAR_BUTTONS.ROAD.id],
+        onSelectTool: noop,
+        onTogglePause: noop,
+        onCycleSimulationSpeed: noop,
+      })
+    );
+
+    expect(markup).toContain('active-tool-context insufficient-funds');
+    expect(markup).toContain('ROAD');
+    expect(markup).toContain('Click or drag to place');
+    expect(markup).toContain('$10 more needed');
   });
 });
 

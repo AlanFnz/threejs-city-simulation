@@ -13,6 +13,7 @@ import {
 
 interface ToolBarProps {
   activeToolId: string | null;
+  money: number;
   isPaused: boolean;
   simulationSpeed: SimulationSpeed;
   unlockedToolIds: string[];
@@ -44,6 +45,7 @@ function getLockedHint(toolId: string): string {
 
 function ToolBar({
   activeToolId,
+  money,
   isPaused,
   simulationSpeed,
   unlockedToolIds,
@@ -222,9 +224,48 @@ function ToolBar({
   const pauseIcon = getIcon(
     isPaused ? pauseButton.iconPlay : pauseButton.iconPause
   );
+  const activeButton = activeToolId
+    ? getToolbarButton(activeToolId)
+    : getToolbarButton(TOOLBAR_BUTTONS.SELECT.id);
+  const activeCost = BUILD_COSTS[activeButton.id];
+  const isPlacementTool = typeof activeCost === 'number';
+  const canAffordActiveTool = !isPlacementTool || money >= activeCost;
+  const activeInstruction =
+    activeButton.id === TOOLBAR_BUTTONS.SELECT.id
+      ? 'Inspect city tiles'
+      : activeButton.id === TOOLBAR_BUTTONS.BULLDOZE.id
+        ? 'Clear buildings and infrastructure'
+        : activeButton.id === TOOLBAR_BUTTONS.ROAD.id ||
+            TOOL_CATEGORIES[0].toolIds.includes(activeButton.id)
+          ? 'Click or drag to place'
+          : 'Click a tile to place';
+  const affordabilityText = canAffordActiveTool
+    ? isPlacementTool
+      ? `$${activeCost.toLocaleString()} per tile`
+      : 'No build cost'
+    : `$${(activeCost - money).toLocaleString()} more needed`;
 
   return (
     <nav ref={toolbar} id="ui-toolbar" aria-label="City controls">
+      <div
+        id="active-tool-context"
+        className={`active-tool-context${
+          openCategoryId ? ' category-open' : ''
+        }${canAffordActiveTool ? '' : ' insufficient-funds'}`}
+        aria-label={`${activeButton.uiText}. ${activeInstruction}. ${affordabilityText}`}
+      >
+        <span className="active-tool-icon" aria-hidden="true">
+          <img src={getIcon(activeButton.icon)} alt="" />
+        </span>
+        <span className="active-tool-copy">
+          <small>Active tool</small>
+          <strong>{activeButton.uiText}</strong>
+        </span>
+        <span className="active-tool-detail">
+          <small>{activeInstruction}</small>
+          <strong>{affordabilityText}</strong>
+        </span>
+      </div>
       {renderDirectTool(DIRECT_TOOL_IDS[0])}
       {renderCategory(TOOL_CATEGORIES[0])}
       {renderDirectTool(DIRECT_TOOL_IDS[1])}
