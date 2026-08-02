@@ -1,3 +1,5 @@
+import type { SimulationSpeed } from '../game/simulationSpeed';
+
 export interface GoalProgressUiState {
   current: number;
   target: number;
@@ -83,6 +85,7 @@ export interface UiState {
   population: number;
   activeToolId: string | null;
   isPaused: boolean;
+  simulationSpeed: SimulationSpeed;
   unlockedToolIds: string[];
   inspector: InspectorUiState | null;
   goals: GoalsUiState;
@@ -93,6 +96,7 @@ export interface UiState {
 export interface UiActions {
   selectTool(toolId: string): void;
   togglePause(): void;
+  cycleSimulationSpeed(): void;
   saveGame(): void;
   loadGame(): void;
   newGame(): void;

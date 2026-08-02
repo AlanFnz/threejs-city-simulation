@@ -36,9 +36,11 @@ function Ui({ actions, store }: UiProps) {
       <ToolBar
         activeToolId={state.activeToolId}
         isPaused={state.isPaused}
+        simulationSpeed={state.simulationSpeed}
         unlockedToolIds={state.unlockedToolIds}
         onSelectTool={actions.selectTool}
         onTogglePause={actions.togglePause}
+        onCycleSimulationSpeed={actions.cycleSimulationSpeed}
       />
       <GoalsPanel goals={state.goals} />
       <InfoPanel inspector={state.inspector} />

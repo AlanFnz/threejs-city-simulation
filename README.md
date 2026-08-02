@@ -32,7 +32,7 @@ Built with **Three.js** and **TypeScript**. No framework, no backend - just a si
 | Pan camera                                  | Ctrl + right click + drag (or two-finger drag on touch)                                                                                        |
 | Zoom                                        | Mouse wheel                                                                                                                                    |
 | Switch tools                                | Toolbar (select, residential, commercial, industrial, road, power plant, power line, fire station, police station, hospital, school, bulldoze) |
-| Pause / resume                              | Toolbar pause button                                                                                                                           |
+| Pause / resume and simulation speed         | Toolbar pause button + 1×/2×/3× speed control                                                                                                  |
 | Save / load / new game                      | Toolbar buttons (autosaves periodically too)                                                                                                   |
 
 ## 🚀 Getting started
@@ -54,7 +54,7 @@ npm run build
 
 The code is split into two worlds that only meet at a sync point:
 
-- **Simulation model** (`src/city`, `src/game`) - pure TypeScript data: a tile grid, buildings composed from small attribute objects (development, residents, jobs, road/power access, civic coverage), citizens, an economy (tax + upkeep), a power grid, milestones, and random events. It ticks once per second.
+- **Simulation model** (`src/city`, `src/game`) - pure TypeScript data: a tile grid, buildings composed from small attribute objects (development, residents, jobs, road/power access, civic coverage), citizens, an economy (tax + upkeep), a power grid, milestones, and random events. It advances at the selected 1×, 2×, or 3× speed.
 - **Render layer** (`src/sceneManager`, `src/assetManager`, `src/cameraManager`) - Three.js. After each tick, only buildings flagged as changed get their meshes rebuilt; rendering itself runs at full display rate.
 
 44 low-poly GLB models are mapped to building type + style + level, and all simulation balance (development chances, construction time, job search distance, build costs, upkeep, milestone thresholds, random event odds, vehicle behavior…) lives in one config file: `src/config.ts`. Tweak it and see your city behave differently.

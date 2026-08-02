@@ -481,11 +481,14 @@ button:focus-visible {
   transform: none;
 }
 
-.ui-button.simulation-control {
+.simulation-controls {
+  position: relative;
   margin-left: 8px;
+  display: flex;
+  gap: 4px;
 }
 
-.ui-button.simulation-control::before {
+.simulation-controls::before {
   position: absolute;
   top: 4px;
   bottom: 4px;
@@ -493,6 +496,25 @@ button:focus-visible {
   width: 1px;
   content: '';
   background: var(--hud-line);
+}
+
+.speed-cycle-button {
+  width: 38px;
+  padding: 6px;
+  flex-basis: 38px;
+  color: var(--hud-text-muted);
+}
+
+.speed-cycle-button strong {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.72rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.speed-cycle-button.accelerated {
+  color: var(--hud-accent-strong);
+  border-color: var(--hud-line-strong);
+  background: rgba(45, 103, 126, 0.62);
 }
 
 .dock-category {
@@ -1796,12 +1818,18 @@ button:focus-visible {
     height: 27px;
   }
 
-  .ui-button.simulation-control {
+  .simulation-controls {
     margin-left: 4px;
+    gap: 3px;
   }
 
-  .ui-button.simulation-control::before {
+  .simulation-controls::before {
     left: -5px;
+  }
+
+  .speed-cycle-button {
+    width: 32px;
+    flex-basis: 32px;
   }
 
   #info-panel {
@@ -1810,6 +1838,29 @@ button:focus-visible {
 
   .tool-tray {
     bottom: calc(72px + env(safe-area-inset-bottom));
+  }
+}
+
+@media (max-width: 350px) {
+  .simulation-controls {
+    position: absolute;
+    right: 0;
+    bottom: calc(100% + 8px);
+    margin-left: 0;
+    padding: 4px;
+    border: 1px solid var(--hud-line);
+    border-radius: 12px;
+    background: var(--hud-bg-strong);
+    box-shadow: var(--hud-shadow);
+  }
+
+  .simulation-controls::before {
+    display: none;
+  }
+
+  #info-panel,
+  .tool-tray {
+    bottom: calc(120px + env(safe-area-inset-bottom));
   }
 }
 

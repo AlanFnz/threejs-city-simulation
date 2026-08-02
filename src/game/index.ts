@@ -20,16 +20,23 @@ import {
 } from './saveGame';
 import { createInspectorUiState } from './inspector';
 import { createGoalsUiState } from './goals';
+import {
+  getNextSimulationSpeed,
+  getScheduledStepCount,
+  SimulationSpeed,
+} from './simulationSpeed';
 
 const AUTOSAVE_INTERVAL_TICKS = 30;
 
 export interface IGame {
   activeToolId: string | null;
   isPaused: boolean;
+  simulationSpeed: SimulationSpeed;
   focusedObject: ITile | null;
   step(): void;
   selectTool(toolId: string): void;
   togglePause(): void;
+  cycleSimulationSpeed(): void;
   saveGame(): void;
   loadGame(): boolean;
   newGame(): boolean;
@@ -38,6 +45,7 @@ export interface IGame {
 export class Game implements IGame {
   activeToolId: string | null = TOOLBAR_BUTTONS.SELECT.id;
   isPaused: boolean = false;
+  simulationSpeed: SimulationSpeed = 1;
   focusedObject: ITile | null = null;
   lastMove: number = Date.now();
   private tickCount: number = 0;
@@ -48,10 +56,14 @@ export class Game implements IGame {
     this.city
   );
   private ui!: UiController;
+  private simulationInterval: ReturnType<typeof setInterval> | null = null;
   private sceneManager: ISceneManager = new SceneManager(this.city, () => {
     this.loadGame();
     this.sceneManager.start();
-    setInterval(this.step.bind(this), 1000);
+    this.simulationInterval = setInterval(
+      this.runScheduledSteps.bind(this),
+      1000
+    );
   });
   private unsubscribers: Unsubscribe[] = [];
   private tools: Record<string, Tool> = createTools();
@@ -67,6 +79,7 @@ export class Game implements IGame {
     this.ui = createUi(this.getInitialUiState(), {
       selectTool: (toolId) => this.selectTool(toolId),
       togglePause: () => this.togglePause(),
+      cycleSimulationSpeed: () => this.cycleSimulationSpeed(),
       saveGame: () => this.saveGameWithFeedback(),
       loadGame: () => this.loadGameWithFeedback(),
       newGame: () => this.newGameWithFeedback(),
@@ -132,7 +145,21 @@ export class Game implements IGame {
   /** Unsubscribes from the shared event bus. Call when this Game is discarded. */
   dispose(): void {
     this.unsubscribers.forEach((unsubscribe) => unsubscribe());
+    if (this.simulationInterval) clearInterval(this.simulationInterval);
+    this.simulationInterval = null;
     this.ui.dispose();
+  }
+
+  private runScheduledSteps(): void {
+    const stepCount = getScheduledStepCount(
+      this.isPaused,
+      this.simulationSpeed
+    );
+    if (stepCount === 0) {
+      this.updateDebugOverlay();
+      return;
+    }
+    for (let step = 0; step < stepCount; step++) this.step();
   }
 
   private refreshInfoOverlayIfFocused(coordinate: {
@@ -149,9 +176,9 @@ export class Game implements IGame {
   }
 
   step(): void {
+    if (this.isPaused) return;
     this.tickCount++;
     this.updateDebugOverlay();
-    if (this.isPaused) return;
     this.city.simulate();
     this.randomEventsSystem.tick();
     this.sceneManager.update(this.city);
@@ -261,6 +288,11 @@ export class Game implements IGame {
   togglePause(): void {
     this.isPaused = !this.isPaused;
     this.ui.update({ isPaused: this.isPaused });
+  }
+
+  cycleSimulationSpeed(): void {
+    this.simulationSpeed = getNextSimulationSpeed(this.simulationSpeed);
+    this.ui.update({ simulationSpeed: this.simulationSpeed });
   }
 
   private onMouseDown(event: MouseEvent): void {
@@ -399,9 +431,9 @@ export class Game implements IGame {
   }
 
   /**
-   * Ticks and elapsed real seconds should stay in lockstep (1 tick/sec).
-   * If the rate drifts from ~1.00/s, the tick loop is firing more than once
-   * per second (e.g. a duplicated setInterval).
+   * Tick rate should converge on the selected 1x/2x/3x speed while running
+   * and remain flat while paused. Unexpected extra rate indicates a duplicated
+   * scheduler.
    */
   private updateDebugOverlay(): void {
     const elapsedSeconds = (Date.now() - this.startTime) / 1000;
@@ -420,6 +452,7 @@ export class Game implements IGame {
       population: this.city.population,
       activeToolId: this.activeToolId,
       isPaused: this.isPaused,
+      simulationSpeed: this.simulationSpeed,
       unlockedToolIds: this.milestoneTracker.getState().unlockedToolIds,
       inspector: null,
       goals: this.getGoalsUiState(),

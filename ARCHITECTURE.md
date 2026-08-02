@@ -29,15 +29,15 @@ The codebase is split into a **simulation model** and a **render layer**. They u
                                     └─────────────────────────────┘
 ```
 
-Two clocks drive everything (a single, non-duplicated sim tick):
+Two clocks drive everything (one simulation scheduler plus the independent render loop):
 
 | Clock                                                         | Rate            | Drives                                                                                                                                                                       |
 | ------------------------------------------------------------- | --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `setInterval(step, 1000)` in `Game`                           | 1 Hz            | `city.simulate()` (tile pass + economy accrual), `milestoneTracker` event checks, `randomEventsSystem.tick()`, `sceneManager.update(city)`, top bar, info panel, goals panel |
+| `setInterval(runScheduledSteps, 1000)` in `Game`              | 1 Hz scheduler  | Runs zero to three `step()` calls from pause/1×/2×/3× state; each drives `city.simulate()` (tile pass + economy accrual), milestone/random-event checks, scene sync, and reactive UI events |
 | `renderer.setAnimationLoop(draw)`                             | display refresh | `vehicleGraph.updateVehicles()`, `renderer.render()`                                                                                                                         |
 | `setInterval(spawnVehicle, SPAWN_INTERVAL)` in `VehicleGraph` | 1 Hz            | vehicle spawning                                                                                                                                                             |
 
-A "day" in sim terms = one `step()` = one `simulate()` pass over every tile plus one economy/tax/upkeep collection (§2.10). Sim-affecting randomness (RNG, see §2.7) and event side effects (§2.8/§2.9) both happen inside that same pass, before `sceneManager.update()` reads the results. `Game.step()` also runs `RandomEventsSystem.tick()` (§2.14) right after `city.simulate()` - milestones (§2.13) react to events emitted during either.
+A "day" in sim terms = one `step()` = one `simulate()` pass over every tile plus one economy/tax/upkeep collection (§2.10). The 1 Hz scheduler runs zero days while paused or one, two, or three days at the selected speed. Sim-affecting randomness (RNG, see §2.7) and event side effects (§2.8/§2.9) both happen inside each pass, before `sceneManager.update()` reads the results. `Game.step()` also runs `RandomEventsSystem.tick()` (§2.14) right after `city.simulate()` - milestones (§2.13) react to events emitted during either.
 
 ---
 
@@ -287,7 +287,7 @@ Orthographic camera orbiting a `cameraOrigin` on a sphere (azimuth/elevation/rad
 A React root is mounted once by `createUi()`. `Game` owns a small external store of serializable `UiState` and passes typed actions back into the HUD; React components never reach into the simulation or Three.js scene directly.
 
 - **TopBar** - population counter (`#population-counter`), money balance, and per-tick net-income trend, refreshed by `citizenMovedIn`/`citizenMovedOut`/`moneyChanged`/`economyUpdated` events rather than unconditional UI polling. Save, load, and new-city actions live in an accessible management dropdown that closes after an action, on outside click, or on Escape (returning focus to its trigger).
-- **ToolBar** - a categorized dock generated from `TOOLBAR_BUTTONS` and `TOOL_CATEGORIES` in `ui/constants.ts`; each leaf action still carries an id matching a `BUILDING_TYPE` (or SELECT/BULLDOZE). Locked milestone tools include their population requirement and remain protected by a second authorization check inside `Game.selectTool`.
+- **ToolBar** - a categorized dock generated from `TOOLBAR_BUTTONS` and `TOOL_CATEGORIES` in `ui/constants.ts`; each leaf action still carries an id matching a `BUILDING_TYPE` (or SELECT/BULLDOZE). Locked milestone tools include their population requirement and remain protected by a second authorization check inside `Game.selectTool`. A separate compact control group pauses/resumes the scheduler and cycles its 1×/2×/3× speed.
 - **InfoPanel** - receives an `InspectorUiState`, built by `game/inspector.ts` from the focused tile. It renders service status, development, costs, power capacity, and citizen/worker occupancy as React elements. No simulation object generates markup and no model data crosses through `innerHTML`.
 - **GoalsPanel** - receives a milestone roadmap from `game/goals.ts`, including the active condition's live progress, reward, completion count, and the next three objectives. Population, money, and development events refresh the relevant progress without the component reading `City` directly; once every milestone is done it renders a completion state.
 - **NotificationCenter** - receives one typed success, warning, milestone, or event notification from the UI store. New notifications replace the current one, restart its timer, and dismiss after 4.5 seconds. Save/load/new-city actions, completed milestones, and random events provide the title and detail without components reaching back into `Game`.

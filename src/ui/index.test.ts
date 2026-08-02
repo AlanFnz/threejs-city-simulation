@@ -100,11 +100,13 @@ describe('React UI shell', () => {
         createElement(ToolBar, {
           activeToolId: TOOLBAR_BUTTONS.SELECT.id,
           isPaused: false,
+          simulationSpeed: 1,
           unlockedToolIds: Object.values(TOOLBAR_BUTTONS).map(
             (button) => button.id
           ),
           onSelectTool: noop,
           onTogglePause: noop,
+          onCycleSimulationSpeed: noop,
         })
       ),
       renderToStaticMarkup(createElement(GoalsPanel, { goals })),
@@ -171,12 +173,14 @@ describe('React UI shell', () => {
       createElement(ToolBar, {
         activeToolId: TOOLBAR_BUTTONS.SELECT.id,
         isPaused: false,
+        simulationSpeed: 2,
         unlockedToolIds: [
           TOOLBAR_BUTTONS.SELECT.id,
           TOOLBAR_BUTTONS.RESIDENTIAL.id,
         ],
         onSelectTool: noop,
         onTogglePause: noop,
+        onCycleSimulationSpeed: noop,
       })
     );
 
@@ -188,6 +192,8 @@ describe('React UI shell', () => {
     expect(markup).toContain('id="FIRE_STATION" class="tool-option locked"');
     expect(markup).toContain('id="SELECT" class="ui-button selected"');
     expect(markup).toContain('aria-label="Zones tools"');
+    expect(markup).toContain('id="simulation-speed-button"');
+    expect(markup).toContain('Currently 2 times');
     expect(markup).toContain('aria-haspopup="dialog"');
     expect(markup).toContain('role="dialog"');
     expect(markup).toContain('$100');
@@ -202,6 +208,7 @@ describe('UI store', () => {
     population: 0,
     activeToolId: 'SELECT',
     isPaused: false,
+    simulationSpeed: 1,
     unlockedToolIds: ['SELECT'],
     inspector: null,
     goals,

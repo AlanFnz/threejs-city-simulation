@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { IconKey, getIcon } from '../../assetManager/icons';
 import CONFIG from '../../config';
 import { MILESTONES } from '../../game/milestones/constants';
+import { SimulationSpeed } from '../../game/simulationSpeed';
 import {
   BaseButton,
   TOOLBAR_BUTTONS,
@@ -13,9 +14,11 @@ import {
 interface ToolBarProps {
   activeToolId: string | null;
   isPaused: boolean;
+  simulationSpeed: SimulationSpeed;
   unlockedToolIds: string[];
   onSelectTool: (toolId: string) => void;
   onTogglePause: () => void;
+  onCycleSimulationSpeed: () => void;
 }
 
 const DIRECT_TOOL_IDS = ['SELECT', 'ROAD', 'BULLDOZE'];
@@ -42,9 +45,11 @@ function getLockedHint(toolId: string): string {
 function ToolBar({
   activeToolId,
   isPaused,
+  simulationSpeed,
   unlockedToolIds,
   onSelectTool,
   onTogglePause,
+  onCycleSimulationSpeed,
 }: ToolBarProps) {
   const [openCategoryId, setOpenCategoryId] = useState<string | null>(null);
   const toolbar = useRef<HTMLElement>(null);
@@ -219,29 +224,51 @@ function ToolBar({
   );
 
   return (
-    <nav ref={toolbar} id="ui-toolbar" aria-label="City building tools">
+    <nav ref={toolbar} id="ui-toolbar" aria-label="City controls">
       {renderDirectTool(DIRECT_TOOL_IDS[0])}
       {renderCategory(TOOL_CATEGORIES[0])}
       {renderDirectTool(DIRECT_TOOL_IDS[1])}
       {renderCategory(TOOL_CATEGORIES[1])}
       {renderCategory(TOOL_CATEGORIES[2])}
       {renderDirectTool(DIRECT_TOOL_IDS[2])}
-      <button
-        id={pauseButton.id}
-        className={`ui-button simulation-control${isPaused ? ' selected' : ''}`}
-        type="button"
-        data-type={pauseButton.id}
-        data-tooltip={pauseLabel}
-        title={pauseLabel}
-        aria-label={pauseLabel}
-        aria-pressed={isPaused}
-        onClick={(event) => {
-          event.stopPropagation();
-          onTogglePause();
-        }}
+      <div
+        className="simulation-controls"
+        role="group"
+        aria-label="Simulation speed"
       >
-        <img className="toolbar-icon" src={pauseIcon} alt="" />
-      </button>
+        <button
+          id={pauseButton.id}
+          className={`ui-button simulation-control${isPaused ? ' selected' : ''}`}
+          type="button"
+          data-type={pauseButton.id}
+          data-tooltip={pauseLabel}
+          title={pauseLabel}
+          aria-label={pauseLabel}
+          aria-pressed={isPaused}
+          onClick={(event) => {
+            event.stopPropagation();
+            onTogglePause();
+          }}
+        >
+          <img className="toolbar-icon" src={pauseIcon} alt="" />
+        </button>
+        <button
+          id="simulation-speed-button"
+          className={`ui-button speed-cycle-button${
+            simulationSpeed > 1 ? ' accelerated' : ''
+          }`}
+          type="button"
+          data-tooltip={`Simulation speed · ${simulationSpeed}×`}
+          title={`Cycle simulation speed · Currently ${simulationSpeed}×`}
+          aria-label={`Cycle simulation speed. Currently ${simulationSpeed} times`}
+          onClick={(event) => {
+            event.stopPropagation();
+            onCycleSimulationSpeed();
+          }}
+        >
+          <strong>{simulationSpeed}×</strong>
+        </button>
+      </div>
     </nav>
   );
 }
