@@ -72,12 +72,15 @@ export type NotificationTone =
 
 export interface UiNotification {
   id: number;
+  day: number;
   tone: NotificationTone;
   title: string;
   message: string;
 }
 
-export type NewUiNotification = Omit<UiNotification, 'id'>;
+export type NewUiNotification = Omit<UiNotification, 'id' | 'day'> & {
+  day?: number;
+};
 
 export interface CensusUiState {
   total: number;
@@ -135,6 +138,7 @@ export interface UiState {
   inspector: InspectorUiState | null;
   goals: GoalsUiState;
   notification: UiNotification | null;
+  activity: UiNotification[];
   debugText: string;
 }
 
@@ -159,6 +163,7 @@ export interface UiController {
 }
 
 const NOTIFICATION_DURATION_MS = 4500;
+const ACTIVITY_HISTORY_LIMIT = 6;
 
 export function createUiStore(initialState: UiState): UiController {
   let state = initialState;
@@ -180,8 +185,14 @@ export function createUiStore(initialState: UiState): UiController {
     update,
     showNotification(notification) {
       if (notificationTimer) clearTimeout(notificationTimer);
+      const entry: UiNotification = {
+        ...notification,
+        id: nextNotificationId++,
+        day: notification.day ?? state.simulationDay,
+      };
       update({
-        notification: { ...notification, id: nextNotificationId++ },
+        notification: entry,
+        activity: [entry, ...state.activity].slice(0, ACTIVITY_HISTORY_LIMIT),
       });
       notificationTimer = setTimeout(() => {
         update({ notification: null });

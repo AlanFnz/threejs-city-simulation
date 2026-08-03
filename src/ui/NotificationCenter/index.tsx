@@ -1,15 +1,9 @@
-import { NotificationTone, UiNotification } from '../store';
+import { NOTIFICATION_ICONS } from '../notificationPresentation';
+import { UiNotification } from '../store';
 
 interface NotificationCenterProps {
   notification: UiNotification | null;
 }
-
-const NOTIFICATION_ICONS: Record<NotificationTone, string> = {
-  success: '✓',
-  warning: '!',
-  milestone: '◆',
-  event: '↯',
-};
 
 function NotificationCenter({ notification }: NotificationCenterProps) {
   return (

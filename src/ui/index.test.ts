@@ -9,6 +9,7 @@ import { ToolBar } from './ToolBar';
 import { TopBar } from './TopBar';
 import { ZoneCapacityPanel } from './ZoneCapacityPanel';
 import { BudgetPanel } from './TopBar/BudgetPanel';
+import { ActivityLog } from './TopBar/ActivityLog';
 import { PopulationPanel } from './TopBar/PopulationPanel';
 import { TOOLBAR_BUTTONS } from './constants';
 import {
@@ -92,6 +93,16 @@ const cityServices: CityServicesUiState = {
   education: { id: 'education', covered: 1, total: 4, percentage: 25 },
 };
 
+const activity = [
+  {
+    id: 2,
+    day: 27,
+    tone: 'milestone' as const,
+    title: 'Milestone complete',
+    message: 'Reach 10 residents · $2,000 bonus',
+  },
+];
+
 const inspector: InspectorUiState = {
   x: 4,
   y: 7,
@@ -141,6 +152,7 @@ describe('React UI shell', () => {
           netIncome: 125.5,
           population: 12,
           census,
+          activity,
           isPaused: false,
           simulationSpeed: 2,
           onRenameCity: noop,
@@ -228,6 +240,7 @@ describe('React UI shell', () => {
       createElement(NotificationCenter, {
         notification: {
           id: 1,
+          day: 27,
           tone: 'milestone',
           title: 'Milestone complete',
           message: 'Reach 10 residents · $2,000 bonus',
@@ -238,6 +251,17 @@ describe('React UI shell', () => {
     expect(markup).toContain('tone-milestone');
     expect(markup).toContain('Milestone complete');
     expect(markup).toContain('Reach 10 residents · $2,000 bonus');
+  });
+
+  it('renders recent city activity with simulation-day context', () => {
+    const markup = renderToStaticMarkup(
+      createElement(ActivityLog, { activity })
+    );
+
+    expect(markup).toContain('Recent city activity');
+    expect(markup).toContain('Milestone complete');
+    expect(markup).toContain('Day 27');
+    expect(markup).toContain('1 latest');
   });
 
   it('renders a typed city budget breakdown', () => {
@@ -377,6 +401,7 @@ describe('UI store', () => {
     inspector: null,
     goals,
     notification: null,
+    activity: [],
     debugText: '',
   };
 
@@ -408,9 +433,28 @@ describe('UI store', () => {
       id: 1,
       tone: 'success',
       title: 'City saved',
+      day: 1,
     });
 
     vi.advanceTimersByTime(4500);
     expect(store.getSnapshot().notification).toBeNull();
+    expect(store.getSnapshot().activity).toHaveLength(1);
+  });
+
+  it('keeps only the six most recent activity entries', () => {
+    vi.useFakeTimers();
+    const store = createUiStore(initialState);
+
+    for (let index = 1; index <= 7; index++) {
+      store.showNotification({
+        tone: 'event',
+        title: `Event ${index}`,
+        message: 'City activity',
+      });
+    }
+
+    expect(store.getSnapshot().activity).toHaveLength(6);
+    expect(store.getSnapshot().activity[0].title).toBe('Event 7');
+    expect(store.getSnapshot().activity[5].title).toBe('Event 2');
   });
 });

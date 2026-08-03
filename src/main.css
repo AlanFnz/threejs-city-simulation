@@ -650,6 +650,10 @@ button:focus-visible {
   backdrop-filter: var(--hud-blur);
   -webkit-backdrop-filter: var(--hud-blur);
   animation: city-menu-enter 140ms ease-out;
+  max-height: calc(100vh - 104px);
+  overflow-y: auto;
+  scrollbar-color: rgba(123, 220, 243, 0.32) transparent;
+  scrollbar-width: thin;
 }
 
 @keyframes city-menu-enter {
@@ -750,6 +754,118 @@ button:focus-visible {
   color: var(--hud-danger);
   border-color: rgba(255, 114, 124, 0.2);
   background: rgba(255, 114, 124, 0.08);
+}
+
+.city-activity {
+  border-top: 1px solid var(--hud-line);
+  background: rgba(9, 21, 32, 0.28);
+}
+
+.city-activity > header {
+  padding: 9px 12px 7px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: var(--hud-text-muted);
+  background: transparent;
+  border: 0;
+}
+
+.city-activity > header span,
+.city-activity > header small {
+  font-size: 0.55rem;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.city-activity > header small {
+  color: var(--hud-text-dim);
+}
+
+.city-activity-empty {
+  margin: 0;
+  padding: 3px 12px 12px;
+  color: var(--hud-text-dim);
+  font-size: 0.62rem;
+  line-height: 1.45;
+}
+
+.city-activity-list {
+  margin: 0;
+  padding: 0 7px 7px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  list-style: none;
+}
+
+.city-activity-list li {
+  --activity-color: var(--hud-accent);
+  min-width: 0;
+  padding: 7px;
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 7px;
+  border-radius: 7px;
+  background: rgba(34, 55, 72, 0.42);
+}
+
+.city-activity-list li.tone-success {
+  --activity-color: var(--hud-positive);
+}
+
+.city-activity-list li.tone-warning,
+.city-activity-list li.tone-event {
+  --activity-color: var(--hud-warning);
+}
+
+.city-activity-list li.tone-milestone {
+  --activity-color: #c28df4;
+}
+
+.city-activity-icon {
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  color: var(--activity-color);
+  font-size: 0.65rem;
+  font-weight: 900;
+  border: 1px solid color-mix(in srgb, var(--activity-color) 28%, transparent);
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--activity-color) 8%, transparent);
+}
+
+.city-activity-list li > span:nth-child(2) {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.city-activity-list strong,
+.city-activity-list small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.city-activity-list strong {
+  color: var(--hud-text-muted);
+  font-size: 0.63rem;
+}
+
+.city-activity-list small,
+.city-activity-list time {
+  color: var(--hud-text-dim);
+  font-size: 0.53rem;
+}
+
+.city-activity-list time {
+  align-self: start;
+  white-space: nowrap;
 }
 
 /* Tool dock */

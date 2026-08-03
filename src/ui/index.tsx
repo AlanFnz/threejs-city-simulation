@@ -35,6 +35,7 @@ function Ui({ actions, store }: UiProps) {
         netIncome={state.netIncome}
         population={state.population}
         census={state.census}
+        activity={state.activity}
         isPaused={state.isPaused}
         simulationSpeed={state.simulationSpeed}
         onRenameCity={actions.renameCity}

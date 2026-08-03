@@ -4,7 +4,9 @@ import { BudgetPanel } from './BudgetPanel';
 import { CityName } from './CityName';
 import type { SimulationSpeed } from '../../game/simulationSpeed';
 import type { CensusUiState } from '../store';
+import type { UiNotification } from '../store';
 import { PopulationPanel } from './PopulationPanel';
+import { ActivityLog } from './ActivityLog';
 
 type OpenTopBarPanel = 'budget' | 'population' | 'menu' | null;
 
@@ -17,6 +19,7 @@ interface TopBarProps {
   netIncome: number;
   population: number;
   census: CensusUiState;
+  activity: UiNotification[];
   isPaused: boolean;
   simulationSpeed: SimulationSpeed;
   onRenameCity: (name: string) => void;
@@ -34,6 +37,7 @@ function TopBar({
   netIncome,
   population,
   census,
+  activity,
   isPaused,
   simulationSpeed,
   onRenameCity,
@@ -280,6 +284,7 @@ function TopBar({
                   </span>
                 </button>
               </div>
+              <ActivityLog activity={activity} />
             </div>
           )}
         </div>
