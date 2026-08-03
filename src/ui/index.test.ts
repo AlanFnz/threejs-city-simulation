@@ -247,6 +247,30 @@ describe('React UI shell', () => {
     expect(markup).toContain('aria-valuenow="4"');
     expect(markup).toContain('Reach 15 residents');
     expect(markup).toContain('1 / 8');
+    expect(markup).not.toContain('Starter city plan');
+  });
+
+  it('shows the dependency order for a brand-new city', () => {
+    const newCityGoals: GoalsUiState = {
+      ...goals,
+      milestones: goals.milestones.map((milestone, index) =>
+        index === 0 && milestone.progress
+          ? {
+              ...milestone,
+              progress: { ...milestone.progress, current: 0 },
+            }
+          : milestone
+      ),
+    };
+    const markup = renderToStaticMarkup(
+      createElement(GoalsPanel, { goals: newCityGoals })
+    );
+
+    expect(markup).toContain('aria-label="Starter city plan"');
+    expect(markup).toContain('Build in this order');
+    expect(markup).toContain('Roads');
+    expect(markup).toContain('Power');
+    expect(markup).toContain('Zones');
   });
 
   it('renders typed notification tone, title, and detail', () => {

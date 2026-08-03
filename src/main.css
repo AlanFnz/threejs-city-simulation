@@ -1706,6 +1706,60 @@ details:not([open]) .panel-collapse-indicator {
   transition: width var(--hud-transition);
 }
 
+.starter-city-plan {
+  margin-top: 12px;
+  padding: 9px;
+  border: 1px solid rgba(83, 199, 232, 0.16);
+  border-radius: 8px;
+  background: rgba(7, 15, 25, 0.28);
+}
+
+.starter-city-plan ol {
+  margin: 7px 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 4px;
+  list-style: none;
+}
+
+.starter-city-plan li {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--hud-text-muted);
+  font-size: 0.6rem;
+  text-transform: uppercase;
+}
+
+.starter-city-plan li > span {
+  width: 17px;
+  height: 17px;
+  flex: 0 0 17px;
+  display: grid;
+  place-items: center;
+  color: var(--hud-accent-strong);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.52rem;
+  border: 1px solid rgba(83, 199, 232, 0.28);
+  border-radius: 5px;
+  background: rgba(83, 199, 232, 0.08);
+}
+
+.starter-city-plan li:not(:last-child)::after {
+  margin-left: auto;
+  content: '›';
+  color: var(--hud-text-dim);
+}
+
+.starter-city-plan p {
+  margin: 8px 0 0;
+  color: var(--hud-text-dim);
+  font-size: 0.61rem;
+  line-height: 1.35;
+}
+
 .goal-reward-card {
   margin-top: 12px;
   padding: 8px;
@@ -2801,6 +2855,17 @@ details:not([open]) .panel-collapse-indicator {
     align-items: flex-start;
     flex-direction: column;
     gap: 3px;
+  }
+
+  .starter-city-plan li:not(:last-child)::after {
+    display: none;
+  }
+
+  .starter-city-plan li {
+    align-items: center;
+    flex-direction: column;
+    gap: 3px;
+    text-align: center;
   }
 
   #info-panel {

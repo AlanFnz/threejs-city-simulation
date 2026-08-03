@@ -30,6 +30,10 @@ function GoalsPanel({ goals }: GoalsPanelProps) {
         Math.max(0, (current.progress.current / current.progress.target) * 100)
       )
     : 100;
+  const showStarterPlan =
+    goals.completedCount === 0 &&
+    current?.progress?.kind === 'population' &&
+    current.progress.current === 0;
 
   return (
     <div id="ui-goals-overlay">
@@ -88,6 +92,32 @@ function GoalsPanel({ goals }: GoalsPanelProps) {
               >
                 <span style={{ width: `${progressPercent}%` }} />
               </div>
+              {showStarterPlan && (
+                <section
+                  className="starter-city-plan"
+                  aria-label="Starter city plan"
+                >
+                  <span className="goal-card-label">Build in this order</span>
+                  <ol>
+                    <li>
+                      <span>1</span>
+                      <strong>Roads</strong>
+                    </li>
+                    <li>
+                      <span>2</span>
+                      <strong>Power</strong>
+                    </li>
+                    <li>
+                      <span>3</span>
+                      <strong>Zones</strong>
+                    </li>
+                  </ol>
+                  <p>
+                    Connect streets and power, then zone homes, shops, and
+                    industry.
+                  </p>
+                </section>
+              )}
               <div className="goal-reward-card">
                 <span className="reward-icon" aria-hidden="true">
                   ◆
