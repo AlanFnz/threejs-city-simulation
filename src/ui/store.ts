@@ -135,6 +135,11 @@ export interface CityMapUiState {
   tiles: CityMapTileKind[];
 }
 
+export interface CityMapFocusUiState {
+  x: number;
+  y: number;
+}
+
 export interface UiState {
   cityName: string;
   simulationDay: number;
@@ -147,6 +152,7 @@ export interface UiState {
   zoneCapacity: ZoneCapacityUiState;
   cityServices: CityServicesUiState;
   cityMap: CityMapUiState;
+  cityMapFocus: CityMapFocusUiState;
   activeToolId: string | null;
   isPaused: boolean;
   simulationSpeed: SimulationSpeed;

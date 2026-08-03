@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { getCityMapTileFromPoint } from '.';
+import { getCityMapFocusPoint, getCityMapTileFromPoint } from '.';
 
 describe('getCityMapTileFromPoint', () => {
   it('maps canvas positions to city coordinates', () => {
@@ -22,6 +22,26 @@ describe('getCityMapTileFromPoint', () => {
     expect(getCityMapTileFromPoint(-10, 180, 128, 128, 16)).toEqual({
       x: 0,
       y: 15,
+    });
+  });
+});
+
+describe('getCityMapFocusPoint', () => {
+  it('positions the camera marker over the focused city tile', () => {
+    expect(getCityMapFocusPoint({ x: 7.5, y: 7.5 }, 16, 128)).toEqual({
+      x: 64,
+      y: 64,
+    });
+    expect(getCityMapFocusPoint({ x: 2, y: 5 }, 16, 128)).toEqual({
+      x: 20,
+      y: 44,
+    });
+  });
+
+  it('keeps an out-of-bounds camera focus visible at the map edge', () => {
+    expect(getCityMapFocusPoint({ x: -4, y: 22 }, 16, 128)).toEqual({
+      x: 4,
+      y: 124,
     });
   });
 });

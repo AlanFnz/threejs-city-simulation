@@ -14,8 +14,14 @@ import {
   Y_AXIS,
 } from './constants';
 
+export interface CameraFocus {
+  x: number;
+  y: number;
+}
+
 export interface ICameraManager {
   camera: THREE.OrthographicCamera;
+  getFocus(): CameraFocus;
   focusOnTile(x: number, y: number): void;
   onMouseMove(event: MouseEvent): void;
   onMouseScroll(event: WheelEvent): void;
@@ -33,10 +39,15 @@ export class CameraManager implements ICameraManager {
   private cameraElevation: number;
   private startTouches: { x: number; y: number };
   private isPanning: boolean;
+  private onFocusChanged: (focus: CameraFocus) => void;
   /** Scaled by 16/citySize so every map size keeps the same relative zoomed-out coverage. */
   private minCameraRadius: number;
 
-  constructor(gameWindow: HTMLElement, citySize: number) {
+  constructor(
+    gameWindow: HTMLElement,
+    citySize: number,
+    onFocusChanged: (focus: CameraFocus) => void = () => undefined
+  ) {
     const aspect = gameWindow.clientWidth / gameWindow.clientHeight;
 
     this.camera = new THREE.OrthographicCamera(
@@ -61,6 +72,7 @@ export class CameraManager implements ICameraManager {
     this.cameraElevation = 45;
     this.startTouches = { x: 0, y: 0 };
     this.isPanning = false;
+    this.onFocusChanged = onFocusChanged;
 
     this.updateCameraPosition();
   }
@@ -84,6 +96,11 @@ export class CameraManager implements ICameraManager {
   public focusOnTile(x: number, y: number): void {
     this.cameraOrigin.set(x, 0, y);
     this.updateCameraPosition();
+    this.onFocusChanged(this.getFocus());
+  }
+
+  public getFocus(): CameraFocus {
+    return { x: this.cameraOrigin.x, y: this.cameraOrigin.z };
   }
 
   public onMouseMove(event: MouseEvent): void {
@@ -111,6 +128,7 @@ export class CameraManager implements ICameraManager {
       this.cameraOrigin.add(
         left.multiplyScalar(PAN_SENSITIVITY * event.movementX)
       );
+      this.onFocusChanged(this.getFocus());
     }
 
     this.updateCameraPosition();
@@ -151,6 +169,7 @@ export class CameraManager implements ICameraManager {
       this.cameraOrigin.add(forward.multiplyScalar(-PAN_SENSITIVITY * deltaY));
       this.cameraOrigin.add(left.multiplyScalar(-PAN_SENSITIVITY * deltaX));
       this.updateCameraPosition();
+      this.onFocusChanged(this.getFocus());
 
       this.startTouches = currentTouches; // Update the start position for the next move
       event.preventDefault();

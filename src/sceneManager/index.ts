@@ -3,7 +3,11 @@ import { ICity } from '../city';
 import { ITile } from '../city/tile';
 import { AssetManager, IAssetManager } from '../assetManager';
 import { ModelKey } from '../assetManager/constants';
-import { ICameraManager, CameraManager } from '../cameraManager';
+import {
+  CameraFocus,
+  ICameraManager,
+  CameraManager,
+} from '../cameraManager';
 import { VehicleGraph } from '../city/vehicle/vehicleGraph';
 import { BUILDING_TYPE } from '../city/building/constants';
 import { IRoad } from '../city/building/road';
@@ -103,7 +107,11 @@ export class SceneManager implements ISceneManager {
   private previewMesh: THREE.Object3D | null = null;
   cameraManager: ICameraManager;
 
-  constructor(city: ICity, onLoad: () => void) {
+  constructor(
+    city: ICity,
+    onLoad: () => void,
+    onCameraFocusChanged: (focus: CameraFocus) => void = () => undefined
+  ) {
     this.renderer = new THREE.WebGLRenderer({
       antialias: true,
     });
@@ -113,7 +121,11 @@ export class SceneManager implements ISceneManager {
       this.initialize(city);
       onLoad();
     });
-    this.cameraManager = new CameraManager(this.gameWindow, city.size);
+    this.cameraManager = new CameraManager(
+      this.gameWindow,
+      city.size,
+      onCameraFocusChanged
+    );
 
     this.renderer.setSize(
       this.gameWindow.offsetWidth,

@@ -35,6 +35,7 @@ import { createToolRejectionNotification } from './toolFeedback';
 import { createZoneCapacityUiState } from './zoneCapacity';
 import { createCityServicesUiState } from './cityServices';
 import { createCityMapUiState } from './cityMap';
+import type { CameraFocus } from '../cameraManager';
 
 const AUTOSAVE_INTERVAL_TICKS = 30;
 
@@ -75,14 +76,18 @@ export class Game implements IGame {
   );
   private ui!: UiController;
   private simulationInterval: ReturnType<typeof setInterval> | null = null;
-  private sceneManager: ISceneManager = new SceneManager(this.city, () => {
-    this.loadGame();
-    this.sceneManager.start();
-    this.simulationInterval = setInterval(
-      this.runScheduledSteps.bind(this),
-      1000
-    );
-  });
+  private sceneManager: ISceneManager = new SceneManager(
+    this.city,
+    () => {
+      this.loadGame();
+      this.sceneManager.start();
+      this.simulationInterval = setInterval(
+        this.runScheduledSteps.bind(this),
+        1000
+      );
+    },
+    (focus) => this.updateCameraFocus(focus)
+  );
   private unsubscribers: Unsubscribe[] = [];
   private tools: Record<string, Tool> = createTools();
   private gameContext: GameContext = {
@@ -338,6 +343,10 @@ export class Game implements IGame {
     this.sceneManager.cameraManager.focusOnTile(tile.x, tile.y);
   }
 
+  private updateCameraFocus(focus: CameraFocus): void {
+    this.ui?.update({ cityMapFocus: focus });
+  }
+
   closeInspector(): void {
     this.focusedObject = null;
     this.sceneManager.deactivateObject();
@@ -567,6 +576,7 @@ export class Game implements IGame {
       zoneCapacity: createZoneCapacityUiState(this.city),
       cityServices: createCityServicesUiState(this.city),
       cityMap: createCityMapUiState(this.city),
+      cityMapFocus: this.sceneManager.cameraManager.getFocus(),
       activeToolId: this.activeToolId,
       isPaused: this.isPaused,
       simulationSpeed: this.simulationSpeed,

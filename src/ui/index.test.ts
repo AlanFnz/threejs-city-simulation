@@ -196,7 +196,11 @@ describe('React UI shell', () => {
       ),
       renderToStaticMarkup(createElement(ControlsLegend)),
       renderToStaticMarkup(
-        createElement(CityMap, { map: cityMap, onFocusTile: noop })
+        createElement(CityMap, {
+          map: cityMap,
+          focus: { x: 0.5, y: 0.5 },
+          onFocusTile: noop,
+        })
       ),
       renderToStaticMarkup(
         createElement(ZoneCapacityPanel, {
@@ -480,6 +484,7 @@ describe('UI store', () => {
     },
     cityServices,
     cityMap,
+    cityMapFocus: { x: 0.5, y: 0.5 },
     activeToolId: 'SELECT',
     isPaused: false,
     simulationSpeed: 1,

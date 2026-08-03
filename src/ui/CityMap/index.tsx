@@ -1,8 +1,13 @@
 import { MouseEvent as ReactMouseEvent, useEffect, useRef } from 'react';
-import { CityMapTileKind, CityMapUiState } from '../store';
+import {
+  CityMapFocusUiState,
+  CityMapTileKind,
+  CityMapUiState,
+} from '../store';
 
 interface CityMapProps {
   map: CityMapUiState;
+  focus: CityMapFocusUiState;
   onFocusTile(x: number, y: number): void;
 }
 
@@ -42,6 +47,21 @@ function getCityMapTileFromPoint(
   return {
     x: Math.min(citySize - 1, Math.floor(normalizedX * citySize)),
     y: Math.min(citySize - 1, Math.floor(normalizedY * citySize)),
+  };
+}
+
+function getCityMapFocusPoint(
+  focus: CityMapFocusUiState,
+  citySize: number,
+  renderSize: number
+): CityMapPoint | null {
+  if (citySize <= 0 || renderSize <= 0) return null;
+  const tileSize = renderSize / citySize;
+  return {
+    x:
+      Math.min(citySize - 0.5, Math.max(0.5, focus.x + 0.5)) * tileSize,
+    y:
+      Math.min(citySize - 0.5, Math.max(0.5, focus.y + 0.5)) * tileSize,
   };
 }
 
@@ -163,7 +183,7 @@ function drawNetworkTile(
   context.fill();
 }
 
-function CityMap({ map, onFocusTile }: CityMapProps) {
+function CityMap({ map, focus, onFocusTile }: CityMapProps) {
   const canvas = useRef<HTMLCanvasElement>(null);
   const occupiedTiles = map.tiles.filter((kind) => kind !== 'empty').length;
 
@@ -226,7 +246,23 @@ function CityMap({ map, onFocusTile }: CityMapProps) {
         tileSize
       );
     });
-  }, [map]);
+
+    const focusPoint = getCityMapFocusPoint(focus, map.size, MAP_SIZE);
+    if (focusPoint) {
+      const markerRadius = Math.max(2.8, tileSize * 0.43);
+      context.fillStyle = 'rgba(7, 18, 27, 0.72)';
+      context.strokeStyle = '#8fe8f8';
+      context.lineWidth = 1.2;
+      context.beginPath();
+      context.arc(focusPoint.x, focusPoint.y, markerRadius, 0, Math.PI * 2);
+      context.fill();
+      context.stroke();
+      context.fillStyle = '#d9fbff';
+      context.beginPath();
+      context.arc(focusPoint.x, focusPoint.y, 0.9, 0, Math.PI * 2);
+      context.fill();
+    }
+  }, [focus, map]);
 
   return (
     <aside
@@ -268,4 +304,4 @@ function CityMap({ map, onFocusTile }: CityMapProps) {
   );
 }
 
-export { CityMap, getCityMapTileFromPoint };
+export { CityMap, getCityMapFocusPoint, getCityMapTileFromPoint };
