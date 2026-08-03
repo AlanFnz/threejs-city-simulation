@@ -537,6 +537,7 @@ export class Game implements IGame {
       goals: this.getGoalsUiState(),
       notification: null,
       activity: [],
+      unreadActivityCount: 0,
       debugText: '',
     };
   }

@@ -153,12 +153,14 @@ describe('React UI shell', () => {
           population: 12,
           census,
           activity,
+          unreadActivityCount: 2,
           isPaused: false,
           simulationSpeed: 2,
           onRenameCity: noop,
           onSave: noop,
           onLoad: noop,
           onNewGame: noop,
+          onActivityRead: noop,
         })
       ),
       renderToStaticMarkup(
@@ -199,6 +201,8 @@ describe('React UI shell', () => {
     expect(markup).toContain('Day 27');
     expect(markup).toContain('2× speed');
     expect(markup).toContain('aria-expanded="false"');
+    expect(markup).toContain('2 unread activity entries');
+    expect(markup).toContain('city-menu-activity-badge');
     expect(markup).toContain('id="ui-toolbar"');
     expect(markup).toContain('id="active-tool-context"');
     expect(markup).toContain('Inspect city tiles');
@@ -402,6 +406,7 @@ describe('UI store', () => {
     goals,
     notification: null,
     activity: [],
+    unreadActivityCount: 0,
     debugText: '',
   };
 
@@ -439,6 +444,7 @@ describe('UI store', () => {
     vi.advanceTimersByTime(4500);
     expect(store.getSnapshot().notification).toBeNull();
     expect(store.getSnapshot().activity).toHaveLength(1);
+    expect(store.getSnapshot().unreadActivityCount).toBe(1);
   });
 
   it('keeps only the six most recent activity entries', () => {
@@ -456,5 +462,9 @@ describe('UI store', () => {
     expect(store.getSnapshot().activity).toHaveLength(6);
     expect(store.getSnapshot().activity[0].title).toBe('Event 7');
     expect(store.getSnapshot().activity[5].title).toBe('Event 2');
+    expect(store.getSnapshot().unreadActivityCount).toBe(6);
+
+    store.markActivityRead();
+    expect(store.getSnapshot().unreadActivityCount).toBe(0);
   });
 });

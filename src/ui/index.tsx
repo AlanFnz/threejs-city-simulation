@@ -36,12 +36,14 @@ function Ui({ actions, store }: UiProps) {
         population={state.population}
         census={state.census}
         activity={state.activity}
+        unreadActivityCount={state.unreadActivityCount}
         isPaused={state.isPaused}
         simulationSpeed={state.simulationSpeed}
         onRenameCity={actions.renameCity}
         onSave={actions.saveGame}
         onLoad={actions.loadGame}
         onNewGame={actions.newGame}
+        onActivityRead={store.markActivityRead}
       />
       <ToolBar
         activeToolId={state.activeToolId}

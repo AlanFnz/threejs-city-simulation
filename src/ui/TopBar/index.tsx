@@ -20,12 +20,14 @@ interface TopBarProps {
   population: number;
   census: CensusUiState;
   activity: UiNotification[];
+  unreadActivityCount: number;
   isPaused: boolean;
   simulationSpeed: SimulationSpeed;
   onRenameCity: (name: string) => void;
   onSave: () => void;
   onLoad: () => void;
   onNewGame: () => void;
+  onActivityRead: () => void;
 }
 
 function TopBar({
@@ -38,12 +40,14 @@ function TopBar({
   population,
   census,
   activity,
+  unreadActivityCount,
   isPaused,
   simulationSpeed,
   onRenameCity,
   onSave,
   onLoad,
   onNewGame,
+  onActivityRead,
 }: TopBarProps) {
   const [openPanel, setOpenPanel] = useState<OpenTopBarPanel>(null);
   const budgetContainer = useRef<HTMLDivElement>(null);
@@ -85,6 +89,10 @@ function TopBar({
       document.removeEventListener('keydown', onKeyDown);
     };
   }, [openPanel]);
+
+  useEffect(() => {
+    if (openPanel === 'menu' && unreadActivityCount > 0) onActivityRead();
+  }, [onActivityRead, openPanel, unreadActivityCount]);
 
   const runAction = (action: () => void) => {
     action();
@@ -214,7 +222,13 @@ function TopBar({
               openPanel === 'menu' ? ' active' : ''
             }`}
             type="button"
-            aria-label="City management menu"
+            aria-label={`City management menu${
+              unreadActivityCount > 0
+                ? `, ${unreadActivityCount} unread activity ${
+                    unreadActivityCount === 1 ? 'entry' : 'entries'
+                  }`
+                : ''
+            }`}
             aria-expanded={openPanel === 'menu'}
             aria-controls="city-management-menu"
             onClick={() =>
@@ -227,6 +241,11 @@ function TopBar({
               <i />
             </span>
             <span className="menu-trigger-label">Menu</span>
+            {unreadActivityCount > 0 && (
+              <span className="city-menu-activity-badge" aria-hidden="true">
+                {unreadActivityCount}
+              </span>
+            )}
           </button>
           {openPanel === 'menu' && (
             <div

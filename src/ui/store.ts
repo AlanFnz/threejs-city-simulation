@@ -139,6 +139,7 @@ export interface UiState {
   goals: GoalsUiState;
   notification: UiNotification | null;
   activity: UiNotification[];
+  unreadActivityCount: number;
   debugText: string;
 }
 
@@ -159,6 +160,7 @@ export interface UiController {
   subscribe(listener: UiListener): () => void;
   update(patch: Partial<UiState>): void;
   showNotification(notification: NewUiNotification): void;
+  markActivityRead(): void;
   dispose(): void;
 }
 
@@ -193,11 +195,18 @@ export function createUiStore(initialState: UiState): UiController {
       update({
         notification: entry,
         activity: [entry, ...state.activity].slice(0, ACTIVITY_HISTORY_LIMIT),
+        unreadActivityCount: Math.min(
+          state.unreadActivityCount + 1,
+          ACTIVITY_HISTORY_LIMIT
+        ),
       });
       notificationTimer = setTimeout(() => {
         update({ notification: null });
         notificationTimer = null;
       }, NOTIFICATION_DURATION_MS);
+    },
+    markActivityRead() {
+      if (state.unreadActivityCount > 0) update({ unreadActivityCount: 0 });
     },
     dispose() {
       if (notificationTimer) clearTimeout(notificationTimer);

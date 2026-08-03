@@ -588,6 +588,7 @@ button:focus-visible {
 }
 
 .city-menu-trigger {
+  position: relative;
   min-height: 38px;
   padding: 0 10px;
   display: flex;
@@ -606,6 +607,26 @@ button:focus-visible {
     color var(--hud-transition),
     border-color var(--hud-transition),
     background-color var(--hud-transition);
+}
+
+.city-menu-activity-badge {
+  position: absolute;
+  top: -7px;
+  right: -7px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  display: grid;
+  place-items: center;
+  color: #f8f4ff;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.55rem;
+  font-weight: 900;
+  line-height: 1;
+  border: 2px solid var(--hud-bg-strong);
+  border-radius: 99px;
+  background: #a76cda;
+  box-shadow: 0 3px 10px rgba(94, 48, 130, 0.48);
 }
 
 .city-menu-trigger:hover,
