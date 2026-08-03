@@ -161,6 +161,7 @@ describe('React UI shell', () => {
           onLoad: noop,
           onNewGame: noop,
           onActivityRead: noop,
+          onHideHud: noop,
         })
       ),
       renderToStaticMarkup(
@@ -175,6 +176,7 @@ describe('React UI shell', () => {
           onSelectTool: noop,
           onTogglePause: noop,
           onCycleSimulationSpeed: noop,
+          onToggleHud: noop,
         })
       ),
       renderToStaticMarkup(createElement(GoalsPanel, { goals })),
@@ -214,6 +216,7 @@ describe('React UI shell', () => {
     expect(markup).toContain('id="zone-capacity-panel"');
     expect(markup).toContain('Ctrl + right drag');
     expect(markup).toContain('1–9 · R · B');
+    expect(markup).toContain('Cinematic HUD');
   });
 
   it('renders typed inspector data as structured status cards', () => {
@@ -334,6 +337,7 @@ describe('React UI shell', () => {
         onSelectTool: noop,
         onTogglePause: noop,
         onCycleSimulationSpeed: noop,
+        onToggleHud: noop,
       })
     );
 
@@ -367,6 +371,7 @@ describe('React UI shell', () => {
         onSelectTool: noop,
         onTogglePause: noop,
         onCycleSimulationSpeed: noop,
+        onToggleHud: noop,
       })
     );
 
@@ -409,6 +414,7 @@ describe('UI store', () => {
     notification: null,
     activity: [],
     unreadActivityCount: 0,
+    isHudHidden: false,
     debugText: '',
   };
 
@@ -425,6 +431,17 @@ describe('UI store', () => {
       activeToolId: 'ROAD',
     });
     expect(listener).toHaveBeenCalledOnce();
+  });
+
+  it('toggles cinematic HUD visibility without changing game state', () => {
+    const store = createUiStore(initialState);
+
+    store.toggleHudVisibility();
+    expect(store.getSnapshot().isHudHidden).toBe(true);
+    expect(store.getSnapshot().population).toBe(0);
+
+    store.toggleHudVisibility();
+    expect(store.getSnapshot().isHudHidden).toBe(false);
   });
 
   it('replaces and automatically clears typed notifications', () => {

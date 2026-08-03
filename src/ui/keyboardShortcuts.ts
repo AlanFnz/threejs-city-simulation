@@ -3,7 +3,8 @@ import { TOOLBAR_BUTTONS } from './constants';
 type KeyboardShortcutAction =
   | { type: 'selectTool'; toolId: string }
   | { type: 'togglePause' }
-  | { type: 'cycleSimulationSpeed' };
+  | { type: 'cycleSimulationSpeed' }
+  | { type: 'toggleHud' };
 
 const TOOL_ID_BY_KEY = Object.values(TOOLBAR_BUTTONS).reduce<
   Record<string, string>
@@ -20,6 +21,7 @@ function getKeyboardShortcutAction(
   const toolId = TOOL_ID_BY_KEY[normalizedKey];
   if (toolId) return { type: 'selectTool', toolId };
   if (repeat) return null;
+  if (normalizedKey === 'h') return { type: 'toggleHud' };
   if (key === ' ' || normalizedKey === 'spacebar') {
     return { type: 'togglePause' };
   }

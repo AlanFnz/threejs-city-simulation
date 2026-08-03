@@ -297,8 +297,9 @@ A React root is mounted once by `createUi()`. `Game` owns a small external store
 - **Keyboard shortcuts** - `ui/keyboardShortcuts.ts` maps Esc/1–9/R/B/Space/`.` into typed HUD actions. `ToolBar` owns the document listener, ignores modified keystrokes and editable fields, respects milestone locks, and exposes the bindings through `aria-keyshortcuts`, dock badges, and the controls legend.
 - **Panel disclosure** - the milestones and capacity/service panels use native open-by-default `<details>` controls, keeping their live React content mounted while allowing either side of the map to collapse to a compact header. `ui/disclosurePreferences.ts` stores each open/closed choice under its own namespaced `localStorage` key (separate from the city save slot) and safely falls back to open when storage is unavailable. CSS repositions the optional debug readout when the lower-right panel is closed.
 - **Debug HUD** - scheduler tick/rate text is omitted from the normal React tree and its per-frame UI update returns immediately unless `CONFIG.DEBUG.SHOW_TICK_RATE` is enabled. This keeps diagnostics available without leaking development chrome into the player HUD; the vehicle graph remains independently gated by `SHOW_VEHICLE_GRAPH`.
+- **Cinematic HUD** - `UiState.isHudHidden` visually hides the mounted HUD shell without unsubscribing components or disabling the global shortcut listener. H and the city-menu action toggle the state; a restore button rendered outside the hidden shell keeps the mode reversible for mouse and touch users. This is session-only presentation state, not simulation/save data.
 
-`Game.isEventFromUiElement` guards world input against clicks on `#ui-topbar`, `#ui-toolbar`, `#ui-info-overlay` - keep new UI containers in that list (or give them one of those ids as ancestor).
+`Game.isEventFromUiElement` guards world input against clicks on `#ui-topbar`, `#ui-toolbar`, `#ui-info-overlay`, and the cinematic `#hud-restore-button` - keep new UI containers in that list (or give them one of those ids as ancestor).
 
 ### 3.5 Tool system (`src/game/tools`)
 

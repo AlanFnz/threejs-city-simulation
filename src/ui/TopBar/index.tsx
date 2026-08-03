@@ -28,6 +28,7 @@ interface TopBarProps {
   onLoad: () => void;
   onNewGame: () => void;
   onActivityRead: () => void;
+  onHideHud: () => void;
 }
 
 function TopBar({
@@ -48,6 +49,7 @@ function TopBar({
   onLoad,
   onNewGame,
   onActivityRead,
+  onHideHud,
 }: TopBarProps) {
   const [openPanel, setOpenPanel] = useState<OpenTopBarPanel>(null);
   const budgetContainer = useRef<HTMLDivElement>(null);
@@ -285,6 +287,20 @@ function TopBar({
                   <span>
                     <strong>Load city</strong>
                     <small>Restore your latest save</small>
+                  </span>
+                </button>
+                <button
+                  id="hide-hud-button"
+                  type="button"
+                  role="menuitem"
+                  onClick={() => runAction(onHideHud)}
+                >
+                  <span className="city-menu-icon" aria-hidden="true">
+                    ◇
+                  </span>
+                  <span>
+                    <strong>Hide interface</strong>
+                    <small>Cinematic view · press H to restore</small>
                   </span>
                 </button>
                 <button

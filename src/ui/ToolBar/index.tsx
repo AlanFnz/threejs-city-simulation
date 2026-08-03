@@ -21,6 +21,7 @@ interface ToolBarProps {
   onSelectTool: (toolId: string) => void;
   onTogglePause: () => void;
   onCycleSimulationSpeed: () => void;
+  onToggleHud: () => void;
 }
 
 const DIRECT_TOOL_IDS = ['SELECT', 'ROAD', 'BULLDOZE'];
@@ -57,6 +58,7 @@ function ToolBar({
   onSelectTool,
   onTogglePause,
   onCycleSimulationSpeed,
+  onToggleHud,
 }: ToolBarProps) {
   const [openCategoryId, setOpenCategoryId] = useState<string | null>(null);
   const toolbar = useRef<HTMLElement>(null);
@@ -107,14 +109,22 @@ function ToolBar({
         setOpenCategoryId(null);
       } else if (action.type === 'togglePause') {
         onTogglePause();
-      } else {
+      } else if (action.type === 'cycleSimulationSpeed') {
         onCycleSimulationSpeed();
+      } else {
+        onToggleHud();
       }
     };
 
     document.addEventListener('keydown', onKeyDown);
     return () => document.removeEventListener('keydown', onKeyDown);
-  }, [onCycleSimulationSpeed, onSelectTool, onTogglePause, unlockedToolIds]);
+  }, [
+    onCycleSimulationSpeed,
+    onSelectTool,
+    onToggleHud,
+    onTogglePause,
+    unlockedToolIds,
+  ]);
 
   const selectTool = (toolId: string): void => {
     if (!unlockedToolIds.includes(toolId)) return;

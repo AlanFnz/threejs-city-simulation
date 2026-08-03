@@ -92,6 +92,56 @@ button:focus-visible {
   -webkit-backdrop-filter: var(--hud-blur);
 }
 
+#hud-shell.hud-hidden > * {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none !important;
+}
+
+#hud-restore-button {
+  position: fixed;
+  z-index: 20;
+  right: 18px;
+  bottom: 18px;
+  min-height: 36px;
+  padding: 7px 10px 7px 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  pointer-events: auto;
+  color: var(--hud-text-muted);
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  border: 1px solid var(--hud-line);
+  border-radius: 10px;
+  background: var(--hud-bg-strong);
+  box-shadow: var(--hud-shadow);
+  backdrop-filter: var(--hud-blur);
+  -webkit-backdrop-filter: var(--hud-blur);
+}
+
+#hud-restore-button:hover,
+#hud-restore-button:focus-visible {
+  color: var(--hud-text);
+  border-color: var(--hud-line-strong);
+}
+
+#hud-restore-button kbd {
+  width: 21px;
+  height: 21px;
+  display: grid;
+  place-items: center;
+  color: var(--hud-accent-strong);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.58rem;
+  border: 1px solid var(--hud-line-strong);
+  border-radius: 5px;
+  background: rgba(83, 199, 232, 0.08);
+}
+
 /* Status bar */
 
 #ui-topbar {
@@ -2570,6 +2620,11 @@ details:not([open]) .panel-collapse-indicator {
 }
 
 @media (max-width: 680px) {
+  #hud-restore-button {
+    right: 8px;
+    bottom: calc(8px + env(safe-area-inset-bottom));
+  }
+
   #ui-topbar {
     top: calc(8px + env(safe-area-inset-top));
     width: calc(100% - 16px);

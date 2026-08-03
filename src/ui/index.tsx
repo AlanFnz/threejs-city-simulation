@@ -1,4 +1,4 @@
-import { useSyncExternalStore } from 'react';
+import { useEffect, useRef, useSyncExternalStore } from 'react';
 import { flushSync } from 'react-dom';
 import { createRoot, Root } from 'react-dom/client';
 import { ControlsLegend } from './ControlsLegend';
@@ -18,55 +18,83 @@ interface UiProps {
 }
 
 function Ui({ actions, store }: UiProps) {
+  const restoreButton = useRef<HTMLButtonElement>(null);
   const state = useSyncExternalStore(
     store.subscribe,
     store.getSnapshot,
     store.getSnapshot
   );
 
+  useEffect(() => {
+    if (state.isHudHidden) {
+      restoreButton.current?.focus();
+    }
+  }, [state.isHudHidden]);
+
   return (
     <>
-      <TopBar
-        cityName={state.cityName}
-        simulationDay={state.simulationDay}
-        money={state.money}
-        income={state.income}
-        upkeep={state.upkeep}
-        netIncome={state.netIncome}
-        population={state.population}
-        census={state.census}
-        activity={state.activity}
-        unreadActivityCount={state.unreadActivityCount}
-        isPaused={state.isPaused}
-        simulationSpeed={state.simulationSpeed}
-        onRenameCity={actions.renameCity}
-        onSave={actions.saveGame}
-        onLoad={actions.loadGame}
-        onNewGame={actions.newGame}
-        onActivityRead={store.markActivityRead}
-      />
-      <ToolBar
-        activeToolId={state.activeToolId}
-        money={state.money}
-        isPaused={state.isPaused}
-        simulationSpeed={state.simulationSpeed}
-        unlockedToolIds={state.unlockedToolIds}
-        onSelectTool={actions.selectTool}
-        onTogglePause={actions.togglePause}
-        onCycleSimulationSpeed={actions.cycleSimulationSpeed}
-      />
-      <GoalsPanel goals={state.goals} />
-      <InfoPanel inspector={state.inspector} />
-      <NotificationCenter
-        notification={state.notification}
-        onDismiss={store.dismissNotification}
-      />
-      <ZoneCapacityPanel
-        capacity={state.zoneCapacity}
-        services={state.cityServices}
-      />
-      <ControlsLegend />
-      {state.debugText && <div id="debug-tick">{state.debugText}</div>}
+      <div
+        id="hud-shell"
+        className={state.isHudHidden ? 'hud-hidden' : undefined}
+        aria-hidden={state.isHudHidden}
+      >
+        <TopBar
+          cityName={state.cityName}
+          simulationDay={state.simulationDay}
+          money={state.money}
+          income={state.income}
+          upkeep={state.upkeep}
+          netIncome={state.netIncome}
+          population={state.population}
+          census={state.census}
+          activity={state.activity}
+          unreadActivityCount={state.unreadActivityCount}
+          isPaused={state.isPaused}
+          simulationSpeed={state.simulationSpeed}
+          onRenameCity={actions.renameCity}
+          onSave={actions.saveGame}
+          onLoad={actions.loadGame}
+          onNewGame={actions.newGame}
+          onActivityRead={store.markActivityRead}
+          onHideHud={store.toggleHudVisibility}
+        />
+        <ToolBar
+          activeToolId={state.activeToolId}
+          money={state.money}
+          isPaused={state.isPaused}
+          simulationSpeed={state.simulationSpeed}
+          unlockedToolIds={state.unlockedToolIds}
+          onSelectTool={actions.selectTool}
+          onTogglePause={actions.togglePause}
+          onCycleSimulationSpeed={actions.cycleSimulationSpeed}
+          onToggleHud={store.toggleHudVisibility}
+        />
+        <GoalsPanel goals={state.goals} />
+        <InfoPanel inspector={state.inspector} />
+        <NotificationCenter
+          notification={state.notification}
+          onDismiss={store.dismissNotification}
+        />
+        <ZoneCapacityPanel
+          capacity={state.zoneCapacity}
+          services={state.cityServices}
+        />
+        <ControlsLegend />
+        {state.debugText && <div id="debug-tick">{state.debugText}</div>}
+      </div>
+      {state.isHudHidden && (
+        <button
+          ref={restoreButton}
+          id="hud-restore-button"
+          type="button"
+          aria-label="Show city interface"
+          aria-keyshortcuts="H"
+          onClick={store.toggleHudVisibility}
+        >
+          <kbd>H</kbd>
+          Show HUD
+        </button>
+      )}
     </>
   );
 }

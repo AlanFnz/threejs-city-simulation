@@ -140,6 +140,7 @@ export interface UiState {
   notification: UiNotification | null;
   activity: UiNotification[];
   unreadActivityCount: number;
+  isHudHidden: boolean;
   debugText: string;
 }
 
@@ -162,6 +163,7 @@ export interface UiController {
   showNotification(notification: NewUiNotification): void;
   dismissNotification(): void;
   markActivityRead(): void;
+  toggleHudVisibility(): void;
   dispose(): void;
 }
 
@@ -213,6 +215,9 @@ export function createUiStore(initialState: UiState): UiController {
     },
     markActivityRead() {
       if (state.unreadActivityCount > 0) update({ unreadActivityCount: 0 });
+    },
+    toggleHudVisibility() {
+      update({ isHudHidden: !state.isHudHidden });
     },
     dispose() {
       if (notificationTimer) clearTimeout(notificationTimer);

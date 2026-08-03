@@ -29,8 +29,10 @@ describe('getKeyboardShortcutAction', () => {
     expect(getKeyboardShortcutAction('.')).toEqual({
       type: 'cycleSimulationSpeed',
     });
+    expect(getKeyboardShortcutAction('h')).toEqual({ type: 'toggleHud' });
     expect(getKeyboardShortcutAction(' ', true)).toBeNull();
     expect(getKeyboardShortcutAction('.', true)).toBeNull();
+    expect(getKeyboardShortcutAction('h', true)).toBeNull();
   });
 
   it('ignores unrelated keys', () => {

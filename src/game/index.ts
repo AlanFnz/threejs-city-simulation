@@ -539,6 +539,7 @@ export class Game implements IGame {
       notification: null,
       activity: [],
       unreadActivityCount: 0,
+      isHudHidden: false,
       debugText: '',
     };
   }
@@ -553,6 +554,7 @@ export class Game implements IGame {
       'ui-toolbar',
       'ui-goals-overlay',
       'ui-info-overlay',
+      'hud-restore-button',
     ];
     return uiElements.some((id) =>
       (event.target as HTMLElement).closest(`#${id}`)
