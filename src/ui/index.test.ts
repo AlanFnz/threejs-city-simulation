@@ -273,6 +273,9 @@ describe('React UI shell', () => {
     expect(markup).toContain('4, 7');
     expect(markup).toContain('Road</span><strong>Online');
     expect(markup).toContain('Power</span><strong>Missing');
+    expect(markup).toContain('class="inspector-service-icon"');
+    expect(markup).toContain('road-color.png');
+    expect(markup).toContain('power-color.png');
     expect(markup).toContain('&lt;img src=x onerror=alert(1)&gt;');
     expect(markup).not.toContain('<img src=x onerror=alert(1)>');
   });

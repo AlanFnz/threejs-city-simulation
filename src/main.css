@@ -2121,9 +2121,9 @@ details:not([open]) .panel-collapse-indicator {
 
 .service-chip {
   min-width: 0;
-  padding: 7px 8px;
+  padding: 6px 8px 6px 6px;
   display: grid;
-  grid-template-columns: 7px 1fr auto;
+  grid-template-columns: 24px minmax(0, 1fr) auto;
   align-items: center;
   gap: 6px;
   color: var(--hud-text-muted);
@@ -2139,21 +2139,49 @@ details:not([open]) .panel-collapse-indicator {
   text-transform: uppercase;
 }
 
-.service-indicator {
-  width: 7px;
-  height: 7px;
+.inspector-service-icon {
+  position: relative;
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(151, 191, 215, 0.1);
+  border-radius: 6px;
+  background: rgba(7, 15, 25, 0.42);
+}
+
+.inspector-service-icon img {
+  width: 15px;
+  height: 15px;
+  object-fit: contain;
+  filter: saturate(0.8);
+}
+
+.inspector-service-icon::after {
+  position: absolute;
+  right: -2px;
+  bottom: -2px;
+  width: 6px;
+  height: 6px;
+  content: '';
+  border: 2px solid #101d29;
   border-radius: 50%;
   background: var(--hud-danger);
-  box-shadow: 0 0 7px rgba(255, 114, 124, 0.38);
+  box-shadow: 0 0 6px rgba(255, 114, 124, 0.4);
 }
 
 .service-chip.available strong {
   color: var(--hud-positive);
 }
 
-.service-chip.available .service-indicator {
+.service-chip.available .inspector-service-icon::after {
   background: var(--hud-positive);
   box-shadow: 0 0 7px rgba(100, 214, 160, 0.42);
+}
+
+.service-chip.unavailable .inspector-service-icon img {
+  filter: grayscale(0.75);
+  opacity: 0.58;
 }
 
 .service-chip.unavailable strong {

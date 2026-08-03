@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { getIcon, ICON_KEYS, type IconKey } from '../../assetManager/icons';
 import { InspectorBuildingUiState, InspectorUiState } from '../store';
 
 interface InfoPanelProps {
@@ -6,6 +7,15 @@ interface InfoPanelProps {
   onBulldoze: () => void;
   onClose: () => void;
 }
+
+const SERVICE_ICONS: Record<string, IconKey> = {
+  road: ICON_KEYS.ROAD_COLOR,
+  power: ICON_KEYS.POWER_COLOR,
+  fire: ICON_KEYS.FIRE_STATION_COLOR,
+  police: ICON_KEYS.POLICE_STATION_COLOR,
+  health: ICON_KEYS.HOSPITAL_COLOR,
+  school: ICON_KEYS.SCHOOL_COLOR,
+};
 
 function formatLabel(value: string): string {
   return value
@@ -170,7 +180,14 @@ function InfoPanel({ inspector, onBulldoze, onClose }: InfoPanelProps) {
                         service.available ? 'available' : 'unavailable'
                       }`}
                     >
-                      <span className="service-indicator" aria-hidden="true" />
+                      <span className="inspector-service-icon" aria-hidden="true">
+                        <img
+                          src={getIcon(
+                            SERVICE_ICONS[service.id] ?? ICON_KEYS.SELECT_COLOR
+                          )}
+                          alt=""
+                        />
+                      </span>
                       <span>{service.label}</span>
                       <strong>
                         {service.available ? 'Online' : 'Missing'}
