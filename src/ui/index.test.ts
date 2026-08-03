@@ -180,7 +180,9 @@ describe('React UI shell', () => {
         })
       ),
       renderToStaticMarkup(createElement(GoalsPanel, { goals })),
-      renderToStaticMarkup(createElement(InfoPanel, { inspector: null })),
+      renderToStaticMarkup(
+        createElement(InfoPanel, { inspector: null, onClose: noop })
+      ),
       renderToStaticMarkup(createElement(ControlsLegend)),
       renderToStaticMarkup(
         createElement(ZoneCapacityPanel, {
@@ -221,10 +223,11 @@ describe('React UI shell', () => {
 
   it('renders typed inspector data as structured status cards', () => {
     const markup = renderToStaticMarkup(
-      createElement(InfoPanel, { inspector })
+      createElement(InfoPanel, { inspector, onClose: noop })
     );
 
     expect(markup).toContain('Residential zone');
+    expect(markup).toContain('aria-label="Close city inspector"');
     expect(markup).toContain('4, 7');
     expect(markup).toContain('Road</span><strong>Online');
     expect(markup).toContain('Power</span><strong>Missing');

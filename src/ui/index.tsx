@@ -70,7 +70,7 @@ function Ui({ actions, store }: UiProps) {
           onToggleHud={store.toggleHudVisibility}
         />
         <GoalsPanel goals={state.goals} />
-        <InfoPanel inspector={state.inspector} />
+        <InfoPanel inspector={state.inspector} onClose={actions.closeInspector} />
         <NotificationCenter
           notification={state.notification}
           onDismiss={store.dismissNotification}

@@ -2,6 +2,7 @@ import { InspectorBuildingUiState, InspectorUiState } from '../store';
 
 interface InfoPanelProps {
   inspector: InspectorUiState | null;
+  onClose: () => void;
 }
 
 function formatLabel(value: string): string {
@@ -112,7 +113,7 @@ function BuildingCard({ building }: { building: InspectorBuildingUiState }) {
   );
 }
 
-function InfoPanel({ inspector }: InfoPanelProps) {
+function InfoPanel({ inspector, onClose }: InfoPanelProps) {
   return (
     <div id="ui-info-overlay">
       <aside
@@ -131,6 +132,15 @@ function InfoPanel({ inspector }: InfoPanelProps) {
               <span className="coordinate-badge">
                 {inspector.x}, {inspector.y}
               </span>
+              <button
+                className="inspector-close-button"
+                type="button"
+                aria-label="Close city inspector"
+                title="Close inspector"
+                onClick={onClose}
+              >
+                <span aria-hidden="true">×</span>
+              </button>
             </header>
             <div id="info-overlay-details">
               <section className="inspector-section">

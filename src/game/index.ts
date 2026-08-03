@@ -46,6 +46,7 @@ export interface IGame {
   focusedObject: ITile | null;
   step(): void;
   selectTool(toolId: string): void;
+  closeInspector(): void;
   togglePause(): void;
   cycleSimulationSpeed(): void;
   renameCity(name: string): void;
@@ -93,6 +94,7 @@ export class Game implements IGame {
   constructor() {
     this.ui = createUi(this.getInitialUiState(), {
       selectTool: (toolId) => this.selectTool(toolId),
+      closeInspector: () => this.closeInspector(),
       togglePause: () => this.togglePause(),
       cycleSimulationSpeed: () => this.cycleSimulationSpeed(),
       renameCity: (name) => this.renameCity(name),
@@ -319,6 +321,12 @@ export class Game implements IGame {
     this.sceneManager.deactivateObject();
     this.sceneManager.hidePreviewMesh();
     this.lastPreviewTile = null;
+  }
+
+  closeInspector(): void {
+    this.focusedObject = null;
+    this.sceneManager.deactivateObject();
+    this.updateInfoOverlay();
   }
 
   togglePause(): void {

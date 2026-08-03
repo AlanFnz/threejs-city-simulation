@@ -1836,11 +1836,15 @@ details:not([open]) .panel-collapse-indicator {
 .inspector-heading {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 16px;
+  gap: 10px;
+}
+
+.inspector-heading > div:first-child {
+  min-width: 0;
 }
 
 .coordinate-badge {
+  margin-left: auto;
   padding: 5px 8px;
   color: var(--hud-text-muted);
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
@@ -1849,6 +1853,33 @@ details:not([open]) .panel-collapse-indicator {
   border: 1px solid var(--hud-line);
   border-radius: 7px;
   background: rgba(7, 15, 25, 0.42);
+}
+
+.inspector-close-button {
+  width: 28px;
+  height: 28px;
+  flex: 0 0 28px;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  color: var(--hud-text-muted);
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 1.15rem;
+  line-height: 1;
+  border: 1px solid var(--hud-line);
+  border-radius: 8px;
+  background: rgba(7, 15, 25, 0.42);
+  transition:
+    color var(--hud-transition),
+    border-color var(--hud-transition),
+    background var(--hud-transition);
+}
+
+.inspector-close-button:hover,
+.inspector-close-button:focus-visible {
+  color: var(--hud-text);
+  border-color: var(--hud-line-strong);
+  background: rgba(83, 199, 232, 0.1);
 }
 
 .inspector-section {

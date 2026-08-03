@@ -147,6 +147,7 @@ export interface UiState {
 export interface UiActions {
   renameCity(name: string): void;
   selectTool(toolId: string): void;
+  closeInspector(): void;
   togglePause(): void;
   cycleSimulationSpeed(): void;
   saveGame(): void;
