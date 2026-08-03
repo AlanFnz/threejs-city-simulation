@@ -334,7 +334,12 @@ export class Game implements IGame {
   selectTool(toolId: string): void {
     if (!this.milestoneTracker.isUnlocked(toolId)) return;
     this.activeToolId = toolId;
-    this.ui.update({ activeToolId: toolId });
+    const uiUpdate: Partial<UiState> = { activeToolId: toolId };
+    if (this.focusedObject) {
+      this.focusedObject = null;
+      uiUpdate.inspector = null;
+    }
+    this.ui.update(uiUpdate);
     this.sceneManager.deactivateObject();
     this.sceneManager.hidePreviewMesh();
     this.lastPreviewTile = null;
