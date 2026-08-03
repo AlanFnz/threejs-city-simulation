@@ -2104,12 +2104,41 @@ details:not([open]) .panel-collapse-indicator {
   font-size: 0.88rem;
 }
 
-.inspector-section-heading > span {
+.inspector-service-heading-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.inspector-service-heading-meta > span {
   color: var(--hud-text-dim);
   font-size: 0.65rem;
   font-weight: 750;
   letter-spacing: 0.08em;
   text-transform: uppercase;
+}
+
+.inspector-service-heading-meta > strong {
+  padding: 3px 5px;
+  font-size: 0.48rem;
+  font-weight: 850;
+  line-height: 1;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  border: 1px solid;
+  border-radius: 5px;
+}
+
+.inspector-service-heading-meta > strong.tone-good {
+  color: var(--hud-positive);
+  border-color: rgba(100, 214, 160, 0.26);
+  background: rgba(100, 214, 160, 0.08);
+}
+
+.inspector-service-heading-meta > strong.tone-poor {
+  color: #f28c94;
+  border-color: rgba(230, 105, 113, 0.28);
+  background: rgba(181, 56, 66, 0.1);
 }
 
 .service-grid {

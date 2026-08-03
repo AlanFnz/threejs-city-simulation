@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ControlsLegend } from './ControlsLegend';
 import { CityMap } from './CityMap';
 import { GoalsPanel } from './GoalsPanel';
-import { InfoPanel } from './InfoPanel';
+import { getInspectorServiceSummary, InfoPanel } from './InfoPanel';
 import { NotificationCenter } from './NotificationCenter';
 import { SimulationStatus } from './SimulationStatus';
 import { ToolBar } from './ToolBar';
@@ -276,8 +276,21 @@ describe('React UI shell', () => {
     expect(markup).toContain('class="inspector-service-icon"');
     expect(markup).toContain('road-color.png');
     expect(markup).toContain('power-color.png');
+    expect(markup).toContain('1 missing');
     expect(markup).toContain('&lt;img src=x onerror=alert(1)&gt;');
     expect(markup).not.toContain('<img src=x onerror=alert(1)>');
+  });
+
+  it('summarizes selected-tile service health', () => {
+    expect(getInspectorServiceSummary(inspector.services)).toEqual({
+      label: '1 missing',
+      tone: 'poor',
+    });
+    expect(
+      getInspectorServiceSummary(
+        inspector.services.map((service) => ({ ...service, available: true }))
+      )
+    ).toEqual({ label: 'All online', tone: 'good' });
   });
 
   it('renders live milestone progress and the upcoming roadmap', () => {

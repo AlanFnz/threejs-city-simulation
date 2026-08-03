@@ -1,6 +1,10 @@
 import { useEffect, useState } from 'react';
 import { getIcon, ICON_KEYS, type IconKey } from '../../assetManager/icons';
-import { InspectorBuildingUiState, InspectorUiState } from '../store';
+import {
+  InspectorBuildingUiState,
+  InspectorServiceUiState,
+  InspectorUiState,
+} from '../store';
 
 interface InfoPanelProps {
   inspector: InspectorUiState | null;
@@ -16,6 +20,19 @@ const SERVICE_ICONS: Record<string, IconKey> = {
   health: ICON_KEYS.HOSPITAL_COLOR,
   school: ICON_KEYS.SCHOOL_COLOR,
 };
+
+function getInspectorServiceSummary(services: InspectorServiceUiState[]): {
+  label: string;
+  tone: 'good' | 'poor';
+} {
+  const missingCount = services.filter((service) => !service.available).length;
+  return missingCount === 0
+    ? { label: 'All online', tone: 'good' }
+    : {
+        label: `${missingCount} missing`,
+        tone: 'poor',
+      };
+}
 
 function formatLabel(value: string): string {
   return value
@@ -127,6 +144,9 @@ function BuildingCard({ building }: { building: InspectorBuildingUiState }) {
 
 function InfoPanel({ inspector, onBulldoze, onClose }: InfoPanelProps) {
   const [isConfirmingBulldoze, setIsConfirmingBulldoze] = useState(false);
+  const serviceSummary = inspector
+    ? getInspectorServiceSummary(inspector.services)
+    : null;
 
   useEffect(() => {
     setIsConfirmingBulldoze(false);
@@ -170,7 +190,14 @@ function InfoPanel({ inspector, onBulldoze, onClose }: InfoPanelProps) {
               <section className="inspector-section">
                 <div className="inspector-section-heading">
                   <h3>Local services</h3>
-                  <span>{formatLabel(inspector.terrain)}</span>
+                  <span className="inspector-service-heading-meta">
+                    <span>{formatLabel(inspector.terrain)}</span>
+                    {serviceSummary && (
+                      <strong className={`tone-${serviceSummary.tone}`}>
+                        {serviceSummary.label}
+                      </strong>
+                    )}
+                  </span>
                 </div>
                 <div className="service-grid">
                   {inspector.services.map((service) => (
@@ -253,4 +280,4 @@ function InfoPanel({ inspector, onBulldoze, onClose }: InfoPanelProps) {
   );
 }
 
-export { InfoPanel };
+export { getInspectorServiceSummary, InfoPanel };
