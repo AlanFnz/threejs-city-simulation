@@ -20,7 +20,7 @@ Built with **Three.js** and **TypeScript**. No framework, no backend - just a si
 - **Urban decay** - cut off a neighborhood from the road network (or power grid) and buildings will eventually be abandoned. Reconnect it and they can redevelop.
 - **Civic services** - fire stations, police stations, hospitals, and schools each protect or boost nearby zones (fire immunity, abandonment immunity, faster move-in, faster level-ups), unlocked as your population grows.
 - **Economy** - every building costs money to place and money to maintain; residents and workers pay tax. The HUD surfaces live revenue, upkeep, and net cash flow, while milestones grant cash bonuses, upkeep discounts, and raised zone level caps as your city grows.
-- **Simulation calendar** - every simulated day advances a persistent city clock, with pause and 1×/2×/3× speed reflected live in the HUD.
+- **Simulation calendar** - every simulated day advances a persistent city clock, with pause and 1×/2×/3× speed reflected live in the HUD and an explicit paused-state banner on desktop and mobile.
 - **Random events** - occasional windfalls, fires, and layoffs add variance on top of the steady simulation.
 - **Activity history** - an unread badge leads to the six latest milestones, events, placement warnings, and management actions in the city menu, each retaining its simulation day after transient alerts disappear.
 - **Controllable alerts** - HUD toasts can be dismissed immediately or left to expire automatically, while their activity-history entry remains available.

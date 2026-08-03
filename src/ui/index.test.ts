@@ -5,6 +5,7 @@ import { ControlsLegend } from './ControlsLegend';
 import { GoalsPanel } from './GoalsPanel';
 import { InfoPanel } from './InfoPanel';
 import { NotificationCenter } from './NotificationCenter';
+import { SimulationStatus } from './SimulationStatus';
 import { ToolBar } from './ToolBar';
 import { TopBar } from './TopBar';
 import { ZoneCapacityPanel } from './ZoneCapacityPanel';
@@ -266,6 +267,20 @@ describe('React UI shell', () => {
     expect(markup).toContain('Milestone complete');
     expect(markup).toContain('Reach 10 residents · $2,000 bonus');
     expect(markup).toContain('Dismiss Milestone complete notification');
+  });
+
+  it('renders an explicit paused-state indicator only while paused', () => {
+    const pausedMarkup = renderToStaticMarkup(
+      createElement(SimulationStatus, { isPaused: true })
+    );
+    const runningMarkup = renderToStaticMarkup(
+      createElement(SimulationStatus, { isPaused: false })
+    );
+
+    expect(pausedMarkup).toContain('id="simulation-pause-indicator"');
+    expect(pausedMarkup).toContain('Simulation paused');
+    expect(pausedMarkup).toContain('<kbd>Space</kbd>');
+    expect(runningMarkup).toBe('');
   });
 
   it('renders recent city activity with simulation-day context', () => {

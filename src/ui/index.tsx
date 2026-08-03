@@ -5,6 +5,7 @@ import { ControlsLegend } from './ControlsLegend';
 import { GoalsPanel } from './GoalsPanel';
 import { InfoPanel } from './InfoPanel';
 import { NotificationCenter } from './NotificationCenter';
+import { SimulationStatus } from './SimulationStatus';
 import { ToolBar } from './ToolBar';
 import { TopBar } from './TopBar';
 import { ZoneCapacityPanel } from './ZoneCapacityPanel';
@@ -72,6 +73,7 @@ function Ui({ actions, store }: UiProps) {
           onToggleHud={store.toggleHudVisibility}
         />
         <GoalsPanel goals={state.goals} />
+        <SimulationStatus isPaused={state.isPaused} />
         <InfoPanel inspector={state.inspector} onClose={actions.closeInspector} />
         <NotificationCenter
           notification={state.notification}
