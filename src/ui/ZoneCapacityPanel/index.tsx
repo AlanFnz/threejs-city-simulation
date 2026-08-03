@@ -21,6 +21,12 @@ const LABELS: Record<ZoneCapacityMetricUiState['id'], string> = {
   industrial: 'Industrial',
 };
 
+const ZONE_TOOLS: Record<ZoneCapacityMetricUiState['id'], string> = {
+  residential: 'RESIDENTIAL',
+  commercial: 'COMMERCIAL',
+  industrial: 'INDUSTRIAL',
+};
+
 const SERVICE_LABELS: Record<CityServiceMetricUiState['id'], string> = {
   road: 'Road',
   power: 'Power',
@@ -89,12 +95,42 @@ function getServiceCoverageSummary(
   };
 }
 
-function CapacityRow({ metric }: { metric: ZoneCapacityMetricUiState }) {
+function CapacityRow({
+  metric,
+  isActive,
+  isUnlocked,
+  onSelect,
+}: {
+  metric: ZoneCapacityMetricUiState;
+  isActive: boolean;
+  isUnlocked: boolean;
+  onSelect(): void;
+}) {
   const utilization = metric.utilization ?? 0;
   const label = LABELS[metric.id];
+  const capacityLabel =
+    metric.capacity === 0
+      ? 'no active zones'
+      : `${metric.occupied} of ${metric.capacity} occupied`;
 
   return (
-    <div className={`capacity-row ${metric.id}`}>
+    <button
+      type="button"
+      className={`capacity-row ${metric.id}${isActive ? ' active' : ''}`}
+      aria-label={`${label} capacity: ${capacityLabel}. ${
+        isUnlocked
+          ? `Select ${label} zoning tool`
+          : `${label} zoning tool locked`
+      }`}
+      aria-pressed={isActive}
+      disabled={!isUnlocked}
+      title={
+        isUnlocked
+          ? `Select ${label} zoning tool`
+          : `${label} zoning unlocks through milestones`
+      }
+      onClick={onSelect}
+    >
       <span className="capacity-label">
         <i aria-hidden="true" />
         {label}
@@ -104,7 +140,7 @@ function CapacityRow({ metric }: { metric: ZoneCapacityMetricUiState }) {
           ? 'No active zones'
           : `${metric.occupied.toLocaleString()} / ${metric.capacity.toLocaleString()}`}
       </span>
-      <div
+      <span
         className="capacity-progress"
         role="progressbar"
         aria-label={`${label} capacity utilization`}
@@ -113,8 +149,8 @@ function CapacityRow({ metric }: { metric: ZoneCapacityMetricUiState }) {
         aria-valuenow={utilization}
       >
         <span style={{ width: `${utilization}%` }} />
-      </div>
-    </div>
+      </span>
+    </button>
   );
 }
 
@@ -185,6 +221,19 @@ function ZoneCapacityPanel({
   const disclosure = useDisclosurePreference('city-overview');
   const coverageSummary = getServiceCoverageSummary(services);
 
+  const renderCapacityRow = (metric: ZoneCapacityMetricUiState) => {
+    const toolId = ZONE_TOOLS[metric.id];
+    return (
+      <CapacityRow
+        key={metric.id}
+        metric={metric}
+        isActive={activeToolId === toolId}
+        isUnlocked={unlockedToolIds.includes(toolId)}
+        onSelect={() => onSelectTool(toolId)}
+      />
+    );
+  };
+
   const renderServiceMetric = (metric: CityServiceMetricUiState) => {
     const toolId = SERVICE_TOOLS[metric.id];
     return (
@@ -220,9 +269,9 @@ function ZoneCapacityPanel({
           </span>
         </summary>
         <div className="capacity-rows">
-          <CapacityRow metric={capacity.residential} />
-          <CapacityRow metric={capacity.commercial} />
-          <CapacityRow metric={capacity.industrial} />
+          {renderCapacityRow(capacity.residential)}
+          {renderCapacityRow(capacity.commercial)}
+          {renderCapacityRow(capacity.industrial)}
         </div>
         <div className="service-coverage-heading">
           <span>Developed zone coverage</span>

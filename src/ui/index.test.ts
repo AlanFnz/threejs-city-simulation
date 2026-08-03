@@ -392,7 +392,13 @@ describe('React UI shell', () => {
         capacity: zoneCapacity,
         services: cityServices,
         activeToolId: 'ROAD',
-        unlockedToolIds: ['ROAD', 'POWER_LINE'],
+        unlockedToolIds: [
+          'RESIDENTIAL',
+          'COMMERCIAL',
+          'INDUSTRIAL',
+          'ROAD',
+          'POWER_LINE',
+        ],
         onSelectTool: noop,
       })
     );
@@ -416,6 +422,9 @@ describe('React UI shell', () => {
     expect(markup).toContain('<summary class="zone-capacity-heading">');
     expect(markup).toContain('4 gaps');
     expect(markup).toContain('4 city service coverage gaps');
+    expect(markup).toContain('Select Residential zoning tool');
+    expect(markup).toContain('Commercial capacity: 4 of 8 occupied');
+    expect(markup).toContain('Industrial capacity: no active zones');
   });
 
   it('summarizes healthy and inactive service coverage without false alerts', () => {

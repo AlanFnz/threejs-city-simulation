@@ -3007,10 +3007,48 @@ details:not([open]) .panel-collapse-indicator {
 }
 
 .capacity-row {
+  appearance: none;
+  width: 100%;
+  padding: 5px 6px;
   display: grid;
   grid-template-columns: 1fr auto;
   align-items: center;
   gap: 4px 10px;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  pointer-events: auto;
+  transition:
+    border-color var(--hud-transition),
+    background var(--hud-transition),
+    box-shadow var(--hud-transition),
+    transform var(--hud-transition);
+}
+
+.capacity-row:not(:disabled):hover,
+.capacity-row:not(:disabled):focus-visible {
+  border-color: rgba(123, 220, 243, 0.24);
+  background: rgba(45, 79, 99, 0.32);
+  outline: none;
+}
+
+.capacity-row:not(:disabled):active {
+  transform: translateY(1px);
+}
+
+.capacity-row.active {
+  border-color: color-mix(in srgb, var(--capacity-color) 42%, transparent);
+  background: color-mix(in srgb, var(--capacity-color) 9%, transparent);
+  box-shadow: inset 2px 0 var(--capacity-color);
+}
+
+.capacity-row:disabled {
+  cursor: not-allowed;
+  opacity: 0.56;
 }
 
 .capacity-label,
@@ -3045,6 +3083,7 @@ details:not([open]) .panel-collapse-indicator {
 .capacity-progress {
   height: 4px;
   grid-column: 1 / -1;
+  display: block;
   overflow: hidden;
   border-radius: 99px;
   background: rgba(151, 191, 215, 0.1);
