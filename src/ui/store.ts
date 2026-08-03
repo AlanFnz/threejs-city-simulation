@@ -101,6 +101,22 @@ export interface ZoneCapacityUiState {
   industrial: ZoneCapacityMetricUiState;
 }
 
+export interface CityServiceMetricUiState {
+  id: 'road' | 'power' | 'fire' | 'police' | 'health' | 'education';
+  covered: number;
+  total: number;
+  percentage: number | null;
+}
+
+export interface CityServicesUiState {
+  road: CityServiceMetricUiState;
+  power: CityServiceMetricUiState;
+  fire: CityServiceMetricUiState;
+  police: CityServiceMetricUiState;
+  health: CityServiceMetricUiState;
+  education: CityServiceMetricUiState;
+}
+
 export interface UiState {
   cityName: string;
   simulationDay: number;
@@ -111,6 +127,7 @@ export interface UiState {
   population: number;
   census: CensusUiState;
   zoneCapacity: ZoneCapacityUiState;
+  cityServices: CityServicesUiState;
   activeToolId: string | null;
   isPaused: boolean;
   simulationSpeed: SimulationSpeed;

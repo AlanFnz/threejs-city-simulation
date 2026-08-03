@@ -14,6 +14,7 @@ import { TOOLBAR_BUTTONS } from './constants';
 import {
   createUiStore,
   CensusUiState,
+  CityServicesUiState,
   GoalsUiState,
   InspectorUiState,
   UiState,
@@ -80,6 +81,15 @@ const zoneCapacity: ZoneCapacityUiState = {
     capacity: 0,
     utilization: null,
   },
+};
+
+const cityServices: CityServicesUiState = {
+  road: { id: 'road', covered: 3, total: 4, percentage: 75 },
+  power: { id: 'power', covered: 4, total: 4, percentage: 100 },
+  fire: { id: 'fire', covered: 2, total: 4, percentage: 50 },
+  police: { id: 'police', covered: 0, total: 4, percentage: 0 },
+  health: { id: 'health', covered: 0, total: 0, percentage: null },
+  education: { id: 'education', covered: 1, total: 4, percentage: 25 },
 };
 
 const inspector: InspectorUiState = {
@@ -157,7 +167,10 @@ describe('React UI shell', () => {
       renderToStaticMarkup(createElement(InfoPanel, { inspector: null })),
       renderToStaticMarkup(createElement(ControlsLegend)),
       renderToStaticMarkup(
-        createElement(ZoneCapacityPanel, { capacity: zoneCapacity })
+        createElement(ZoneCapacityPanel, {
+          capacity: zoneCapacity,
+          services: cityServices,
+        })
       ),
     ].join('');
 
@@ -257,14 +270,21 @@ describe('React UI shell', () => {
 
   it('renders real zone capacity without inventing demand values', () => {
     const markup = renderToStaticMarkup(
-      createElement(ZoneCapacityPanel, { capacity: zoneCapacity })
+      createElement(ZoneCapacityPanel, {
+        capacity: zoneCapacity,
+        services: cityServices,
+      })
     );
 
-    expect(markup).toContain('City zone capacity');
+    expect(markup).toContain('City capacity and service coverage');
     expect(markup).toContain('Residential');
     expect(markup).toContain('8 / 12');
     expect(markup).toContain('aria-valuenow="67"');
     expect(markup).toContain('No active zones');
+    expect(markup).toContain('Developed zone coverage');
+    expect(markup).toContain('Power');
+    expect(markup).toContain('100%');
+    expect(markup).toContain('Health coverage: no developed zones');
   });
 
   it('renders every tool and preserves locked state at mount time', () => {
@@ -346,6 +366,7 @@ describe('UI store', () => {
       commercial: { ...zoneCapacity.commercial, occupied: 0 },
       industrial: { ...zoneCapacity.industrial },
     },
+    cityServices,
     activeToolId: 'SELECT',
     isPaused: false,
     simulationSpeed: 1,

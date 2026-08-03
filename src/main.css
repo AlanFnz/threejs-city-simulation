@@ -2143,7 +2143,7 @@ button:focus-visible {
 #debug-tick {
   position: absolute;
   right: 18px;
-  bottom: 174px;
+  bottom: 296px;
   color: rgba(178, 244, 208, 0.72);
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 0.65rem;
@@ -2254,6 +2254,76 @@ button:focus-visible {
 
 .capacity-row.industrial {
   --capacity-color: var(--hud-zone-industrial);
+}
+
+.service-coverage-heading {
+  padding: 8px 10px 6px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: var(--hud-text-muted);
+  border-top: 1px solid var(--hud-line);
+  background: rgba(28, 51, 67, 0.28);
+}
+
+.service-coverage-heading span,
+.service-coverage-heading small {
+  font-size: 0.52rem;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.service-coverage-heading small {
+  color: var(--hud-text-dim);
+}
+
+.service-coverage-grid {
+  padding: 7px 9px 9px;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 5px;
+}
+
+.service-metric {
+  min-width: 0;
+  padding: 5px 6px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 5px;
+  border: 1px solid rgba(151, 191, 215, 0.09);
+  border-radius: 6px;
+  background: rgba(17, 32, 44, 0.48);
+}
+
+.service-metric span {
+  overflow: hidden;
+  color: var(--hud-text-dim);
+  font-size: 0.5rem;
+  font-weight: 750;
+  letter-spacing: 0.035em;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.service-metric strong {
+  color: var(--hud-danger);
+  font-size: 0.56rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.service-metric.good strong {
+  color: var(--hud-positive);
+}
+
+.service-metric.watch strong {
+  color: var(--hud-warning);
+}
+
+.service-metric.empty strong {
+  color: var(--hud-text-dim);
 }
 
 @media (max-width: 900px) {

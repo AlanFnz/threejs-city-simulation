@@ -15,6 +15,7 @@ Built with **Three.js** and **TypeScript**. No framework, no backend - just a si
 - **A living population** - citizens move into residential zones with names, ages, and an employment lifecycle (school, working age, retirement). Workers search nearby commercial and industrial zones for jobs, and move-in slows down when there's nowhere to work.
 - **Live census** - the population HUD opens into an employment and life-stage breakdown sourced directly from current residents and workplace links.
 - **Zone capacity** - a compact desktop overview shows real residential occupancy and commercial/industrial staffing for developed zones, without inventing a separate demand simulation.
+- **Service coverage** - the same city overview reports road, power, fire, police, health, and education coverage across developed zones so infrastructure gaps are visible without opening individual tiles.
 - **Traffic** - vehicles spawn on the road network and drive it lane-by-lane, scaled to your population.
 - **Urban decay** - cut off a neighborhood from the road network (or power grid) and buildings will eventually be abandoned. Reconnect it and they can redevelop.
 - **Civic services** - fire stations, police stations, hospitals, and schools each protect or boost nearby zones (fire immunity, abandonment immunity, faster move-in, faster level-ups), unlocked as your population grows.

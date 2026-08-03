@@ -55,7 +55,10 @@ function Ui({ actions, store }: UiProps) {
       <GoalsPanel goals={state.goals} />
       <InfoPanel inspector={state.inspector} />
       <NotificationCenter notification={state.notification} />
-      <ZoneCapacityPanel capacity={state.zoneCapacity} />
+      <ZoneCapacityPanel
+        capacity={state.zoneCapacity}
+        services={state.cityServices}
+      />
       <ControlsLegend />
       <div id="debug-tick">{state.debugText}</div>
     </>

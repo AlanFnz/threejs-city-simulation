@@ -33,6 +33,7 @@ import {
 import { createCensusUiState } from './census';
 import { createToolRejectionNotification } from './toolFeedback';
 import { createZoneCapacityUiState } from './zoneCapacity';
+import { createCityServicesUiState } from './cityServices';
 
 const AUTOSAVE_INTERVAL_TICKS = 30;
 
@@ -435,6 +436,7 @@ export class Game implements IGame {
       population: this.city.population,
       census: createCensusUiState(this.city),
       zoneCapacity: createZoneCapacityUiState(this.city),
+      cityServices: createCityServicesUiState(this.city),
     });
   }
 
@@ -449,6 +451,7 @@ export class Game implements IGame {
       this.ui.update({
         census: createCensusUiState(this.city),
         zoneCapacity: createZoneCapacityUiState(this.city),
+        cityServices: createCityServicesUiState(this.city),
       });
     });
   }
@@ -525,6 +528,7 @@ export class Game implements IGame {
       population: this.city.population,
       census: createCensusUiState(this.city),
       zoneCapacity: createZoneCapacityUiState(this.city),
+      cityServices: createCityServicesUiState(this.city),
       activeToolId: this.activeToolId,
       isPaused: this.isPaused,
       simulationSpeed: this.simulationSpeed,
