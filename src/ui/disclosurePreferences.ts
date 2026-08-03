@@ -1,6 +1,6 @@
 import { SyntheticEvent, useCallback, useState } from 'react';
 
-type DisclosurePreferenceKey = 'goals' | 'city-overview';
+type DisclosurePreferenceKey = 'goals' | 'city-overview' | 'controls';
 
 interface PreferenceStorage {
   getItem(key: string): string | null;

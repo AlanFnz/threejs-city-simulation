@@ -2542,7 +2542,17 @@ details:not([open]) .panel-collapse-indicator {
   bottom: 18px;
   left: 18px;
   width: 196px;
-  pointer-events: none;
+  pointer-events: auto;
+}
+
+.controls-legend-details > summary {
+  list-style: none;
+  cursor: pointer;
+  user-select: none;
+}
+
+.controls-legend-details > summary::-webkit-details-marker {
+  display: none;
 }
 
 .controls-heading {
@@ -2569,10 +2579,19 @@ details:not([open]) .panel-collapse-indicator {
   background: rgba(83, 199, 232, 0.08);
 }
 
-.controls-heading > span:last-child {
+.controls-heading-copy {
+  min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 1px;
+}
+
+.controls-heading .panel-collapse-indicator {
+  margin-left: auto;
+}
+
+.controls-legend-details:not([open]) .controls-heading {
+  border-bottom-color: transparent;
 }
 
 .controls-heading small {

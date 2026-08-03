@@ -219,6 +219,8 @@ describe('React UI shell', () => {
     expect(markup).toContain('<summary class="panel-heading goals-heading">');
     expect(markup).toContain('id="info-panel"');
     expect(markup).toContain('id="controls-legend"');
+    expect(markup).toContain('<summary class="controls-heading">');
+    expect(markup).toContain('class="controls-legend-details"');
     expect(markup).toContain('id="zone-capacity-panel"');
     expect(markup).toContain('Ctrl + right drag');
     expect(markup).toContain('1–9 · R · B');

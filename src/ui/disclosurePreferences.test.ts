@@ -21,6 +21,9 @@ describe('disclosure preferences', () => {
 
     expect(readDisclosurePreference(storage, 'goals')).toBe(false);
     expect(readDisclosurePreference(storage, 'city-overview')).toBe(true);
+    expect(readDisclosurePreference(storage, 'controls', false)).toBe(false);
+    writeDisclosurePreference(storage, 'controls', true);
+    expect(readDisclosurePreference(storage, 'controls', false)).toBe(true);
   });
 
   it('falls back safely when storage is unavailable', () => {
