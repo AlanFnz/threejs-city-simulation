@@ -1272,6 +1272,37 @@ button:focus-visible {
   scrollbar-width: thin;
 }
 
+#goals-panel > summary,
+#zone-capacity-panel summary {
+  list-style: none;
+  cursor: pointer;
+  user-select: none;
+}
+
+#goals-panel > summary::-webkit-details-marker,
+#zone-capacity-panel summary::-webkit-details-marker {
+  display: none;
+}
+
+.panel-collapse-indicator {
+  width: 7px;
+  height: 7px;
+  flex: 0 0 7px;
+  border-right: 1px solid var(--hud-text-muted);
+  border-bottom: 1px solid var(--hud-text-muted);
+  transform: translateY(2px) rotate(225deg);
+  transition: transform var(--hud-transition);
+}
+
+details:not([open]) .panel-collapse-indicator {
+  transform: translateY(-2px) rotate(45deg);
+}
+
+#goals-panel:not([open]) .panel-heading,
+#zone-capacity-panel details:not([open]) .zone-capacity-heading {
+  border-bottom-color: transparent;
+}
+
 .panel-heading {
   padding: 15px 16px 13px;
   border-bottom: 1px solid var(--hud-line);
@@ -1303,6 +1334,12 @@ button:focus-visible {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+}
+
+.goals-heading-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .goal-stage-badge {
@@ -2169,20 +2206,34 @@ button:focus-visible {
   pointer-events: none;
 }
 
-#zone-capacity-panel header {
+.zone-capacity-heading {
   padding: 10px 11px 8px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 10px;
+  border-bottom: 1px solid var(--hud-line);
+  background: rgba(28, 51, 67, 0.42);
+  pointer-events: auto;
+}
+
+.zone-capacity-heading > span:first-child {
   display: flex;
   flex-direction: column;
   gap: 1px;
-  border-bottom: 1px solid var(--hud-line);
-  background: rgba(28, 51, 67, 0.42);
 }
 
-#zone-capacity-panel header strong {
+.zone-capacity-heading strong {
   font-family: 'Bebas', sans-serif;
   font-size: 1rem;
   font-weight: 400;
   letter-spacing: 0.07em;
+}
+
+@media (min-width: 901px) {
+  #zone-capacity-panel:has(> details:not([open])) ~ #debug-tick {
+    bottom: 76px;
+  }
 }
 
 .capacity-rows {

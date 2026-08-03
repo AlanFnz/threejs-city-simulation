@@ -31,16 +31,24 @@ function GoalsPanel({ goals }: GoalsPanelProps) {
 
   return (
     <div id="ui-goals-overlay">
-      <section id="goals-panel" className="hud-panel" aria-label="City goals">
-        <header className="panel-heading goals-heading">
+      <details
+        id="goals-panel"
+        className="hud-panel"
+        aria-label="City goals"
+        open
+      >
+        <summary className="panel-heading goals-heading">
           <div>
             <span className="panel-eyebrow">City progression</span>
             <h2>Milestones</h2>
           </div>
-          <span className="goal-stage-badge">
-            {currentStage} / {goals.totalCount}
+          <span className="goals-heading-meta">
+            <span className="goal-stage-badge">
+              {currentStage} / {goals.totalCount}
+            </span>
+            <span className="panel-collapse-indicator" aria-hidden="true" />
           </span>
-        </header>
+        </summary>
         <div id="goals-overlay-details">
           <div className="goals-overall-progress">
             <span>
@@ -120,7 +128,7 @@ function GoalsPanel({ goals }: GoalsPanelProps) {
             </div>
           )}
         </div>
-      </section>
+      </details>
     </div>
   );
 }

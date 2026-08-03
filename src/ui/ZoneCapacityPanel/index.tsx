@@ -83,27 +83,32 @@ function ZoneCapacityPanel({ capacity, services }: ZoneCapacityPanelProps) {
       id="zone-capacity-panel"
       aria-label="City capacity and service coverage"
     >
-      <header>
-        <span className="panel-eyebrow">City utilization</span>
-        <strong>Zone capacity</strong>
-      </header>
-      <div className="capacity-rows">
-        <CapacityRow metric={capacity.residential} />
-        <CapacityRow metric={capacity.commercial} />
-        <CapacityRow metric={capacity.industrial} />
-      </div>
-      <div className="service-coverage-heading">
-        <span>Developed zone coverage</span>
-        <small>City services</small>
-      </div>
-      <div className="service-coverage-grid">
-        <ServiceMetric metric={services.road} />
-        <ServiceMetric metric={services.power} />
-        <ServiceMetric metric={services.fire} />
-        <ServiceMetric metric={services.police} />
-        <ServiceMetric metric={services.health} />
-        <ServiceMetric metric={services.education} />
-      </div>
+      <details open>
+        <summary className="zone-capacity-heading">
+          <span>
+            <span className="panel-eyebrow">City utilization</span>
+            <strong>Zone capacity</strong>
+          </span>
+          <span className="panel-collapse-indicator" aria-hidden="true" />
+        </summary>
+        <div className="capacity-rows">
+          <CapacityRow metric={capacity.residential} />
+          <CapacityRow metric={capacity.commercial} />
+          <CapacityRow metric={capacity.industrial} />
+        </div>
+        <div className="service-coverage-heading">
+          <span>Developed zone coverage</span>
+          <small>City services</small>
+        </div>
+        <div className="service-coverage-grid">
+          <ServiceMetric metric={services.road} />
+          <ServiceMetric metric={services.power} />
+          <ServiceMetric metric={services.fire} />
+          <ServiceMetric metric={services.police} />
+          <ServiceMetric metric={services.health} />
+          <ServiceMetric metric={services.education} />
+        </div>
+      </details>
     </aside>
   );
 }

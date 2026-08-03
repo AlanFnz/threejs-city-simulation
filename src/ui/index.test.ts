@@ -191,6 +191,8 @@ describe('React UI shell', () => {
     expect(markup).toContain('id="active-tool-context"');
     expect(markup).toContain('Inspect city tiles');
     expect(markup).toContain('id="goals-overlay-details"');
+    expect(markup).toContain('id="goals-panel" class="hud-panel"');
+    expect(markup).toContain('<summary class="panel-heading goals-heading">');
     expect(markup).toContain('id="info-panel"');
     expect(markup).toContain('id="controls-legend"');
     expect(markup).toContain('id="zone-capacity-panel"');
@@ -285,6 +287,7 @@ describe('React UI shell', () => {
     expect(markup).toContain('Power');
     expect(markup).toContain('100%');
     expect(markup).toContain('Health coverage: no developed zones');
+    expect(markup).toContain('<summary class="zone-capacity-heading">');
   });
 
   it('renders every tool and preserves locked state at mount time', () => {
