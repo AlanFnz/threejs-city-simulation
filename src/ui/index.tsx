@@ -64,7 +64,9 @@ function Ui({ actions, store }: UiProps) {
           isPaused={state.isPaused}
           simulationSpeed={state.simulationSpeed}
           unlockedToolIds={state.unlockedToolIds}
+          hasOpenInspector={state.inspector !== null}
           onSelectTool={actions.selectTool}
+          onCloseInspector={actions.closeInspector}
           onTogglePause={actions.togglePause}
           onCycleSimulationSpeed={actions.cycleSimulationSpeed}
           onToggleHud={store.toggleHudVisibility}

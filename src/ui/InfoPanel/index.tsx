@@ -136,6 +136,7 @@ function InfoPanel({ inspector, onClose }: InfoPanelProps) {
                 className="inspector-close-button"
                 type="button"
                 aria-label="Close city inspector"
+                aria-keyshortcuts="Escape"
                 title="Close inspector"
                 onClick={onClose}
               >

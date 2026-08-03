@@ -173,7 +173,9 @@ describe('React UI shell', () => {
           unlockedToolIds: Object.values(TOOLBAR_BUTTONS).map(
             (button) => button.id
           ),
+          hasOpenInspector: false,
           onSelectTool: noop,
+          onCloseInspector: noop,
           onTogglePause: noop,
           onCycleSimulationSpeed: noop,
           onToggleHud: noop,
@@ -228,6 +230,7 @@ describe('React UI shell', () => {
 
     expect(markup).toContain('Residential zone');
     expect(markup).toContain('aria-label="Close city inspector"');
+    expect(markup).toContain('aria-keyshortcuts="Escape"');
     expect(markup).toContain('4, 7');
     expect(markup).toContain('Road</span><strong>Online');
     expect(markup).toContain('Power</span><strong>Missing');
@@ -337,7 +340,9 @@ describe('React UI shell', () => {
           TOOLBAR_BUTTONS.SELECT.id,
           TOOLBAR_BUTTONS.RESIDENTIAL.id,
         ],
+        hasOpenInspector: false,
         onSelectTool: noop,
+        onCloseInspector: noop,
         onTogglePause: noop,
         onCycleSimulationSpeed: noop,
         onToggleHud: noop,
@@ -371,7 +376,9 @@ describe('React UI shell', () => {
         isPaused: false,
         simulationSpeed: 1,
         unlockedToolIds: [TOOLBAR_BUTTONS.ROAD.id],
+        hasOpenInspector: false,
         onSelectTool: noop,
+        onCloseInspector: noop,
         onTogglePause: noop,
         onCycleSimulationSpeed: noop,
         onToggleHud: noop,

@@ -18,7 +18,9 @@ interface ToolBarProps {
   isPaused: boolean;
   simulationSpeed: SimulationSpeed;
   unlockedToolIds: string[];
+  hasOpenInspector: boolean;
   onSelectTool: (toolId: string) => void;
+  onCloseInspector: () => void;
   onTogglePause: () => void;
   onCycleSimulationSpeed: () => void;
   onToggleHud: () => void;
@@ -55,7 +57,9 @@ function ToolBar({
   isPaused,
   simulationSpeed,
   unlockedToolIds,
+  hasOpenInspector,
   onSelectTool,
+  onCloseInspector,
   onTogglePause,
   onCycleSimulationSpeed,
   onToggleHud,
@@ -105,6 +109,12 @@ function ToolBar({
 
       if (action.type === 'selectTool') {
         if (!unlockedToolIds.includes(action.toolId)) return;
+        if (
+          action.toolId === TOOLBAR_BUTTONS.SELECT.id &&
+          hasOpenInspector
+        ) {
+          onCloseInspector();
+        }
         onSelectTool(action.toolId);
         setOpenCategoryId(null);
       } else if (action.type === 'togglePause') {
@@ -119,6 +129,8 @@ function ToolBar({
     document.addEventListener('keydown', onKeyDown);
     return () => document.removeEventListener('keydown', onKeyDown);
   }, [
+    hasOpenInspector,
+    onCloseInspector,
     onCycleSimulationSpeed,
     onSelectTool,
     onToggleHud,
