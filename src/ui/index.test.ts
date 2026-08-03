@@ -2,6 +2,7 @@ import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ControlsLegend } from './ControlsLegend';
+import { CityMap } from './CityMap';
 import { GoalsPanel } from './GoalsPanel';
 import { InfoPanel } from './InfoPanel';
 import { NotificationCenter } from './NotificationCenter';
@@ -19,6 +20,7 @@ import {
   CityServicesUiState,
   GoalsUiState,
   InspectorUiState,
+  CityMapUiState,
   UiState,
   ZoneCapacityUiState,
 } from './store';
@@ -92,6 +94,11 @@ const cityServices: CityServicesUiState = {
   police: { id: 'police', covered: 0, total: 4, percentage: 0 },
   health: { id: 'health', covered: 0, total: 0, percentage: null },
   education: { id: 'education', covered: 1, total: 4, percentage: 25 },
+};
+
+const cityMap: CityMapUiState = {
+  size: 2,
+  tiles: ['road', 'residential', 'power', 'empty'],
 };
 
 const activity = [
@@ -188,6 +195,7 @@ describe('React UI shell', () => {
         createElement(InfoPanel, { inspector: null, onClose: noop })
       ),
       renderToStaticMarkup(createElement(ControlsLegend)),
+      renderToStaticMarkup(createElement(CityMap, { map: cityMap })),
       renderToStaticMarkup(
         createElement(ZoneCapacityPanel, {
           capacity: zoneCapacity,
@@ -221,6 +229,8 @@ describe('React UI shell', () => {
     expect(markup).toContain('id="controls-legend"');
     expect(markup).toContain('<summary class="controls-heading">');
     expect(markup).toContain('class="controls-legend-details"');
+    expect(markup).toContain('id="city-minimap"');
+    expect(markup).toContain('City minimap. 3 of 4 tiles occupied.');
     expect(markup).toContain('id="zone-capacity-panel"');
     expect(markup).toContain('Ctrl + right drag');
     expect(markup).toContain('1–9 · R · B');
@@ -464,6 +474,7 @@ describe('UI store', () => {
       industrial: { ...zoneCapacity.industrial },
     },
     cityServices,
+    cityMap,
     activeToolId: 'SELECT',
     isPaused: false,
     simulationSpeed: 1,

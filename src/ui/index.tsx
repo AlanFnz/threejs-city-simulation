@@ -2,6 +2,7 @@ import { useEffect, useRef, useSyncExternalStore } from 'react';
 import { flushSync } from 'react-dom';
 import { createRoot, Root } from 'react-dom/client';
 import { ControlsLegend } from './ControlsLegend';
+import { CityMap } from './CityMap';
 import { GoalsPanel } from './GoalsPanel';
 import { InfoPanel } from './InfoPanel';
 import { NotificationCenter } from './NotificationCenter';
@@ -84,7 +85,10 @@ function Ui({ actions, store }: UiProps) {
           capacity={state.zoneCapacity}
           services={state.cityServices}
         />
-        <ControlsLegend />
+        <div id="ui-lower-left-overlay">
+          <CityMap map={state.cityMap} />
+          <ControlsLegend />
+        </div>
         {state.debugText && <div id="debug-tick">{state.debugText}</div>}
       </div>
       {state.isHudHidden && (

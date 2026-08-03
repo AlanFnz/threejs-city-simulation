@@ -120,6 +120,20 @@ export interface CityServicesUiState {
   education: CityServiceMetricUiState;
 }
 
+export type CityMapTileKind =
+  | 'empty'
+  | 'road'
+  | 'residential'
+  | 'commercial'
+  | 'industrial'
+  | 'power'
+  | 'service';
+
+export interface CityMapUiState {
+  size: number;
+  tiles: CityMapTileKind[];
+}
+
 export interface UiState {
   cityName: string;
   simulationDay: number;
@@ -131,6 +145,7 @@ export interface UiState {
   census: CensusUiState;
   zoneCapacity: ZoneCapacityUiState;
   cityServices: CityServicesUiState;
+  cityMap: CityMapUiState;
   activeToolId: string | null;
   isPaused: boolean;
   simulationSpeed: SimulationSpeed;

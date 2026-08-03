@@ -34,6 +34,7 @@ import { createCensusUiState } from './census';
 import { createToolRejectionNotification } from './toolFeedback';
 import { createZoneCapacityUiState } from './zoneCapacity';
 import { createCityServicesUiState } from './cityServices';
+import { createCityMapUiState } from './cityMap';
 
 const AUTOSAVE_INTERVAL_TICKS = 30;
 
@@ -91,6 +92,7 @@ export class Game implements IGame {
   };
   private lastPreviewTile: ITile | null = null;
   private cityMetricsUpdateQueued: boolean = false;
+  private cityMapUpdateQueued: boolean = false;
 
   constructor() {
     this.ui = createUi(this.getInitialUiState(), {
@@ -160,10 +162,12 @@ export class Game implements IGame {
       }),
       cityEvents.on('buildingPlaced', (payload) => {
         this.scheduleCityMetricsUpdate();
+        this.scheduleCityMapUpdate();
         this.refreshInfoOverlayIfFocused(payload);
       }),
       cityEvents.on('buildingRemoved', (payload) => {
         this.scheduleCityMetricsUpdate();
+        this.scheduleCityMapUpdate();
         this.updateGoalsPanel();
         this.refreshInfoOverlayIfFocused(payload);
       })
@@ -304,6 +308,7 @@ export class Game implements IGame {
    * unlocks - refresh the UI pieces that don't already react to an event. */
   private onGameStateReplaced(): void {
     this.updateTitleBar();
+    this.ui.update({ cityMap: createCityMapUiState(this.city) });
     this.updateMoneyDisplay();
     this.updateGoalsPanel();
     this.refreshUnlockedToolButtons();
@@ -454,6 +459,15 @@ export class Game implements IGame {
     });
   }
 
+  private scheduleCityMapUpdate(): void {
+    if (this.cityMapUpdateQueued) return;
+    this.cityMapUpdateQueued = true;
+    queueMicrotask(() => {
+      this.cityMapUpdateQueued = false;
+      this.ui.update({ cityMap: createCityMapUiState(this.city) });
+    });
+  }
+
   /** City events can arrive in bursts while a simulation step is still
    * unwinding. Batch them into one microtask so resident/workplace links are
    * final and each burst causes only one derived-metrics scan/UI update. */
@@ -544,6 +558,7 @@ export class Game implements IGame {
       census: createCensusUiState(this.city),
       zoneCapacity: createZoneCapacityUiState(this.city),
       cityServices: createCityServicesUiState(this.city),
+      cityMap: createCityMapUiState(this.city),
       activeToolId: this.activeToolId,
       isPaused: this.isPaused,
       simulationSpeed: this.simulationSpeed,
@@ -568,6 +583,7 @@ export class Game implements IGame {
       'ui-toolbar',
       'ui-goals-overlay',
       'ui-info-overlay',
+      'ui-lower-left-overlay',
       'hud-restore-button',
     ];
     return uiElements.some((id) =>
