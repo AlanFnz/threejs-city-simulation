@@ -1,4 +1,9 @@
-import { MouseEvent as ReactMouseEvent, useEffect, useRef } from 'react';
+import {
+  MouseEvent as ReactMouseEvent,
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
 import {
   CityMapFocusUiState,
   CityMapTileKind,
@@ -28,6 +33,20 @@ const ZONE_KINDS: CityMapTileKind[] = [
   'commercial',
   'industrial',
 ];
+const LABEL_BY_KIND: Record<CityMapTileKind, string> = {
+  empty: 'Open land',
+  road: 'Road',
+  residential: 'Residential',
+  commercial: 'Commercial',
+  industrial: 'Industrial',
+  'power-line': 'Power line',
+  'power-plant': 'Power plant',
+  service: 'City service',
+};
+
+function getCityMapTileLabel(kind: CityMapTileKind): string {
+  return LABEL_BY_KIND[kind];
+}
 
 interface CityMapPoint {
   x: number;
@@ -185,7 +204,11 @@ function drawNetworkTile(
 
 function CityMap({ map, focus, onFocusTile }: CityMapProps) {
   const canvas = useRef<HTMLCanvasElement>(null);
+  const [hoveredTile, setHoveredTile] = useState<CityMapPoint | null>(null);
   const occupiedTiles = map.tiles.filter((kind) => kind !== 'empty').length;
+  const hoveredKind = hoveredTile
+    ? getMapTileKind(map, hoveredTile.x, hoveredTile.y)
+    : null;
 
   const focusCityCenter = () => {
     const center = Math.floor(map.size / 2);
@@ -206,6 +229,20 @@ function CityMap({ map, focus, onFocusTile }: CityMapProps) {
       map.size
     );
     if (tile) onFocusTile(tile.x, tile.y);
+  };
+
+  const handleMapMove = (event: ReactMouseEvent<HTMLButtonElement>) => {
+    const bounds = event.currentTarget.getBoundingClientRect();
+    const tile = getCityMapTileFromPoint(
+      event.clientX - bounds.left,
+      event.clientY - bounds.top,
+      bounds.width,
+      bounds.height,
+      map.size
+    );
+    setHoveredTile((current) =>
+      current?.x === tile?.x && current?.y === tile?.y ? current : tile
+    );
   };
 
   useEffect(() => {
@@ -262,7 +299,21 @@ function CityMap({ map, focus, onFocusTile }: CityMapProps) {
       context.arc(focusPoint.x, focusPoint.y, 0.9, 0, Math.PI * 2);
       context.fill();
     }
-  }, [focus, map]);
+
+    if (hoveredTile) {
+      const inset = Math.max(0.45, tileSize * 0.08);
+      context.strokeStyle = '#ecfcff';
+      context.lineWidth = Math.max(0.8, tileSize * 0.11);
+      context.setLineDash([Math.max(1.5, tileSize * 0.24), 1]);
+      context.strokeRect(
+        hoveredTile.x * tileSize + inset,
+        hoveredTile.y * tileSize + inset,
+        tileSize - inset * 2,
+        tileSize - inset * 2
+      );
+      context.setLineDash([]);
+    }
+  }, [focus, hoveredTile, map]);
 
   return (
     <aside
@@ -275,8 +326,19 @@ function CityMap({ map, focus, onFocusTile }: CityMapProps) {
           <small>City overview</small>
           <strong>Map</strong>
         </span>
-        <span className="city-minimap-count">
-          {occupiedTiles} built <span aria-hidden="true">⌖</span>
+        <span
+          className={`city-minimap-count${hoveredTile ? ' hovered' : ''}`}
+        >
+          {hoveredTile && hoveredKind ? (
+            <>
+              <span>{getCityMapTileLabel(hoveredKind)}</span>
+              <i>{hoveredTile.x}, {hoveredTile.y}</i>
+            </>
+          ) : (
+            <>
+              {occupiedTiles} built <span aria-hidden="true">⌖</span>
+            </>
+          )}
         </span>
       </header>
       <button
@@ -285,6 +347,8 @@ function CityMap({ map, focus, onFocusTile }: CityMapProps) {
         aria-label="Recenter camera. Choose a location on the city minimap."
         title="Click a location to recenter the camera"
         onClick={handleMapClick}
+        onMouseMove={handleMapMove}
+        onMouseLeave={() => setHoveredTile(null)}
       >
         <canvas
           ref={canvas}
@@ -304,4 +368,9 @@ function CityMap({ map, focus, onFocusTile }: CityMapProps) {
   );
 }
 
-export { CityMap, getCityMapFocusPoint, getCityMapTileFromPoint };
+export {
+  CityMap,
+  getCityMapFocusPoint,
+  getCityMapTileFromPoint,
+  getCityMapTileLabel,
+};

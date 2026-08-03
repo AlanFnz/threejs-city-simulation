@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { getCityMapFocusPoint, getCityMapTileFromPoint } from '.';
+import {
+  getCityMapFocusPoint,
+  getCityMapTileFromPoint,
+  getCityMapTileLabel,
+} from '.';
 
 describe('getCityMapTileFromPoint', () => {
   it('maps canvas positions to city coordinates', () => {
@@ -43,5 +47,13 @@ describe('getCityMapFocusPoint', () => {
       x: 4,
       y: 124,
     });
+  });
+});
+
+describe('getCityMapTileLabel', () => {
+  it('names land use and infrastructure without exposing internal ids', () => {
+    expect(getCityMapTileLabel('residential')).toBe('Residential');
+    expect(getCityMapTileLabel('power-line')).toBe('Power line');
+    expect(getCityMapTileLabel('empty')).toBe('Open land');
   });
 });

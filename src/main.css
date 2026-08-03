@@ -2598,6 +2598,23 @@ details:not([open]) .panel-collapse-indicator {
   border: 1px solid var(--hud-line);
   border-radius: 5px;
   background: rgba(7, 15, 25, 0.42);
+  white-space: nowrap;
+}
+
+.city-minimap-count.hovered {
+  min-width: 68px;
+  padding-block: 3px;
+  display: flex;
+  align-items: flex-end;
+  flex-direction: column;
+  gap: 1px;
+  line-height: 1;
+}
+
+.city-minimap-count.hovered i {
+  color: var(--hud-text-dim);
+  font-size: 0.44rem;
+  font-style: normal;
 }
 
 .city-minimap-focus {
