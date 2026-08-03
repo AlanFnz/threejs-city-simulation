@@ -2,7 +2,10 @@ import { useEffect, useRef, useState } from 'react';
 import { IconKey, getIcon } from '../../assetManager/icons';
 import CONFIG from '../../config';
 import { MILESTONES } from '../../game/milestones/constants';
-import { SimulationSpeed } from '../../game/simulationSpeed';
+import {
+  SIMULATION_SPEEDS,
+  SimulationSpeed,
+} from '../../game/simulationSpeed';
 import {
   BaseButton,
   TOOLBAR_BUTTONS,
@@ -22,6 +25,7 @@ interface ToolBarProps {
   onSelectTool: (toolId: string) => void;
   onCloseInspector: () => void;
   onTogglePause: () => void;
+  onSetSimulationSpeed: (speed: SimulationSpeed) => void;
   onCycleSimulationSpeed: () => void;
   onToggleHud: () => void;
 }
@@ -61,12 +65,16 @@ function ToolBar({
   onSelectTool,
   onCloseInspector,
   onTogglePause,
+  onSetSimulationSpeed,
   onCycleSimulationSpeed,
   onToggleHud,
 }: ToolBarProps) {
   const [openCategoryId, setOpenCategoryId] = useState<string | null>(null);
+  const [isSpeedPickerOpen, setIsSpeedPickerOpen] = useState(false);
   const toolbar = useRef<HTMLElement>(null);
   const categoryButtons = useRef<Record<string, HTMLButtonElement | null>>({});
+  const speedControls = useRef<HTMLDivElement>(null);
+  const speedButton = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     if (!openCategoryId) return;
@@ -89,6 +97,28 @@ function ToolBar({
       document.removeEventListener('keydown', onKeyDown);
     };
   }, [openCategoryId]);
+
+  useEffect(() => {
+    if (!isSpeedPickerOpen) return;
+
+    const onPointerDown = (event: PointerEvent): void => {
+      if (!speedControls.current?.contains(event.target as Node)) {
+        setIsSpeedPickerOpen(false);
+      }
+    };
+    const onKeyDown = (event: KeyboardEvent): void => {
+      if (event.key !== 'Escape') return;
+      setIsSpeedPickerOpen(false);
+      speedButton.current?.focus();
+    };
+
+    document.addEventListener('pointerdown', onPointerDown);
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.removeEventListener('pointerdown', onPointerDown);
+      document.removeEventListener('keydown', onKeyDown);
+    };
+  }, [isSpeedPickerOpen]);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent): void => {
@@ -121,6 +151,7 @@ function ToolBar({
         onTogglePause();
       } else if (action.type === 'cycleSimulationSpeed') {
         onCycleSimulationSpeed();
+        setIsSpeedPickerOpen(false);
       } else {
         onToggleHud();
       }
@@ -142,6 +173,7 @@ function ToolBar({
     if (!unlockedToolIds.includes(toolId)) return;
     onSelectTool(toolId);
     setOpenCategoryId(null);
+    setIsSpeedPickerOpen(false);
   };
 
   const renderDirectTool = (toolId: string) => {
@@ -211,6 +243,7 @@ function ToolBar({
           aria-controls={trayId}
           onClick={(event) => {
             event.stopPropagation();
+            setIsSpeedPickerOpen(false);
             setOpenCategoryId(isOpen ? null : category.id);
           }}
         >
@@ -327,7 +360,7 @@ function ToolBar({
       <div
         id="active-tool-context"
         className={`active-tool-context${
-          openCategoryId ? ' category-open' : ''
+          openCategoryId || isSpeedPickerOpen ? ' category-open' : ''
         }${canAffordActiveTool ? '' : ' insufficient-funds'}`}
         aria-label={`${activeButton.uiText}. ${activeInstruction}. ${affordabilityText}`}
       >
@@ -350,6 +383,7 @@ function ToolBar({
       {renderCategory(TOOL_CATEGORIES[2])}
       {renderDirectTool(DIRECT_TOOL_IDS[2])}
       <div
+        ref={speedControls}
         className="simulation-controls"
         role="group"
         aria-label="Simulation speed"
@@ -372,22 +406,55 @@ function ToolBar({
           <img className="toolbar-icon" src={pauseIcon} alt="" />
         </button>
         <button
+          ref={speedButton}
           id="simulation-speed-button"
           className={`ui-button speed-cycle-button${
             simulationSpeed > 1 ? ' accelerated' : ''
-          }`}
+          }${isSpeedPickerOpen ? ' open' : ''}`}
           type="button"
           data-tooltip={`Simulation speed · ${simulationSpeed}×`}
-          title={`Cycle simulation speed · Currently ${simulationSpeed}×`}
-          aria-label={`Cycle simulation speed. Currently ${simulationSpeed} times`}
+          title={`Choose simulation speed · Currently ${simulationSpeed}×`}
+          aria-label={`Choose simulation speed. Currently ${simulationSpeed} times`}
           aria-keyshortcuts="."
+          aria-haspopup="dialog"
+          aria-expanded={isSpeedPickerOpen}
+          aria-controls="simulation-speed-picker"
           onClick={(event) => {
             event.stopPropagation();
-            onCycleSimulationSpeed();
+            setOpenCategoryId(null);
+            setIsSpeedPickerOpen((isOpen) => !isOpen);
           }}
         >
           <strong>{simulationSpeed}×</strong>
         </button>
+        <div
+          id="simulation-speed-picker"
+          className={`speed-picker${isSpeedPickerOpen ? ' open' : ''}`}
+          role="dialog"
+          aria-label="Choose simulation speed"
+          aria-hidden={!isSpeedPickerOpen}
+        >
+          <span>Simulation speed</span>
+          <div role="radiogroup" aria-label="Simulation speed options">
+            {SIMULATION_SPEEDS.map((speed) => (
+              <button
+                key={speed}
+                id={`simulation-speed-${speed}`}
+                type="button"
+                role="radio"
+                aria-checked={simulationSpeed === speed}
+                tabIndex={isSpeedPickerOpen ? 0 : -1}
+                onClick={() => {
+                  onSetSimulationSpeed(speed);
+                  setIsSpeedPickerOpen(false);
+                  speedButton.current?.focus();
+                }}
+              >
+                {speed}×
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
     </nav>
   );

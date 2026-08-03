@@ -48,6 +48,7 @@ export interface IGame {
   selectTool(toolId: string): void;
   closeInspector(): void;
   togglePause(): void;
+  setSimulationSpeed(speed: SimulationSpeed): void;
   cycleSimulationSpeed(): void;
   renameCity(name: string): void;
   saveGame(): void;
@@ -96,6 +97,7 @@ export class Game implements IGame {
       selectTool: (toolId) => this.selectTool(toolId),
       closeInspector: () => this.closeInspector(),
       togglePause: () => this.togglePause(),
+      setSimulationSpeed: (speed) => this.setSimulationSpeed(speed),
       cycleSimulationSpeed: () => this.cycleSimulationSpeed(),
       renameCity: (name) => this.renameCity(name),
       saveGame: () => this.saveGameWithFeedback(),
@@ -335,7 +337,11 @@ export class Game implements IGame {
   }
 
   cycleSimulationSpeed(): void {
-    this.simulationSpeed = getNextSimulationSpeed(this.simulationSpeed);
+    this.setSimulationSpeed(getNextSimulationSpeed(this.simulationSpeed));
+  }
+
+  setSimulationSpeed(speed: SimulationSpeed): void {
+    this.simulationSpeed = speed;
     this.ui.update({ simulationSpeed: this.simulationSpeed });
   }
 

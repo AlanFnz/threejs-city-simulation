@@ -1215,6 +1215,92 @@ button:focus-visible {
   background: rgba(45, 103, 126, 0.62);
 }
 
+.speed-cycle-button.open {
+  border-color: var(--hud-accent);
+  background: rgba(45, 103, 126, 0.92);
+}
+
+.speed-cycle-button.open::after {
+  display: none;
+}
+
+.speed-picker {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 18px);
+  width: 174px;
+  padding: 9px;
+  color: var(--hud-text);
+  border: 1px solid var(--hud-line);
+  border-radius: 12px;
+  background:
+    linear-gradient(145deg, rgba(37, 63, 80, 0.22), transparent 50%),
+    var(--hud-bg-strong);
+  box-shadow: var(--hud-shadow);
+  opacity: 0;
+  transform: translateY(8px);
+  transition:
+    opacity var(--hud-transition),
+    transform var(--hud-transition),
+    visibility var(--hud-transition);
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.speed-picker.open {
+  opacity: 1;
+  transform: translateY(0);
+  visibility: visible;
+  pointer-events: auto;
+}
+
+.speed-picker > span {
+  padding: 1px 3px 7px;
+  display: block;
+  color: var(--hud-text-dim);
+  font-size: 0.58rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.speed-picker > div {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 5px;
+}
+
+.speed-picker button {
+  height: 36px;
+  cursor: pointer;
+  color: var(--hud-text-muted);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.7rem;
+  font-weight: 800;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: rgba(34, 55, 72, 0.66);
+  transition:
+    color var(--hud-transition),
+    border-color var(--hud-transition),
+    background var(--hud-transition),
+    transform var(--hud-transition);
+}
+
+.speed-picker button:hover,
+.speed-picker button:focus-visible {
+  color: var(--hud-text);
+  border-color: var(--hud-line-strong);
+  background: rgba(52, 78, 96, 0.92);
+  transform: translateY(-1px);
+}
+
+.speed-picker button[aria-checked='true'] {
+  color: var(--hud-accent-strong);
+  border-color: var(--hud-accent);
+  background: rgba(45, 103, 126, 0.78);
+}
+
 .dock-category {
   position: relative;
   display: flex;

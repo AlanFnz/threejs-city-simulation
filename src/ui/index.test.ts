@@ -178,6 +178,7 @@ describe('React UI shell', () => {
           onSelectTool: noop,
           onCloseInspector: noop,
           onTogglePause: noop,
+          onSetSimulationSpeed: noop,
           onCycleSimulationSpeed: noop,
           onToggleHud: noop,
         })
@@ -383,6 +384,7 @@ describe('React UI shell', () => {
         onSelectTool: noop,
         onCloseInspector: noop,
         onTogglePause: noop,
+        onSetSimulationSpeed: noop,
         onCycleSimulationSpeed: noop,
         onToggleHud: noop,
       })
@@ -397,6 +399,11 @@ describe('React UI shell', () => {
     expect(markup).toContain('id="SELECT" class="ui-button selected"');
     expect(markup).toContain('aria-label="Zones tools"');
     expect(markup).toContain('id="simulation-speed-button"');
+    expect(markup).toContain('id="simulation-speed-picker"');
+    expect(markup).toContain('id="simulation-speed-1"');
+    expect(markup).toContain('id="simulation-speed-2"');
+    expect(markup).toContain('id="simulation-speed-3"');
+    expect(markup).toContain('role="radio" aria-checked="true"');
     expect(markup).toContain('Currently 2 times');
     expect(markup).toContain('aria-haspopup="dialog"');
     expect(markup).toContain('role="dialog"');
@@ -419,6 +426,7 @@ describe('React UI shell', () => {
         onSelectTool: noop,
         onCloseInspector: noop,
         onTogglePause: noop,
+        onSetSimulationSpeed: noop,
         onCycleSimulationSpeed: noop,
         onToggleHud: noop,
       })

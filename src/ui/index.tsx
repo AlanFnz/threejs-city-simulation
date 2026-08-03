@@ -69,6 +69,7 @@ function Ui({ actions, store }: UiProps) {
           onSelectTool={actions.selectTool}
           onCloseInspector={actions.closeInspector}
           onTogglePause={actions.togglePause}
+          onSetSimulationSpeed={actions.setSimulationSpeed}
           onCycleSimulationSpeed={actions.cycleSimulationSpeed}
           onToggleHud={store.toggleHudVisibility}
         />

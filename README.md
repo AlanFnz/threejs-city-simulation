@@ -39,7 +39,7 @@ Built with **Three.js** and **TypeScript**. No framework, no backend - just a si
 | Pan camera                                  | Ctrl + right click + drag (or two-finger drag on touch)                                                                                        |
 | Zoom                                        | Mouse wheel                                                                                                                                    |
 | Switch tools                                | Toolbar (select, residential, commercial, industrial, road, power plant, power line, fire station, police station, hospital, school, bulldoze) |
-| Pause / resume and simulation speed         | Toolbar pause button + 1×/2×/3× speed control                                                                                                  |
+| Pause / resume and simulation speed         | Toolbar pause button + explicit 1×/2×/3× speed picker                                                                                          |
 | Keyboard tool switching                     | Esc close inspector/select, 1–9 build tools, R road, B bulldoze, Space pause, . cycle speed                                                     |
 | Collapse side panels                        | Click the Milestones or Zone capacity header; each preference is remembered locally                                                            |
 | Cinematic HUD                               | Press H or choose Hide interface from the city menu; use H or Show HUD to restore                                                              |

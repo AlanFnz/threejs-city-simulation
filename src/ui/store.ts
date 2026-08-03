@@ -149,6 +149,7 @@ export interface UiActions {
   selectTool(toolId: string): void;
   closeInspector(): void;
   togglePause(): void;
+  setSimulationSpeed(speed: SimulationSpeed): void;
   cycleSimulationSpeed(): void;
   saveGame(): void;
   loadGame(): void;
