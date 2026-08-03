@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { BulldozeTool } from './bulldozeTool';
+import { BulldozeTool, bulldozeTile } from './bulldozeTool';
 import { GameContext } from './tool';
 import { Tile } from '../../city/tile';
 import { BUILDING_TYPE } from '../../city/building/constants';
@@ -41,5 +41,16 @@ describe('BulldozeTool', () => {
     expect(result).toEqual({ status: 'rejected', reason: 'emptyTile' });
     expect(context.city.simulate).not.toHaveBeenCalled();
     expect(context.sceneManager.update).not.toHaveBeenCalled();
+  });
+
+  it('exposes the same operation for confirmed inspector actions', () => {
+    const tile = new Tile(1, 1);
+    tile.placeBuilding(BUILDING_TYPE.ROAD);
+    const context = fakeContext();
+
+    expect(bulldozeTile(tile, context)).toEqual({ status: 'applied' });
+    expect(tile.building).toBeNull();
+    expect(context.city.simulate).toHaveBeenCalledTimes(1);
+    expect(context.sceneManager.update).toHaveBeenCalledWith(context.city);
   });
 });

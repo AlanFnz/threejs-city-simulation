@@ -2386,6 +2386,104 @@ details:not([open]) .panel-collapse-indicator {
   font-size: 0.65rem;
 }
 
+.inspector-actions {
+  margin-top: 10px;
+}
+
+.inspector-demolish-button {
+  width: 100%;
+  padding: 10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  color: #f1a0a5;
+  text-align: left;
+  border: 1px solid rgba(230, 105, 113, 0.24);
+  border-radius: 10px;
+  background: rgba(151, 48, 57, 0.1);
+  transition:
+    color var(--hud-transition),
+    border-color var(--hud-transition),
+    background-color var(--hud-transition);
+}
+
+.inspector-demolish-button:hover,
+.inspector-demolish-button:focus-visible {
+  color: #ffd3d5;
+  border-color: rgba(244, 126, 134, 0.46);
+  background: rgba(181, 56, 66, 0.17);
+}
+
+.inspector-demolish-button > span:first-child {
+  width: 30px;
+  height: 30px;
+  flex: 0 0 30px;
+  display: grid;
+  place-items: center;
+  font-size: 1.1rem;
+  border: 1px solid currentColor;
+  border-radius: 8px;
+}
+
+.inspector-demolish-button > span:last-child {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.inspector-demolish-button strong {
+  font-size: 0.7rem;
+}
+
+.inspector-demolish-button small {
+  color: var(--hud-text-dim);
+  font-size: 0.58rem;
+}
+
+.inspector-demolish-confirmation {
+  min-height: 52px;
+  padding: 8px;
+  display: grid;
+  align-items: center;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 6px;
+  color: var(--hud-text-muted);
+  border: 1px solid rgba(230, 105, 113, 0.3);
+  border-radius: 10px;
+  background: rgba(151, 48, 57, 0.12);
+}
+
+.inspector-demolish-confirmation > span {
+  padding-left: 2px;
+  font-size: 0.65rem;
+  font-weight: 750;
+}
+
+.inspector-demolish-confirmation button {
+  min-height: 32px;
+  padding: 0 9px;
+  cursor: pointer;
+  color: var(--hud-text-muted);
+  font-size: 0.62rem;
+  font-weight: 800;
+  border: 1px solid var(--hud-line);
+  border-radius: 7px;
+  background: rgba(7, 15, 25, 0.34);
+}
+
+.inspector-demolish-confirmation button:hover,
+.inspector-demolish-confirmation button:focus-visible {
+  color: var(--hud-text);
+  border-color: var(--hud-line-strong);
+}
+
+.inspector-demolish-confirmation button.confirm {
+  color: #ffd3d5;
+  border-color: rgba(244, 126, 134, 0.42);
+  background: rgba(181, 56, 66, 0.3);
+}
+
 /* Feedback and supporting overlays */
 
 #notification-center {

@@ -192,7 +192,11 @@ describe('React UI shell', () => {
       ),
       renderToStaticMarkup(createElement(GoalsPanel, { goals })),
       renderToStaticMarkup(
-        createElement(InfoPanel, { inspector: null, onClose: noop })
+        createElement(InfoPanel, {
+          inspector: null,
+          onBulldoze: noop,
+          onClose: noop,
+        })
       ),
       renderToStaticMarkup(createElement(ControlsLegend)),
       renderToStaticMarkup(
@@ -248,12 +252,18 @@ describe('React UI shell', () => {
 
   it('renders typed inspector data as structured status cards', () => {
     const markup = renderToStaticMarkup(
-      createElement(InfoPanel, { inspector, onClose: noop })
+      createElement(InfoPanel, {
+        inspector,
+        onBulldoze: noop,
+        onClose: noop,
+      })
     );
 
     expect(markup).toContain('Residential zone');
     expect(markup).toContain('aria-label="Close city inspector"');
     expect(markup).toContain('aria-keyshortcuts="Escape"');
+    expect(markup).toContain('Demolish building');
+    expect(markup).toContain('Clear this tile for new development');
     expect(markup).toContain('4, 7');
     expect(markup).toContain('Road</span><strong>Online');
     expect(markup).toContain('Power</span><strong>Missing');

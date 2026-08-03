@@ -76,7 +76,11 @@ function Ui({ actions, store }: UiProps) {
         />
         <GoalsPanel goals={state.goals} />
         <SimulationStatus isPaused={state.isPaused} />
-        <InfoPanel inspector={state.inspector} onClose={actions.closeInspector} />
+        <InfoPanel
+          inspector={state.inspector}
+          onBulldoze={actions.bulldozeFocusedTile}
+          onClose={actions.closeInspector}
+        />
         <NotificationCenter
           notification={state.notification}
           onDismiss={store.dismissNotification}

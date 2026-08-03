@@ -1,7 +1,9 @@
+import { useEffect, useState } from 'react';
 import { InspectorBuildingUiState, InspectorUiState } from '../store';
 
 interface InfoPanelProps {
   inspector: InspectorUiState | null;
+  onBulldoze: () => void;
   onClose: () => void;
 }
 
@@ -113,7 +115,18 @@ function BuildingCard({ building }: { building: InspectorBuildingUiState }) {
   );
 }
 
-function InfoPanel({ inspector, onClose }: InfoPanelProps) {
+function InfoPanel({ inspector, onBulldoze, onClose }: InfoPanelProps) {
+  const [isConfirmingBulldoze, setIsConfirmingBulldoze] = useState(false);
+
+  useEffect(() => {
+    setIsConfirmingBulldoze(false);
+  }, [inspector?.building?.type, inspector?.x, inspector?.y]);
+
+  const confirmBulldoze = () => {
+    setIsConfirmingBulldoze(false);
+    onBulldoze();
+  };
+
   return (
     <div id="ui-info-overlay">
       <aside
@@ -167,7 +180,45 @@ function InfoPanel({ inspector, onClose }: InfoPanelProps) {
                 </div>
               </section>
               {inspector.building ? (
-                <BuildingCard building={inspector.building} />
+                <>
+                  <BuildingCard building={inspector.building} />
+                  <section className="inspector-actions">
+                    {isConfirmingBulldoze ? (
+                      <div
+                        className="inspector-demolish-confirmation"
+                        role="group"
+                        aria-label="Confirm building demolition"
+                      >
+                        <span>Remove this building?</span>
+                        <button
+                          type="button"
+                          onClick={() => setIsConfirmingBulldoze(false)}
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          className="confirm"
+                          type="button"
+                          onClick={confirmBulldoze}
+                        >
+                          Demolish
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        className="inspector-demolish-button"
+                        type="button"
+                        onClick={() => setIsConfirmingBulldoze(true)}
+                      >
+                        <span aria-hidden="true">♢</span>
+                        <span>
+                          <strong>Demolish building</strong>
+                          <small>Clear this tile for new development</small>
+                        </span>
+                      </button>
+                    )}
+                  </section>
+                </>
               ) : (
                 <div className="inspector-empty-building">
                   <span aria-hidden="true">+</span>

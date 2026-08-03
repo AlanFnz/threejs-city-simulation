@@ -36,6 +36,7 @@ import { createZoneCapacityUiState } from './zoneCapacity';
 import { createCityServicesUiState } from './cityServices';
 import { createCityMapUiState } from './cityMap';
 import type { CameraFocus } from '../cameraManager';
+import { bulldozeTile } from './tools/bulldozeTool';
 
 const AUTOSAVE_INTERVAL_TICKS = 30;
 
@@ -48,6 +49,7 @@ export interface IGame {
   focusedObject: ITile | null;
   step(): void;
   focusMapTile(x: number, y: number): void;
+  bulldozeFocusedTile(): void;
   selectTool(toolId: string): void;
   closeInspector(): void;
   togglePause(): void;
@@ -104,6 +106,7 @@ export class Game implements IGame {
     this.ui = createUi(this.getInitialUiState(), {
       selectTool: (toolId) => this.selectTool(toolId),
       focusMapTile: (x, y) => this.focusMapTile(x, y),
+      bulldozeFocusedTile: () => this.bulldozeFocusedTile(),
       closeInspector: () => this.closeInspector(),
       togglePause: () => this.togglePause(),
       setSimulationSpeed: (speed) => this.setSimulationSpeed(speed),
@@ -345,6 +348,15 @@ export class Game implements IGame {
 
   private updateCameraFocus(focus: CameraFocus): void {
     this.ui?.update({ cityMapFocus: focus });
+  }
+
+  bulldozeFocusedTile(): void {
+    const tile = this.focusedObject;
+    if (!tile?.building) return;
+    if (!this.milestoneTracker.isUnlocked(TOOLBAR_BUTTONS.BULLDOZE.id)) return;
+    this.sceneManager.deactivateObject();
+    const result = bulldozeTile(tile, this.gameContext);
+    if (result.status === 'applied') this.updateInfoOverlay();
   }
 
   closeInspector(): void {

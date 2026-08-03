@@ -170,6 +170,7 @@ export interface UiActions {
   renameCity(name: string): void;
   selectTool(toolId: string): void;
   focusMapTile(x: number, y: number): void;
+  bulldozeFocusedTile(): void;
   closeInspector(): void;
   togglePause(): void;
   setSimulationSpeed(speed: SimulationSpeed): void;

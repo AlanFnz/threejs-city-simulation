@@ -27,7 +27,7 @@ Built with **Three.js** and **TypeScript**. No framework, no backend - just a si
 - **Controllable alerts** - HUD toasts can be dismissed immediately or left to expire automatically, while their activity-history entry remains available.
 - **Goals** - a running list of population/money/zone-count milestones with real rewards (cash, discounts, unlocked civic tools, raised level caps), plus a compact Roads → Power → Zones starter plan for a brand-new city.
 - **Save & load** - your named city persists in the browser (autosave + manual save/load/new game).
-- **Inspection tools** - select any tile to see its building state, level, road/power/civic access, and a list of its residents or workers; dismissing the panel also clears the world selection highlight. Pause the simulation at any time.
+- **Inspection tools** - select any tile to see its building state, level, road/power/civic access, and a list of its residents or workers; a guarded inspector action can demolish the selected building without changing tools, while dismissing the panel clears the world selection highlight. Pause the simulation at any time.
 - **Contextual building controls** - the active-tool strip keeps placement gestures, per-tile cost, and affordability visible while you build, while rejected clicks explain occupied tiles, insufficient funds, or empty bulldoze targets.
 - **Isometric-style camera** - orbit, pan, and zoom over your city (orthographic projection, soft shadows).
 
