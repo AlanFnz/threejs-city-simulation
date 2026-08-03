@@ -2960,6 +2960,43 @@ details:not([open]) .panel-collapse-indicator {
   letter-spacing: 0.07em;
 }
 
+.zone-capacity-heading-meta {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.coverage-summary {
+  padding: 4px 6px;
+  color: var(--hud-text-dim);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.48rem;
+  font-weight: 800;
+  line-height: 1;
+  text-transform: uppercase;
+  border: 1px solid var(--hud-line);
+  border-radius: 5px;
+  background: rgba(7, 15, 25, 0.4);
+}
+
+.coverage-summary.good {
+  color: var(--hud-positive);
+  border-color: rgba(100, 214, 160, 0.24);
+  background: rgba(100, 214, 160, 0.08);
+}
+
+.coverage-summary.watch {
+  color: var(--hud-warning);
+  border-color: rgba(235, 184, 92, 0.28);
+  background: rgba(235, 184, 92, 0.08);
+}
+
+.coverage-summary.poor {
+  color: #f28c94;
+  border-color: rgba(230, 105, 113, 0.3);
+  background: rgba(181, 56, 66, 0.1);
+}
+
 @media (min-width: 901px) {
   #zone-capacity-panel:has(> details:not([open])) ~ #debug-tick {
     bottom: 76px;
@@ -3089,6 +3126,18 @@ details:not([open]) .panel-collapse-indicator {
   white-space: nowrap;
 }
 
+.service-metric span::before {
+  width: 5px;
+  height: 5px;
+  margin-right: 4px;
+  display: inline-block;
+  content: '';
+  vertical-align: 1px;
+  border-radius: 50%;
+  background: var(--hud-danger);
+  box-shadow: 0 0 5px rgba(230, 105, 113, 0.3);
+}
+
 .service-metric strong {
   color: var(--hud-danger);
   font-size: 0.56rem;
@@ -3099,12 +3148,37 @@ details:not([open]) .panel-collapse-indicator {
   color: var(--hud-positive);
 }
 
+.service-metric.good span::before {
+  background: var(--hud-positive);
+  box-shadow: 0 0 5px rgba(100, 214, 160, 0.3);
+}
+
 .service-metric.watch strong {
   color: var(--hud-warning);
 }
 
+.service-metric.watch {
+  border-color: rgba(235, 184, 92, 0.16);
+  background: rgba(126, 88, 31, 0.09);
+}
+
+.service-metric.watch span::before {
+  background: var(--hud-warning);
+  box-shadow: 0 0 5px rgba(235, 184, 92, 0.3);
+}
+
+.service-metric.poor {
+  border-color: rgba(230, 105, 113, 0.16);
+  background: rgba(151, 48, 57, 0.08);
+}
+
 .service-metric.empty strong {
   color: var(--hud-text-dim);
+}
+
+.service-metric.empty span::before {
+  background: var(--hud-text-dim);
+  box-shadow: none;
 }
 
 @media (max-width: 900px) {

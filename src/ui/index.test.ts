@@ -9,7 +9,10 @@ import { NotificationCenter } from './NotificationCenter';
 import { SimulationStatus } from './SimulationStatus';
 import { ToolBar } from './ToolBar';
 import { TopBar } from './TopBar';
-import { ZoneCapacityPanel } from './ZoneCapacityPanel';
+import {
+  getServiceCoverageSummary,
+  ZoneCapacityPanel,
+} from './ZoneCapacityPanel';
 import { BudgetPanel } from './TopBar/BudgetPanel';
 import { ActivityLog } from './TopBar/ActivityLog';
 import { PopulationPanel } from './TopBar/PopulationPanel';
@@ -398,6 +401,32 @@ describe('React UI shell', () => {
     expect(markup).toContain('100%');
     expect(markup).toContain('Health coverage: no developed zones');
     expect(markup).toContain('<summary class="zone-capacity-heading">');
+    expect(markup).toContain('4 gaps');
+    expect(markup).toContain('4 city service coverage gaps');
+  });
+
+  it('summarizes healthy and inactive service coverage without false alerts', () => {
+    const allCovered = Object.fromEntries(
+      Object.entries(cityServices).map(([key, metric]) => [
+        key,
+        { ...metric, covered: 4, total: 4, percentage: 100 },
+      ])
+    ) as unknown as CityServicesUiState;
+    const noDevelopedZones = Object.fromEntries(
+      Object.entries(cityServices).map(([key, metric]) => [
+        key,
+        { ...metric, covered: 0, total: 0, percentage: null },
+      ])
+    ) as unknown as CityServicesUiState;
+
+    expect(getServiceCoverageSummary(allCovered)).toMatchObject({
+      label: 'All covered',
+      tone: 'good',
+    });
+    expect(getServiceCoverageSummary(noDevelopedZones)).toMatchObject({
+      label: 'No zones',
+      tone: 'empty',
+    });
   });
 
   it('renders every tool and preserves locked state at mount time', () => {

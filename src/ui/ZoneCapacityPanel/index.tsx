@@ -26,6 +26,47 @@ const SERVICE_LABELS: Record<CityServiceMetricUiState['id'], string> = {
   education: 'Education',
 };
 
+interface CoverageSummary {
+  label: string;
+  ariaLabel: string;
+  tone: 'empty' | 'good' | 'watch' | 'poor';
+}
+
+function getServiceCoverageSummary(
+  services: CityServicesUiState
+): CoverageSummary {
+  const activeMetrics = Object.values(services).filter(
+    (metric) => metric.percentage !== null
+  );
+  if (activeMetrics.length === 0) {
+    return {
+      label: 'No zones',
+      ariaLabel: 'No developed zones to evaluate',
+      tone: 'empty',
+    };
+  }
+
+  const gaps = activeMetrics.filter((metric) => (metric.percentage ?? 0) < 80);
+  if (gaps.length === 0) {
+    return {
+      label: 'All covered',
+      ariaLabel: 'All active city services have healthy coverage',
+      tone: 'good',
+    };
+  }
+
+  const hasPoorCoverage = gaps.some(
+    (metric) => (metric.percentage ?? 0) < 50
+  );
+  return {
+    label: `${gaps.length} ${gaps.length === 1 ? 'gap' : 'gaps'}`,
+    ariaLabel: `${gaps.length} city service coverage ${
+      gaps.length === 1 ? 'gap' : 'gaps'
+    }`,
+    tone: hasPoorCoverage ? 'poor' : 'watch',
+  };
+}
+
 function CapacityRow({ metric }: { metric: ZoneCapacityMetricUiState }) {
   const utilization = metric.utilization ?? 0;
   const label = LABELS[metric.id];
@@ -80,6 +121,7 @@ function ServiceMetric({ metric }: { metric: CityServiceMetricUiState }) {
 
 function ZoneCapacityPanel({ capacity, services }: ZoneCapacityPanelProps) {
   const disclosure = useDisclosurePreference('city-overview');
+  const coverageSummary = getServiceCoverageSummary(services);
 
   return (
     <aside
@@ -92,7 +134,15 @@ function ZoneCapacityPanel({ capacity, services }: ZoneCapacityPanelProps) {
             <span className="panel-eyebrow">City utilization</span>
             <strong>Zone capacity</strong>
           </span>
-          <span className="panel-collapse-indicator" aria-hidden="true" />
+          <span className="zone-capacity-heading-meta">
+            <span
+              className={`coverage-summary ${coverageSummary.tone}`}
+              aria-label={coverageSummary.ariaLabel}
+            >
+              {coverageSummary.label}
+            </span>
+            <span className="panel-collapse-indicator" aria-hidden="true" />
+          </span>
         </summary>
         <div className="capacity-rows">
           <CapacityRow metric={capacity.residential} />
@@ -116,4 +166,4 @@ function ZoneCapacityPanel({ capacity, services }: ZoneCapacityPanelProps) {
   );
 }
 
-export { ZoneCapacityPanel };
+export { getServiceCoverageSummary, ZoneCapacityPanel };
