@@ -96,10 +96,10 @@ const cityServices: CityServicesUiState = {
   education: { id: 'education', covered: 1, total: 4, percentage: 25 },
 };
 
-const cityMap: CityMapUiState = {
-  size: 2,
-  tiles: ['road', 'residential', 'power', 'empty'],
-};
+  const cityMap: CityMapUiState = {
+    size: 2,
+    tiles: ['road', 'residential', 'power-line', 'empty'],
+  };
 
 const activity = [
   {
@@ -195,7 +195,9 @@ describe('React UI shell', () => {
         createElement(InfoPanel, { inspector: null, onClose: noop })
       ),
       renderToStaticMarkup(createElement(ControlsLegend)),
-      renderToStaticMarkup(createElement(CityMap, { map: cityMap })),
+      renderToStaticMarkup(
+        createElement(CityMap, { map: cityMap, onFocusTile: noop })
+      ),
       renderToStaticMarkup(
         createElement(ZoneCapacityPanel, {
           capacity: zoneCapacity,
@@ -231,6 +233,9 @@ describe('React UI shell', () => {
     expect(markup).toContain('class="controls-legend-details"');
     expect(markup).toContain('id="city-minimap"');
     expect(markup).toContain('City minimap. 3 of 4 tiles occupied.');
+    expect(markup).toContain(
+      'aria-label="Recenter camera. Choose a location on the city minimap."'
+    );
     expect(markup).toContain('id="zone-capacity-panel"');
     expect(markup).toContain('Ctrl + right drag');
     expect(markup).toContain('1–9 · R · B');

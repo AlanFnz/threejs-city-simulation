@@ -126,7 +126,8 @@ export type CityMapTileKind =
   | 'residential'
   | 'commercial'
   | 'industrial'
-  | 'power'
+  | 'power-line'
+  | 'power-plant'
   | 'service';
 
 export interface CityMapUiState {
@@ -162,6 +163,7 @@ export interface UiState {
 export interface UiActions {
   renameCity(name: string): void;
   selectTool(toolId: string): void;
+  focusMapTile(x: number, y: number): void;
   closeInspector(): void;
   togglePause(): void;
   setSimulationSpeed(speed: SimulationSpeed): void;

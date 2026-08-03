@@ -16,6 +16,7 @@ import {
 
 export interface ICameraManager {
   camera: THREE.OrthographicCamera;
+  focusOnTile(x: number, y: number): void;
   onMouseMove(event: MouseEvent): void;
   onMouseScroll(event: WheelEvent): void;
   onWindowResize(gameWindow: HTMLElement): void;
@@ -78,6 +79,11 @@ export class CameraManager implements ICameraManager {
     this.camera.position.add(this.cameraOrigin);
     this.camera.lookAt(this.cameraOrigin);
     this.camera.updateProjectionMatrix();
+  }
+
+  public focusOnTile(x: number, y: number): void {
+    this.cameraOrigin.set(x, 0, y);
+    this.updateCameraPosition();
   }
 
   public onMouseMove(event: MouseEvent): void {
@@ -179,4 +185,3 @@ export class CameraManager implements ICameraManager {
     return { x: avgX, y: avgY };
   }
 }
-

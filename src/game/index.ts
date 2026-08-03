@@ -46,6 +46,7 @@ export interface IGame {
   simulationSpeed: SimulationSpeed;
   focusedObject: ITile | null;
   step(): void;
+  focusMapTile(x: number, y: number): void;
   selectTool(toolId: string): void;
   closeInspector(): void;
   togglePause(): void;
@@ -97,6 +98,7 @@ export class Game implements IGame {
   constructor() {
     this.ui = createUi(this.getInitialUiState(), {
       selectTool: (toolId) => this.selectTool(toolId),
+      focusMapTile: (x, y) => this.focusMapTile(x, y),
       closeInspector: () => this.closeInspector(),
       togglePause: () => this.togglePause(),
       setSimulationSpeed: (speed) => this.setSimulationSpeed(speed),
@@ -328,6 +330,12 @@ export class Game implements IGame {
     this.sceneManager.deactivateObject();
     this.sceneManager.hidePreviewMesh();
     this.lastPreviewTile = null;
+  }
+
+  focusMapTile(x: number, y: number): void {
+    const tile = this.city.getTile(x, y);
+    if (!tile) return;
+    this.sceneManager.cameraManager.focusOnTile(tile.x, tile.y);
   }
 
   closeInspector(): void {

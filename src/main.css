@@ -2541,16 +2541,16 @@ details:not([open]) .panel-collapse-indicator {
   z-index: 2;
   bottom: 18px;
   left: 18px;
-  width: 196px;
+  width: auto;
   display: flex;
-  flex-direction: column;
+  align-items: flex-end;
   gap: 10px;
   pointer-events: none;
 }
 
 #city-minimap,
 #controls-legend {
-  width: 100%;
+  width: 196px;
   pointer-events: auto;
 }
 
@@ -2600,16 +2600,41 @@ details:not([open]) .panel-collapse-indicator {
   background: rgba(7, 15, 25, 0.42);
 }
 
-#city-minimap canvas {
+.city-minimap-focus {
   width: 128px;
   height: 128px;
   margin: 8px auto 6px;
+  padding: 0;
   display: block;
+  overflow: hidden;
+  cursor: crosshair;
   border: 1px solid var(--hud-line);
   border-radius: 8px;
-  background: #183148;
+  background: #44763f;
   box-shadow: inset 0 0 18px rgba(2, 8, 14, 0.28);
-  image-rendering: pixelated;
+  transition:
+    border-color var(--hud-transition),
+    box-shadow var(--hud-transition),
+    transform var(--hud-transition);
+}
+
+.city-minimap-focus:hover,
+.city-minimap-focus:focus-visible {
+  border-color: var(--hud-accent);
+  box-shadow:
+    inset 0 0 18px rgba(2, 8, 14, 0.28),
+    0 0 0 2px rgba(123, 220, 243, 0.16);
+}
+
+.city-minimap-focus:active {
+  transform: scale(0.985);
+}
+
+#city-minimap canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+  image-rendering: auto;
 }
 
 .city-minimap-legend {
@@ -2654,8 +2679,19 @@ details:not([open]) .panel-collapse-indicator {
   color: #aab7c1;
 }
 
-.city-minimap-legend .power {
+.city-minimap-legend .road::before,
+.city-minimap-legend .power-line::before {
+  width: 7px;
+  height: 2px;
+  border-radius: 1px;
+}
+
+.city-minimap-legend .power-line {
   color: #b58cf2;
+}
+
+.city-minimap-legend .power-line::before {
+  box-shadow: 3px 0 0 -0.25px currentColor;
 }
 
 .controls-legend-details > summary {

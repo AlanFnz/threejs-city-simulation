@@ -15,6 +15,7 @@ describe('createCityMapUiState', () => {
     city.getTile(1, 0)?.placeBuilding(BUILDING_TYPE.INDUSTRIAL);
     city.getTile(1, 1)?.placeBuilding(BUILDING_TYPE.POWER_LINE);
     city.getTile(1, 2)?.placeBuilding(BUILDING_TYPE.HOSPITAL);
+    city.getTile(2, 0)?.placeBuilding(BUILDING_TYPE.POWER_PLANT);
 
     expect(createCityMapUiState(city)).toEqual({
       size: 3,
@@ -23,9 +24,9 @@ describe('createCityMapUiState', () => {
         'residential',
         'commercial',
         'industrial',
-        'power',
+        'power-line',
         'service',
-        'empty',
+        'power-plant',
         'empty',
         'empty',
       ],

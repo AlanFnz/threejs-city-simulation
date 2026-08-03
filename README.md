@@ -16,7 +16,7 @@ Built with **Three.js** and **TypeScript**. No framework, no backend - just a si
 - **Live census** - the population HUD opens into an employment and life-stage breakdown sourced directly from current residents and workplace links.
 - **Zone capacity** - a compact desktop overview shows real residential occupancy and commercial/industrial staffing for developed zones, without inventing a separate demand simulation.
 - **Service coverage** - the same city overview reports road, power, fire, police, health, and education coverage across developed zones so infrastructure gaps are visible without opening individual tiles.
-- **Live minimap** - a compact lower-left overview redraws from typed city data when buildings are placed or removed, with distinct colors for roads, utilities, services, and each zone type.
+- **Live minimap** - a compact terrain-backed overview redraws from typed city data when buildings are placed or removed; zones appear as colored parcels, roads as connected streets, power lines as a thinner node network, and utilities/services as facility markers. Click any map location to recenter the camera there.
 - **Traffic** - vehicles spawn on the road network and drive it lane-by-lane, scaled to your population.
 - **Urban decay** - cut off a neighborhood from the road network (or power grid) and buildings will eventually be abandoned. Reconnect it and they can redevelop.
 - **Civic services** - fire stations, police stations, hospitals, and schools each protect or boost nearby zones (fire immunity, abandonment immunity, faster move-in, faster level-ups), unlocked as your population grows.

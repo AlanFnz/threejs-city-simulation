@@ -86,7 +86,7 @@ function Ui({ actions, store }: UiProps) {
           services={state.cityServices}
         />
         <div id="ui-lower-left-overlay">
-          <CityMap map={state.cityMap} />
+          <CityMap map={state.cityMap} onFocusTile={actions.focusMapTile} />
           <ControlsLegend />
         </div>
         {state.debugText && <div id="debug-tick">{state.debugText}</div>}
