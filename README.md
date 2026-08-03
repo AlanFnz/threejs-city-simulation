@@ -69,6 +69,8 @@ The code is split into two worlds that only meet at a sync point:
 
 44 low-poly GLB models are mapped to building type + style + level, and all simulation balance (development chances, construction time, job search distance, build costs, upkeep, milestone thresholds, random event odds, vehicle behavior…) lives in one config file: `src/config.ts`. Tweak it and see your city behave differently.
 
+Developer-only tick-rate and vehicle-graph diagnostics are available through the typed `CONFIG.DEBUG` flags and stay out of the normal player HUD.
+
 For the full picture - data flow, the development state machine, the vehicle graph, and step-by-step recipes for adding new building types or mechanics - see:
 
 - [`AGENTS.md`](AGENTS.md) - contributor guide with conventions, commands, and known gotchas (agent-agnostic: usable as CLAUDE.md, Cursor rules, or Copilot instructions).

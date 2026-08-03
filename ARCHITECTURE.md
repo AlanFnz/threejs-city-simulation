@@ -296,6 +296,7 @@ A React root is mounted once by `createUi()`. `Game` owns a small external store
 - **ControlsLegend** - renders the desktop mouse/camera quick reference inside the React HUD rather than leaving UI markup in the HTML shell. It is non-interactive and hidden on touch or short displays so it never competes with city controls.
 - **Keyboard shortcuts** - `ui/keyboardShortcuts.ts` maps Esc/1–9/R/B/Space/`.` into typed HUD actions. `ToolBar` owns the document listener, ignores modified keystrokes and editable fields, respects milestone locks, and exposes the bindings through `aria-keyshortcuts`, dock badges, and the controls legend.
 - **Panel disclosure** - the milestones and capacity/service panels use native open-by-default `<details>` controls, keeping their live React content mounted while allowing either side of the map to collapse to a compact header. CSS repositions the debug readout when the lower-right panel is closed.
+- **Debug HUD** - scheduler tick/rate text is omitted from the normal React tree and its per-frame UI update returns immediately unless `CONFIG.DEBUG.SHOW_TICK_RATE` is enabled. This keeps diagnostics available without leaking development chrome into the player HUD; the vehicle graph remains independently gated by `SHOW_VEHICLE_GRAPH`.
 
 `Game.isEventFromUiElement` guards world input against clicks on `#ui-topbar`, `#ui-toolbar`, `#ui-info-overlay` - keep new UI containers in that list (or give them one of those ids as ancestor).
 

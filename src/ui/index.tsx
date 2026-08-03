@@ -66,7 +66,7 @@ function Ui({ actions, store }: UiProps) {
         services={state.cityServices}
       />
       <ControlsLegend />
-      <div id="debug-tick">{state.debugText}</div>
+      {state.debugText && <div id="debug-tick">{state.debugText}</div>}
     </>
   );
 }

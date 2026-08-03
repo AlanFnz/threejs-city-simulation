@@ -83,6 +83,8 @@ export interface Config {
   DEBUG: {
     /** rebuilds and renders node/edge markers for the road graph on every road edit; O(citySize^2) per edit, so keep off outside debugging */
     SHOW_VEHICLE_GRAPH: boolean;
+    /** surfaces scheduler tick/rate diagnostics in the player HUD */
+    SHOW_TICK_RATE: boolean;
   };
   ECONOMY: {
     /** starting balance for a new city */
@@ -191,6 +193,7 @@ const CONFIG = {
   },
   DEBUG: {
     SHOW_VEHICLE_GRAPH: false,
+    SHOW_TICK_RATE: false,
   },
   ECONOMY: {
     STARTING_MONEY: 10000,

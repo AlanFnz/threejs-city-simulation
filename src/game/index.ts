@@ -508,6 +508,7 @@ export class Game implements IGame {
    * scheduler.
    */
   private updateDebugOverlay(): void {
+    if (!CONFIG.DEBUG.SHOW_TICK_RATE) return;
     const elapsedSeconds = (Date.now() - this.startTime) / 1000;
     const rate = elapsedSeconds > 0 ? this.tickCount / elapsedSeconds : 0;
     this.ui.update({
