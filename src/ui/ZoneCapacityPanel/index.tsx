@@ -4,6 +4,7 @@ import type {
   ZoneCapacityMetricUiState,
   ZoneCapacityUiState,
 } from '../store';
+import { useDisclosurePreference } from '../disclosurePreferences';
 
 interface ZoneCapacityPanelProps {
   capacity: ZoneCapacityUiState;
@@ -78,12 +79,14 @@ function ServiceMetric({ metric }: { metric: CityServiceMetricUiState }) {
 }
 
 function ZoneCapacityPanel({ capacity, services }: ZoneCapacityPanelProps) {
+  const disclosure = useDisclosurePreference('city-overview');
+
   return (
     <aside
       id="zone-capacity-panel"
       aria-label="City capacity and service coverage"
     >
-      <details open>
+      <details open={disclosure.isOpen} onToggle={disclosure.onToggle}>
         <summary className="zone-capacity-heading">
           <span>
             <span className="panel-eyebrow">City utilization</span>

@@ -1,4 +1,5 @@
 import { GoalProgressUiState, GoalsUiState } from '../store';
+import { useDisclosurePreference } from '../disclosurePreferences';
 
 interface GoalsPanelProps {
   goals: GoalsUiState;
@@ -13,6 +14,7 @@ function formatProgressValue(progress: GoalProgressUiState): string {
 }
 
 function GoalsPanel({ goals }: GoalsPanelProps) {
+  const disclosure = useDisclosurePreference('goals');
   const current = goals.milestones.find(
     (milestone) => milestone.status === 'current'
   );
@@ -35,7 +37,8 @@ function GoalsPanel({ goals }: GoalsPanelProps) {
         id="goals-panel"
         className="hud-panel"
         aria-label="City goals"
-        open
+        open={disclosure.isOpen}
+        onToggle={disclosure.onToggle}
       >
         <summary className="panel-heading goals-heading">
           <div>

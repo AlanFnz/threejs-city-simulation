@@ -41,7 +41,7 @@ Built with **Three.js** and **TypeScript**. No framework, no backend - just a si
 | Switch tools                                | Toolbar (select, residential, commercial, industrial, road, power plant, power line, fire station, police station, hospital, school, bulldoze) |
 | Pause / resume and simulation speed         | Toolbar pause button + 1×/2×/3× speed control                                                                                                  |
 | Keyboard tool switching                     | Esc select, 1–9 build tools, R road, B bulldoze, Space pause, . cycle speed                                                                     |
-| Collapse side panels                        | Click the Milestones or Zone capacity header                                                                                                    |
+| Collapse side panels                        | Click the Milestones or Zone capacity header; each preference is remembered locally                                                            |
 | Rename city                                 | Click the city name in the top bar                                                                                                             |
 | Save / load / new game                      | Top-bar management menu (autosaves periodically too)                                                                                           |
 
