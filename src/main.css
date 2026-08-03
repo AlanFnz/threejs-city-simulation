@@ -2652,10 +2652,6 @@ details:not([open]) .panel-collapse-indicator {
   pointer-events: auto;
 }
 
-#ui-lower-left-overlay:has(.controls-legend-details[open]) #city-minimap {
-  display: none;
-}
-
 .city-minimap-heading {
   min-height: 42px;
   padding: 8px 10px;
