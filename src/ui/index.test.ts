@@ -249,12 +249,14 @@ describe('React UI shell', () => {
           title: 'Milestone complete',
           message: 'Reach 10 residents · $2,000 bonus',
         },
+        onDismiss: noop,
       })
     );
 
     expect(markup).toContain('tone-milestone');
     expect(markup).toContain('Milestone complete');
     expect(markup).toContain('Reach 10 residents · $2,000 bonus');
+    expect(markup).toContain('Dismiss Milestone complete notification');
   });
 
   it('renders recent city activity with simulation-day context', () => {
@@ -466,5 +468,21 @@ describe('UI store', () => {
 
     store.markActivityRead();
     expect(store.getSnapshot().unreadActivityCount).toBe(0);
+  });
+
+  it('dismisses the active toast without clearing its activity entry', () => {
+    vi.useFakeTimers();
+    const store = createUiStore(initialState);
+    store.showNotification({
+      tone: 'warning',
+      title: 'Placement blocked',
+      message: 'That tile is already occupied.',
+    });
+
+    store.dismissNotification();
+
+    expect(store.getSnapshot().notification).toBeNull();
+    expect(store.getSnapshot().activity).toHaveLength(1);
+    expect(store.getSnapshot().unreadActivityCount).toBe(1);
   });
 });

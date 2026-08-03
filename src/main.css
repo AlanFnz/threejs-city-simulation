@@ -2121,7 +2121,7 @@ details:not([open]) .panel-collapse-indicator {
   position: relative;
   padding: 11px 14px 13px 11px;
   display: grid;
-  grid-template-columns: 38px minmax(0, 1fr);
+  grid-template-columns: 38px minmax(0, 1fr) 25px;
   align-items: center;
   gap: 11px;
   overflow: hidden;
@@ -2139,6 +2139,34 @@ details:not([open]) .panel-collapse-indicator {
   backdrop-filter: var(--hud-blur);
   -webkit-backdrop-filter: var(--hud-blur);
   animation: notification-enter 180ms ease-out;
+  pointer-events: auto;
+}
+
+.notification-dismiss {
+  width: 25px;
+  height: 25px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  color: var(--hud-text-dim);
+  font-size: 1rem;
+  line-height: 1;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  background: transparent;
+  pointer-events: auto;
+  transition:
+    color var(--hud-transition),
+    border-color var(--hud-transition),
+    background-color var(--hud-transition);
+}
+
+.notification-dismiss:hover,
+.notification-dismiss:focus-visible {
+  color: var(--hud-text);
+  border-color: var(--hud-line);
+  background: rgba(151, 191, 215, 0.08);
 }
 
 .hud-notification.tone-success {

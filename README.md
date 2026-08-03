@@ -23,6 +23,7 @@ Built with **Three.js** and **TypeScript**. No framework, no backend - just a si
 - **Simulation calendar** - every simulated day advances a persistent city clock, with pause and 1×/2×/3× speed reflected live in the HUD.
 - **Random events** - occasional windfalls, fires, and layoffs add variance on top of the steady simulation.
 - **Activity history** - an unread badge leads to the six latest milestones, events, placement warnings, and management actions in the city menu, each retaining its simulation day after transient alerts disappear.
+- **Controllable alerts** - HUD toasts can be dismissed immediately or left to expire automatically, while their activity-history entry remains available.
 - **Goals** - a running list of population/money/zone-count milestones with real rewards (cash, discounts, unlocked civic tools, raised level caps).
 - **Save & load** - your named city persists in the browser (autosave + manual save/load/new game).
 - **Inspection tools** - select any tile to see its building state, level, road/power/civic access, and a list of its residents or workers. Pause the simulation at any time.

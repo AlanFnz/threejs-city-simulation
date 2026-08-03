@@ -3,9 +3,10 @@ import { UiNotification } from '../store';
 
 interface NotificationCenterProps {
   notification: UiNotification | null;
+  onDismiss: () => void;
 }
 
-function NotificationCenter({ notification }: NotificationCenterProps) {
+function NotificationCenter({ notification, onDismiss }: NotificationCenterProps) {
   return (
     <div id="notification-center" aria-live="polite" aria-atomic="true">
       {notification && (
@@ -21,6 +22,14 @@ function NotificationCenter({ notification }: NotificationCenterProps) {
             <strong>{notification.title}</strong>
             <span>{notification.message}</span>
           </span>
+          <button
+            className="notification-dismiss"
+            type="button"
+            aria-label={`Dismiss ${notification.title} notification`}
+            onClick={onDismiss}
+          >
+            ×
+          </button>
           <span className="notification-timer" aria-hidden="true" />
         </article>
       )}

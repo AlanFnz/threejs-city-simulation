@@ -160,6 +160,7 @@ export interface UiController {
   subscribe(listener: UiListener): () => void;
   update(patch: Partial<UiState>): void;
   showNotification(notification: NewUiNotification): void;
+  dismissNotification(): void;
   markActivityRead(): void;
   dispose(): void;
 }
@@ -204,6 +205,11 @@ export function createUiStore(initialState: UiState): UiController {
         update({ notification: null });
         notificationTimer = null;
       }, NOTIFICATION_DURATION_MS);
+    },
+    dismissNotification() {
+      if (notificationTimer) clearTimeout(notificationTimer);
+      notificationTimer = null;
+      if (state.notification) update({ notification: null });
     },
     markActivityRead() {
       if (state.unreadActivityCount > 0) update({ unreadActivityCount: 0 });

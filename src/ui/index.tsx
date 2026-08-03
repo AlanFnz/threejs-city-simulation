@@ -57,7 +57,10 @@ function Ui({ actions, store }: UiProps) {
       />
       <GoalsPanel goals={state.goals} />
       <InfoPanel inspector={state.inspector} />
-      <NotificationCenter notification={state.notification} />
+      <NotificationCenter
+        notification={state.notification}
+        onDismiss={store.dismissNotification}
+      />
       <ZoneCapacityPanel
         capacity={state.zoneCapacity}
         services={state.cityServices}
