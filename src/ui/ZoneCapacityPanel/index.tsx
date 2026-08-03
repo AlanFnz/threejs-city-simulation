@@ -4,6 +4,7 @@ import type {
   ZoneCapacityMetricUiState,
   ZoneCapacityUiState,
 } from '../store';
+import { getIcon, ICON_KEYS, type IconKey } from '../../assetManager/icons';
 import { useDisclosurePreference } from '../disclosurePreferences';
 
 interface ZoneCapacityPanelProps {
@@ -24,6 +25,15 @@ const SERVICE_LABELS: Record<CityServiceMetricUiState['id'], string> = {
   police: 'Police',
   health: 'Health',
   education: 'Education',
+};
+
+const SERVICE_ICONS: Record<CityServiceMetricUiState['id'], IconKey> = {
+  road: ICON_KEYS.ROAD_COLOR,
+  power: ICON_KEYS.POWER_COLOR,
+  fire: ICON_KEYS.FIRE_STATION_COLOR,
+  police: ICON_KEYS.POLICE_STATION_COLOR,
+  health: ICON_KEYS.HOSPITAL_COLOR,
+  education: ICON_KEYS.SCHOOL_COLOR,
 };
 
 interface CoverageSummary {
@@ -97,6 +107,7 @@ function CapacityRow({ metric }: { metric: ZoneCapacityMetricUiState }) {
 }
 
 function ServiceMetric({ metric }: { metric: CityServiceMetricUiState }) {
+  const label = SERVICE_LABELS[metric.id];
   const coverageClass =
     metric.percentage === null
       ? 'empty'
@@ -109,12 +120,22 @@ function ServiceMetric({ metric }: { metric: CityServiceMetricUiState }) {
   return (
     <div
       className={`service-metric ${coverageClass}`}
-      aria-label={`${SERVICE_LABELS[metric.id]} coverage: ${
+      aria-label={`${label} coverage: ${
         metric.percentage === null ? 'no developed zones' : `${metric.percentage}%`
       }`}
     >
-      <span>{SERVICE_LABELS[metric.id]}</span>
-      <strong>{metric.percentage === null ? '—' : `${metric.percentage}%`}</strong>
+      <img src={getIcon(SERVICE_ICONS[metric.id])} alt="" aria-hidden="true" />
+      <span className="service-metric-copy">
+        <span>{label}</span>
+        <small>
+          {metric.total === 0
+            ? 'No active zones'
+            : `${metric.covered} / ${metric.total} zones`}
+        </small>
+      </span>
+      <strong>
+        {metric.percentage === null ? '—' : `${metric.percentage}%`}
+      </strong>
     </div>
   );
 }

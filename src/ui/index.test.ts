@@ -399,6 +399,9 @@ describe('React UI shell', () => {
     expect(markup).toContain('Developed zone coverage');
     expect(markup).toContain('Power');
     expect(markup).toContain('100%');
+    expect(markup).toContain('4 / 4 zones');
+    expect(markup).toContain('No active zones');
+    expect(markup).toContain('service-metric-copy');
     expect(markup).toContain('Health coverage: no developed zones');
     expect(markup).toContain('<summary class="zone-capacity-heading">');
     expect(markup).toContain('4 gaps');
