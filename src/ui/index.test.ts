@@ -213,6 +213,9 @@ describe('React UI shell', () => {
         createElement(ZoneCapacityPanel, {
           capacity: zoneCapacity,
           services: cityServices,
+          activeToolId: null,
+          unlockedToolIds: [],
+          onSelectTool: noop,
         })
       ),
     ].join('');
@@ -388,6 +391,9 @@ describe('React UI shell', () => {
       createElement(ZoneCapacityPanel, {
         capacity: zoneCapacity,
         services: cityServices,
+        activeToolId: 'ROAD',
+        unlockedToolIds: ['ROAD', 'POWER_LINE'],
+        onSelectTool: noop,
       })
     );
 
@@ -403,6 +409,10 @@ describe('React UI shell', () => {
     expect(markup).toContain('No active zones');
     expect(markup).toContain('service-metric-copy');
     expect(markup).toContain('Health coverage: no developed zones');
+    expect(markup).toContain('Select Road build tool');
+    expect(markup).toContain('aria-pressed="true"');
+    expect(markup).toContain('Fire build tool locked');
+    expect(markup).toContain('disabled=""');
     expect(markup).toContain('<summary class="zone-capacity-heading">');
     expect(markup).toContain('4 gaps');
     expect(markup).toContain('4 city service coverage gaps');

@@ -10,6 +10,9 @@ import { useDisclosurePreference } from '../disclosurePreferences';
 interface ZoneCapacityPanelProps {
   capacity: ZoneCapacityUiState;
   services: CityServicesUiState;
+  activeToolId: string | null;
+  unlockedToolIds: string[];
+  onSelectTool(toolId: string): void;
 }
 
 const LABELS: Record<ZoneCapacityMetricUiState['id'], string> = {
@@ -34,6 +37,15 @@ const SERVICE_ICONS: Record<CityServiceMetricUiState['id'], IconKey> = {
   police: ICON_KEYS.POLICE_STATION_COLOR,
   health: ICON_KEYS.HOSPITAL_COLOR,
   education: ICON_KEYS.SCHOOL_COLOR,
+};
+
+const SERVICE_TOOLS: Record<CityServiceMetricUiState['id'], string> = {
+  road: 'ROAD',
+  power: 'POWER_LINE',
+  fire: 'FIRE_STATION',
+  police: 'POLICE_STATION',
+  health: 'HOSPITAL',
+  education: 'SCHOOL',
 };
 
 interface CoverageSummary {
@@ -106,8 +118,22 @@ function CapacityRow({ metric }: { metric: ZoneCapacityMetricUiState }) {
   );
 }
 
-function ServiceMetric({ metric }: { metric: CityServiceMetricUiState }) {
+function ServiceMetric({
+  metric,
+  isActive,
+  isUnlocked,
+  onSelect,
+}: {
+  metric: CityServiceMetricUiState;
+  isActive: boolean;
+  isUnlocked: boolean;
+  onSelect(): void;
+}) {
   const label = SERVICE_LABELS[metric.id];
+  const coverageLabel =
+    metric.percentage === null
+      ? 'no developed zones'
+      : `${metric.percentage}%`;
   const coverageClass =
     metric.percentage === null
       ? 'empty'
@@ -118,11 +144,20 @@ function ServiceMetric({ metric }: { metric: CityServiceMetricUiState }) {
           : 'poor';
 
   return (
-    <div
-      className={`service-metric ${coverageClass}`}
-      aria-label={`${label} coverage: ${
-        metric.percentage === null ? 'no developed zones' : `${metric.percentage}%`
+    <button
+      type="button"
+      className={`service-metric ${coverageClass}${isActive ? ' active' : ''}`}
+      aria-label={`${label} coverage: ${coverageLabel}. ${
+        isUnlocked ? `Select ${label} build tool` : `${label} build tool locked`
       }`}
+      aria-pressed={isActive}
+      disabled={!isUnlocked}
+      title={
+        isUnlocked
+          ? `Select ${label} build tool`
+          : `${label} service unlocks through milestones`
+      }
+      onClick={onSelect}
     >
       <img src={getIcon(SERVICE_ICONS[metric.id])} alt="" aria-hidden="true" />
       <span className="service-metric-copy">
@@ -136,13 +171,32 @@ function ServiceMetric({ metric }: { metric: CityServiceMetricUiState }) {
       <strong>
         {metric.percentage === null ? '—' : `${metric.percentage}%`}
       </strong>
-    </div>
+    </button>
   );
 }
 
-function ZoneCapacityPanel({ capacity, services }: ZoneCapacityPanelProps) {
+function ZoneCapacityPanel({
+  capacity,
+  services,
+  activeToolId,
+  unlockedToolIds,
+  onSelectTool,
+}: ZoneCapacityPanelProps) {
   const disclosure = useDisclosurePreference('city-overview');
   const coverageSummary = getServiceCoverageSummary(services);
+
+  const renderServiceMetric = (metric: CityServiceMetricUiState) => {
+    const toolId = SERVICE_TOOLS[metric.id];
+    return (
+      <ServiceMetric
+        key={metric.id}
+        metric={metric}
+        isActive={activeToolId === toolId}
+        isUnlocked={unlockedToolIds.includes(toolId)}
+        onSelect={() => onSelectTool(toolId)}
+      />
+    );
+  };
 
   return (
     <aside
@@ -175,12 +229,12 @@ function ZoneCapacityPanel({ capacity, services }: ZoneCapacityPanelProps) {
           <small>City services</small>
         </div>
         <div className="service-coverage-grid">
-          <ServiceMetric metric={services.road} />
-          <ServiceMetric metric={services.power} />
-          <ServiceMetric metric={services.fire} />
-          <ServiceMetric metric={services.police} />
-          <ServiceMetric metric={services.health} />
-          <ServiceMetric metric={services.education} />
+          {renderServiceMetric(services.road)}
+          {renderServiceMetric(services.power)}
+          {renderServiceMetric(services.fire)}
+          {renderServiceMetric(services.police)}
+          {renderServiceMetric(services.health)}
+          {renderServiceMetric(services.education)}
         </div>
       </details>
     </aside>

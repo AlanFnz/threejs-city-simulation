@@ -29,7 +29,7 @@ Built with **Three.js** and **TypeScript**. No framework, no backend - just a si
 - **Save & load** - your named city persists in the browser (autosave + manual save/load/new game).
 - **Inspection tools** - select any tile to see its building state, level, road/power/civic access, and a list of its residents or workers; a guarded inspector action can demolish the selected building without changing tools, while dismissing the panel clears the world selection highlight. Pause the simulation at any time.
 - **Contextual building controls** - the active-tool strip keeps placement gestures, per-tile cost, and affordability visible while you build, while rejected clicks explain occupied tiles, insufficient funds, or empty bulldoze targets.
-- **City service health** - icon-led road, power, fire, police, health, and education cards show live coverage percentages, covered-zone counts, and urgent gaps at a glance.
+- **City service health** - icon-led road, power, fire, police, health, and education cards show live coverage percentages, covered-zone counts, and urgent gaps; unlocked cards jump directly to the matching build tool.
 - **Isometric-style camera** - orbit, pan, and zoom over your city (orthographic projection, soft shadows).
 
 ## 🎮 Controls

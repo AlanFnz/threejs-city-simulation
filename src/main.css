@@ -3100,6 +3100,7 @@ details:not([open]) .panel-collapse-indicator {
 }
 
 .service-metric {
+  appearance: none;
   min-width: 0;
   padding: 6px;
   display: grid;
@@ -3109,6 +3110,39 @@ details:not([open]) .panel-collapse-indicator {
   border: 1px solid rgba(151, 191, 215, 0.09);
   border-radius: 6px;
   background: rgba(17, 32, 44, 0.48);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  pointer-events: auto;
+  cursor: pointer;
+  transition:
+    border-color var(--hud-transition),
+    background var(--hud-transition),
+    box-shadow var(--hud-transition),
+    transform var(--hud-transition);
+}
+
+.service-metric:not(:disabled):hover,
+.service-metric:not(:disabled):focus-visible {
+  border-color: rgba(123, 220, 243, 0.34);
+  background: rgba(45, 79, 99, 0.46);
+  box-shadow: 0 0 0 2px rgba(123, 220, 243, 0.1);
+  outline: none;
+}
+
+.service-metric:not(:disabled):active {
+  transform: translateY(1px);
+}
+
+.service-metric.active {
+  border-color: rgba(123, 220, 243, 0.48);
+  background: rgba(65, 147, 174, 0.18);
+  box-shadow: inset 2px 0 var(--hud-accent);
+}
+
+.service-metric:disabled {
+  cursor: not-allowed;
+  opacity: 0.56;
 }
 
 .service-metric > img {

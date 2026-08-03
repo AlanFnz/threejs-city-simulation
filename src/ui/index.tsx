@@ -88,6 +88,9 @@ function Ui({ actions, store }: UiProps) {
         <ZoneCapacityPanel
           capacity={state.zoneCapacity}
           services={state.cityServices}
+          activeToolId={state.activeToolId}
+          unlockedToolIds={state.unlockedToolIds}
+          onSelectTool={actions.selectTool}
         />
         <div id="ui-lower-left-overlay">
           <CityMap
