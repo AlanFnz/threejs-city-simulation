@@ -6,6 +6,8 @@ export interface Config {
     KEYBOARD_ROTATION_SPEED: number;
     /** how quickly keyboard movement reaches its target velocity, per second */
     KEYBOARD_RESPONSE: number;
+    /** how quickly scroll zoom catches up to its target, per second */
+    SCROLL_ZOOM_RESPONSE: number;
   };
   ATTRIBUTES: {
     ROAD_ACCESS: {
@@ -152,6 +154,7 @@ const CONFIG = {
     KEYBOARD_PAN_SPEED: 5,
     KEYBOARD_ROTATION_SPEED: 90,
     KEYBOARD_RESPONSE: 12,
+    SCROLL_ZOOM_RESPONSE: 14,
   },
   ATTRIBUTES: {
     ROAD_ACCESS: {

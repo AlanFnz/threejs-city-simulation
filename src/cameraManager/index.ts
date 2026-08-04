@@ -40,6 +40,7 @@ export class CameraManager implements ICameraManager {
   public camera: THREE.OrthographicCamera;
   private cameraOrigin: THREE.Vector3;
   private cameraRadius: number;
+  private targetCameraRadius: number;
   private cameraAzimuth: number;
   private cameraElevation: number;
   private startTouches: { x: number; y: number };
@@ -76,6 +77,7 @@ export class CameraManager implements ICameraManager {
       MAX_CAMERA_RADIUS,
       Math.max(this.minCameraRadius, CAMERA_SIZE / (citySize + 4))
     );
+    this.targetCameraRadius = this.cameraRadius;
     this.cameraAzimuth = 135;
     this.cameraElevation = 45;
     this.startTouches = { x: 0, y: 0 };
@@ -159,12 +161,14 @@ export class CameraManager implements ICameraManager {
       Number(this.pressedKeys.has('KeyQ'));
     const clampedDeltaSeconds = Math.min(Math.max(deltaSeconds, 0), 0.1);
     if (clampedDeltaSeconds === 0) return;
+    const hasZoomMotion = this.cameraRadius !== this.targetCameraRadius;
     if (
       forwardInput === 0 &&
       leftInput === 0 &&
       rotationInput === 0 &&
       this.panVelocity.lengthSq() === 0 &&
-      this.rotationVelocity === 0
+      this.rotationVelocity === 0 &&
+      !hasZoomMotion
     ) {
       return;
     }
@@ -220,6 +224,18 @@ export class CameraManager implements ICameraManager {
       this.panVelocity.set(0, 0, 0);
     }
 
+    if (hasZoomMotion) {
+      const zoomDecay = Math.exp(
+        -CONFIG.CAMERA.SCROLL_ZOOM_RESPONSE * clampedDeltaSeconds
+      );
+      this.cameraRadius =
+        this.targetCameraRadius +
+        (this.cameraRadius - this.targetCameraRadius) * zoomDecay;
+      if (Math.abs(this.cameraRadius - this.targetCameraRadius) < 1e-4) {
+        this.cameraRadius = this.targetCameraRadius;
+      }
+    }
+
     this.updateCameraPosition();
     if (movement.lengthSq() > 0) this.onFocusChanged(this.getFocus());
   }
@@ -256,12 +272,12 @@ export class CameraManager implements ICameraManager {
   }
 
   public onMouseScroll(event: WheelEvent): void {
-    this.cameraRadius *= 1 - event.deltaY * ZOOM_SENSITIVITY;
-    this.cameraRadius = Math.min(
+    event.preventDefault();
+    this.targetCameraRadius *= Math.exp(-event.deltaY * ZOOM_SENSITIVITY);
+    this.targetCameraRadius = Math.min(
       MAX_CAMERA_RADIUS,
-      Math.max(this.minCameraRadius, this.cameraRadius)
+      Math.max(this.minCameraRadius, this.targetCameraRadius)
     );
-    this.updateCameraPosition();
   }
 
   public onTouchStart(event: TouchEvent): void {

@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { CameraManager } from '.';
+import { ZOOM_SENSITIVITY } from './constants';
 
 describe('CameraManager', () => {
   it('recenters the camera origin on a city tile', () => {
@@ -179,5 +180,44 @@ describe('CameraManager', () => {
     expect(cameraManager.camera.position.x).toBeCloseTo(initialPosition.x);
     expect(cameraManager.camera.position.y).toBeCloseTo(initialPosition.y);
     expect(cameraManager.camera.position.z).toBeCloseTo(initialPosition.z);
+  });
+
+  it('eases scroll input toward a frame-rate-independent target zoom', () => {
+    const gameWindow = { clientWidth: 800, clientHeight: 600 } as HTMLElement;
+    const atSixtyFps = new CameraManager(gameWindow, 16);
+    const atTenFps = new CameraManager(gameWindow, 16);
+    const initialZoom = atSixtyFps.camera.zoom;
+    const preventDefault = vi.fn();
+
+    atSixtyFps.onMouseScroll({
+      deltaY: 100,
+      preventDefault,
+    } as unknown as WheelEvent);
+    atTenFps.onMouseScroll({
+      deltaY: 100,
+      preventDefault: vi.fn(),
+    } as unknown as WheelEvent);
+
+    expect(preventDefault).toHaveBeenCalledOnce();
+    expect(atSixtyFps.camera.zoom).toBe(initialZoom);
+
+    atSixtyFps.update(1 / 60);
+    expect(atSixtyFps.camera.zoom).toBeLessThan(initialZoom);
+    expect(atSixtyFps.camera.zoom).toBeGreaterThan(
+      initialZoom * Math.exp(-100 * ZOOM_SENSITIVITY)
+    );
+
+    for (let frame = 1; frame < 60; frame += 1) {
+      atSixtyFps.update(1 / 60);
+    }
+    for (let frame = 0; frame < 10; frame += 1) {
+      atTenFps.update(0.1);
+    }
+
+    expect(atSixtyFps.camera.zoom).toBeCloseTo(atTenFps.camera.zoom, 5);
+    expect(atSixtyFps.camera.zoom).toBeCloseTo(
+      initialZoom * Math.exp(-100 * ZOOM_SENSITIVITY),
+      3
+    );
   });
 });
