@@ -2,6 +2,8 @@ export interface Config {
   CAMERA: {
     /** ground-plane tiles traversed per second at camera zoom 1 */
     KEYBOARD_PAN_SPEED: number;
+    /** degrees rotated around the camera focus per second */
+    KEYBOARD_ROTATION_SPEED: number;
   };
   ATTRIBUTES: {
     ROAD_ACCESS: {
@@ -146,6 +148,7 @@ export interface Config {
 const CONFIG = {
   CAMERA: {
     KEYBOARD_PAN_SPEED: 5,
+    KEYBOARD_ROTATION_SPEED: 90,
   },
   ATTRIBUTES: {
     ROAD_ACCESS: {

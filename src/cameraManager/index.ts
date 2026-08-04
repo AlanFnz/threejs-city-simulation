@@ -111,7 +111,9 @@ export class CameraManager implements ICameraManager {
   }
 
   public onKeyDown(event: KeyboardEvent): void {
-    if (!['KeyW', 'KeyA', 'KeyS', 'KeyD'].includes(event.code)) return;
+    if (!['KeyW', 'KeyA', 'KeyS', 'KeyD', 'KeyQ', 'KeyE'].includes(event.code)) {
+      return;
+    }
     const target = event.target as {
       closest?: (selector: string) => unknown;
     } | null;
@@ -142,28 +144,42 @@ export class CameraManager implements ICameraManager {
     const leftInput =
       Number(this.pressedKeys.has('KeyA')) -
       Number(this.pressedKeys.has('KeyD'));
-    if (forwardInput === 0 && leftInput === 0) return;
+    const rotationInput =
+      Number(this.pressedKeys.has('KeyE')) -
+      Number(this.pressedKeys.has('KeyQ'));
+    if (forwardInput === 0 && leftInput === 0 && rotationInput === 0) return;
 
-    const forward = new THREE.Vector3(0, 0, -1).applyAxisAngle(
-      Y_AXIS,
-      this.cameraAzimuth * DEG2RAD
-    );
-    const left = new THREE.Vector3(1, 0, 0).applyAxisAngle(
-      Y_AXIS,
-      this.cameraAzimuth * DEG2RAD
-    );
-    const movement = forward
-      .multiplyScalar(forwardInput)
-      .add(left.multiplyScalar(leftInput))
-      .normalize()
-      .multiplyScalar(
-        (CONFIG.CAMERA.KEYBOARD_PAN_SPEED / this.cameraRadius) *
-          Math.min(Math.max(deltaSeconds, 0), 0.1)
+    const clampedDeltaSeconds = Math.min(Math.max(deltaSeconds, 0), 0.1);
+    if (rotationInput !== 0) {
+      this.cameraAzimuth +=
+        rotationInput *
+        CONFIG.CAMERA.KEYBOARD_ROTATION_SPEED *
+        clampedDeltaSeconds;
+    }
+
+    const isPanning = forwardInput !== 0 || leftInput !== 0;
+    if (isPanning) {
+      const forward = new THREE.Vector3(0, 0, -1).applyAxisAngle(
+        Y_AXIS,
+        this.cameraAzimuth * DEG2RAD
       );
+      const left = new THREE.Vector3(1, 0, 0).applyAxisAngle(
+        Y_AXIS,
+        this.cameraAzimuth * DEG2RAD
+      );
+      const movement = forward
+        .multiplyScalar(forwardInput)
+        .add(left.multiplyScalar(leftInput))
+        .normalize()
+        .multiplyScalar(
+          (CONFIG.CAMERA.KEYBOARD_PAN_SPEED / this.cameraRadius) *
+            clampedDeltaSeconds
+        );
 
-    this.cameraOrigin.add(movement);
+      this.cameraOrigin.add(movement);
+    }
     this.updateCameraPosition();
-    this.onFocusChanged(this.getFocus());
+    if (isPanning) this.onFocusChanged(this.getFocus());
   }
 
   public onMouseMove(event: MouseEvent): void {

@@ -117,4 +117,34 @@ describe('CameraManager', () => {
     expect(typingPreventDefault).not.toHaveBeenCalled();
     expect(modifiedPreventDefault).not.toHaveBeenCalled();
   });
+
+  it('rotates smoothly with Q and E without changing camera focus', () => {
+    const gameWindow = { clientWidth: 800, clientHeight: 600 } as HTMLElement;
+    const onFocusChanged = vi.fn();
+    const cameraManager = new CameraManager(gameWindow, 16, onFocusChanged);
+    const initialFocus = cameraManager.getFocus();
+    const initialPosition = cameraManager.camera.position.clone();
+    const press = (code: string) =>
+      cameraManager.onKeyDown({
+        code,
+        altKey: false,
+        ctrlKey: false,
+        metaKey: false,
+        preventDefault: vi.fn(),
+      } as unknown as KeyboardEvent);
+
+    press('KeyQ');
+    cameraManager.update(0.1);
+    const rotatedPosition = cameraManager.camera.position.clone();
+    expect(rotatedPosition.equals(initialPosition)).toBe(false);
+    expect(cameraManager.getFocus()).toEqual(initialFocus);
+    expect(onFocusChanged).not.toHaveBeenCalled();
+
+    cameraManager.onKeyUp({ code: 'KeyQ' } as KeyboardEvent);
+    press('KeyE');
+    cameraManager.update(0.1);
+    expect(cameraManager.camera.position.x).toBeCloseTo(initialPosition.x);
+    expect(cameraManager.camera.position.y).toBeCloseTo(initialPosition.y);
+    expect(cameraManager.camera.position.z).toBeCloseTo(initialPosition.z);
+  });
 });
