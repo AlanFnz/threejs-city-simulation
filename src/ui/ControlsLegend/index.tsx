@@ -1,6 +1,7 @@
 import { useDisclosurePreference } from '../disclosurePreferences';
 
 const CONTROL_HINTS = [
+  { action: 'Move camera', input: 'W · A · S · D' },
   { action: 'Select / build', input: 'Left click' },
   { action: 'Orbit camera', input: 'Right drag' },
   { action: 'Pan camera', input: 'Ctrl + right drag' },

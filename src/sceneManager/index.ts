@@ -105,6 +105,7 @@ export class SceneManager implements ISceneManager {
   private vehicleGraph: VehicleGraph = null!;
   private root: THREE.Group = new THREE.Group();
   private previewMesh: THREE.Object3D | null = null;
+  private lastFrameTime: number | null = null;
   cameraManager: ICameraManager;
 
   constructor(
@@ -541,6 +542,7 @@ export class SceneManager implements ISceneManager {
   }
 
   public start(): void {
+    this.lastFrameTime = null;
     this.renderer.setAnimationLoop(this.draw.bind(this));
   }
 
@@ -548,7 +550,11 @@ export class SceneManager implements ISceneManager {
     this.renderer.setAnimationLoop(null);
   }
 
-  private draw(): void {
+  private draw(time: number): void {
+    const deltaSeconds =
+      this.lastFrameTime === null ? 0 : (time - this.lastFrameTime) / 1000;
+    this.lastFrameTime = time;
+    this.cameraManager.update(deltaSeconds);
     this.vehicleGraph.updateVehicles();
     this.renderer.render(this.scene, this.cameraManager.camera);
   }

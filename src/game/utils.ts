@@ -19,6 +19,15 @@ export function setupEventListeners(
 
   document.addEventListener('mousedown', onMouseDown, false);
   document.addEventListener('mousemove', onMouseMove, false);
+  document.addEventListener('keydown', (event) =>
+    sceneManager.cameraManager.onKeyDown(event)
+  );
+  document.addEventListener('keyup', (event) =>
+    sceneManager.cameraManager.onKeyUp(event)
+  );
+  window.addEventListener('blur', () =>
+    sceneManager.cameraManager.clearKeyboardState()
+  );
 
   document.addEventListener(
     'contextmenu',
@@ -42,4 +51,3 @@ export function setupEventListeners(
 }
 
 export { isActiveToolIdValid };
-

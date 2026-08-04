@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import CONFIG from '../config';
 import {
   DEG2RAD,
   RIGHT_MOUSE_BUTTON,
@@ -23,6 +24,10 @@ export interface ICameraManager {
   camera: THREE.OrthographicCamera;
   getFocus(): CameraFocus;
   focusOnTile(x: number, y: number): void;
+  update(deltaSeconds: number): void;
+  onKeyDown(event: KeyboardEvent): void;
+  onKeyUp(event: KeyboardEvent): void;
+  clearKeyboardState(): void;
   onMouseMove(event: MouseEvent): void;
   onMouseScroll(event: WheelEvent): void;
   onWindowResize(gameWindow: HTMLElement): void;
@@ -42,6 +47,7 @@ export class CameraManager implements ICameraManager {
   private onFocusChanged: (focus: CameraFocus) => void;
   /** Scaled by 16/citySize so every map size keeps the same relative zoomed-out coverage. */
   private minCameraRadius: number;
+  private pressedKeys: Set<string>;
 
   constructor(
     gameWindow: HTMLElement,
@@ -72,6 +78,7 @@ export class CameraManager implements ICameraManager {
     this.cameraElevation = 45;
     this.startTouches = { x: 0, y: 0 };
     this.isPanning = false;
+    this.pressedKeys = new Set();
     this.onFocusChanged = onFocusChanged;
 
     this.updateCameraPosition();
@@ -101,6 +108,62 @@ export class CameraManager implements ICameraManager {
 
   public getFocus(): CameraFocus {
     return { x: this.cameraOrigin.x, y: this.cameraOrigin.z };
+  }
+
+  public onKeyDown(event: KeyboardEvent): void {
+    if (!['KeyW', 'KeyA', 'KeyS', 'KeyD'].includes(event.code)) return;
+    const target = event.target as {
+      closest?: (selector: string) => unknown;
+    } | null;
+    if (
+      event.altKey ||
+      event.ctrlKey ||
+      event.metaKey ||
+      target?.closest?.('input, textarea, select, [contenteditable="true"]')
+    ) {
+      return;
+    }
+    event.preventDefault();
+    this.pressedKeys.add(event.code);
+  }
+
+  public onKeyUp(event: KeyboardEvent): void {
+    this.pressedKeys.delete(event.code);
+  }
+
+  public clearKeyboardState(): void {
+    this.pressedKeys.clear();
+  }
+
+  public update(deltaSeconds: number): void {
+    const forwardInput =
+      Number(this.pressedKeys.has('KeyW')) -
+      Number(this.pressedKeys.has('KeyS'));
+    const leftInput =
+      Number(this.pressedKeys.has('KeyA')) -
+      Number(this.pressedKeys.has('KeyD'));
+    if (forwardInput === 0 && leftInput === 0) return;
+
+    const forward = new THREE.Vector3(0, 0, -1).applyAxisAngle(
+      Y_AXIS,
+      this.cameraAzimuth * DEG2RAD
+    );
+    const left = new THREE.Vector3(1, 0, 0).applyAxisAngle(
+      Y_AXIS,
+      this.cameraAzimuth * DEG2RAD
+    );
+    const movement = forward
+      .multiplyScalar(forwardInput)
+      .add(left.multiplyScalar(leftInput))
+      .normalize()
+      .multiplyScalar(
+        (CONFIG.CAMERA.KEYBOARD_PAN_SPEED / this.cameraRadius) *
+          Math.min(Math.max(deltaSeconds, 0), 0.1)
+      );
+
+    this.cameraOrigin.add(movement);
+    this.updateCameraPosition();
+    this.onFocusChanged(this.getFocus());
   }
 
   public onMouseMove(event: MouseEvent): void {

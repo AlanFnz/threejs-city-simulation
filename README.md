@@ -36,6 +36,7 @@ Built with **Three.js** and **TypeScript**. No framework, no backend - just a si
 
 | Action                                      | Input                                                                                                                                          |
 | ------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| Move camera                                 | W / A / S / D                                                                                                                                  |
 | Use active tool (place / select / bulldoze) | Left click (drag to paint)                                                                                                                     |
 | Orbit camera                                | Right click + drag                                                                                                                             |
 | Pan camera                                  | Ctrl + right click + drag (or two-finger drag on touch)                                                                                        |

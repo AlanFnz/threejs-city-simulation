@@ -1,4 +1,8 @@
 export interface Config {
+  CAMERA: {
+    /** ground-plane tiles traversed per second at camera zoom 1 */
+    KEYBOARD_PAN_SPEED: number;
+  };
   ATTRIBUTES: {
     ROAD_ACCESS: {
       /** tiles (Manhattan distance) a tile searches for a road */
@@ -140,6 +144,9 @@ export interface Config {
 }
 
 const CONFIG = {
+  CAMERA: {
+    KEYBOARD_PAN_SPEED: 5,
+  },
   ATTRIBUTES: {
     ROAD_ACCESS: {
       SEARCH_DISTANCE: 3,
