@@ -1,6 +1,7 @@
 import {
   MouseEvent as ReactMouseEvent,
   useEffect,
+  useMemo,
   useRef,
   useState,
 } from 'react';
@@ -203,9 +204,13 @@ function drawNetworkTile(
 }
 
 function CityMap({ map, focus, onFocusTile }: CityMapProps) {
-  const canvas = useRef<HTMLCanvasElement>(null);
+  const mapCanvas = useRef<HTMLCanvasElement>(null);
+  const focusCanvas = useRef<HTMLCanvasElement>(null);
   const [hoveredTile, setHoveredTile] = useState<CityMapPoint | null>(null);
-  const occupiedTiles = map.tiles.filter((kind) => kind !== 'empty').length;
+  const occupiedTiles = useMemo(
+    () => map.tiles.filter((kind) => kind !== 'empty').length,
+    [map]
+  );
   const hoveredKind = hoveredTile
     ? getMapTileKind(map, hoveredTile.x, hoveredTile.y)
     : null;
@@ -246,7 +251,7 @@ function CityMap({ map, focus, onFocusTile }: CityMapProps) {
   };
 
   useEffect(() => {
-    const element = canvas.current;
+    const element = mapCanvas.current;
     const context = element?.getContext('2d');
     if (!element || !context || map.size <= 0) return;
 
@@ -284,22 +289,6 @@ function CityMap({ map, focus, onFocusTile }: CityMapProps) {
       );
     });
 
-    const focusPoint = getCityMapFocusPoint(focus, map.size, MAP_SIZE);
-    if (focusPoint) {
-      const markerRadius = Math.max(2.8, tileSize * 0.43);
-      context.fillStyle = 'rgba(7, 18, 27, 0.72)';
-      context.strokeStyle = '#8fe8f8';
-      context.lineWidth = 1.2;
-      context.beginPath();
-      context.arc(focusPoint.x, focusPoint.y, markerRadius, 0, Math.PI * 2);
-      context.fill();
-      context.stroke();
-      context.fillStyle = '#d9fbff';
-      context.beginPath();
-      context.arc(focusPoint.x, focusPoint.y, 0.9, 0, Math.PI * 2);
-      context.fill();
-    }
-
     if (hoveredTile) {
       const inset = Math.max(0.45, tileSize * 0.08);
       context.strokeStyle = '#ecfcff';
@@ -313,7 +302,39 @@ function CityMap({ map, focus, onFocusTile }: CityMapProps) {
       );
       context.setLineDash([]);
     }
-  }, [focus, hoveredTile, map]);
+  }, [hoveredTile, map]);
+
+  useEffect(() => {
+    const element = focusCanvas.current;
+    const context = element?.getContext('2d');
+    if (!element || !context || map.size <= 0) return;
+
+    const pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
+    const renderSize = MAP_SIZE * pixelRatio;
+    if (element.width !== renderSize || element.height !== renderSize) {
+      element.width = renderSize;
+      element.height = renderSize;
+    }
+    context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
+    context.clearRect(0, 0, MAP_SIZE, MAP_SIZE);
+
+    const focusPoint = getCityMapFocusPoint(focus, map.size, MAP_SIZE);
+    if (!focusPoint) return;
+
+    const tileSize = MAP_SIZE / map.size;
+    const markerRadius = Math.max(2.8, tileSize * 0.43);
+    context.fillStyle = 'rgba(7, 18, 27, 0.72)';
+    context.strokeStyle = '#8fe8f8';
+    context.lineWidth = 1.2;
+    context.beginPath();
+    context.arc(focusPoint.x, focusPoint.y, markerRadius, 0, Math.PI * 2);
+    context.fill();
+    context.stroke();
+    context.fillStyle = '#d9fbff';
+    context.beginPath();
+    context.arc(focusPoint.x, focusPoint.y, 0.9, 0, Math.PI * 2);
+    context.fill();
+  }, [focus, map.size]);
 
   return (
     <aside
@@ -351,7 +372,15 @@ function CityMap({ map, focus, onFocusTile }: CityMapProps) {
         onMouseLeave={() => setHoveredTile(null)}
       >
         <canvas
-          ref={canvas}
+          ref={mapCanvas}
+          className="city-minimap-map-layer"
+          width={MAP_SIZE}
+          height={MAP_SIZE}
+          aria-hidden="true"
+        />
+        <canvas
+          ref={focusCanvas}
+          className="city-minimap-focus-layer"
           width={MAP_SIZE}
           height={MAP_SIZE}
           aria-hidden="true"

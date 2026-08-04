@@ -48,6 +48,8 @@ export class CameraManager implements ICameraManager {
   /** Scaled by 16/citySize so every map size keeps the same relative zoomed-out coverage. */
   private minCameraRadius: number;
   private pressedKeys: Set<string>;
+  private panVelocity: THREE.Vector3;
+  private rotationVelocity: number;
 
   constructor(
     gameWindow: HTMLElement,
@@ -79,13 +81,18 @@ export class CameraManager implements ICameraManager {
     this.startTouches = { x: 0, y: 0 };
     this.isPanning = false;
     this.pressedKeys = new Set();
+    this.panVelocity = new THREE.Vector3();
+    this.rotationVelocity = 0;
     this.onFocusChanged = onFocusChanged;
 
     this.updateCameraPosition();
   }
 
   private updateCameraPosition(): void {
-    this.camera.zoom = this.cameraRadius;
+    if (this.camera.zoom !== this.cameraRadius) {
+      this.camera.zoom = this.cameraRadius;
+      this.camera.updateProjectionMatrix();
+    }
     this.camera.position.x =
       100 *
       Math.sin(this.cameraAzimuth * DEG2RAD) *
@@ -97,10 +104,11 @@ export class CameraManager implements ICameraManager {
       Math.cos(this.cameraElevation * DEG2RAD);
     this.camera.position.add(this.cameraOrigin);
     this.camera.lookAt(this.cameraOrigin);
-    this.camera.updateProjectionMatrix();
   }
 
   public focusOnTile(x: number, y: number): void {
+    this.panVelocity.set(0, 0, 0);
+    this.rotationVelocity = 0;
     this.cameraOrigin.set(x, 0, y);
     this.updateCameraPosition();
     this.onFocusChanged(this.getFocus());
@@ -135,6 +143,8 @@ export class CameraManager implements ICameraManager {
 
   public clearKeyboardState(): void {
     this.pressedKeys.clear();
+    this.panVelocity.set(0, 0, 0);
+    this.rotationVelocity = 0;
   }
 
   public update(deltaSeconds: number): void {
@@ -147,18 +157,36 @@ export class CameraManager implements ICameraManager {
     const rotationInput =
       Number(this.pressedKeys.has('KeyE')) -
       Number(this.pressedKeys.has('KeyQ'));
-    if (forwardInput === 0 && leftInput === 0 && rotationInput === 0) return;
-
     const clampedDeltaSeconds = Math.min(Math.max(deltaSeconds, 0), 0.1);
-    if (rotationInput !== 0) {
-      this.cameraAzimuth +=
-        rotationInput *
-        CONFIG.CAMERA.KEYBOARD_ROTATION_SPEED *
-        clampedDeltaSeconds;
+    if (clampedDeltaSeconds === 0) return;
+    if (
+      forwardInput === 0 &&
+      leftInput === 0 &&
+      rotationInput === 0 &&
+      this.panVelocity.lengthSq() === 0 &&
+      this.rotationVelocity === 0
+    ) {
+      return;
     }
 
-    const isPanning = forwardInput !== 0 || leftInput !== 0;
-    if (isPanning) {
+    const response = CONFIG.CAMERA.KEYBOARD_RESPONSE;
+    const decay = Math.exp(-response * clampedDeltaSeconds);
+    const targetRotationVelocity =
+      rotationInput * CONFIG.CAMERA.KEYBOARD_ROTATION_SPEED;
+    const rotationDelta =
+      targetRotationVelocity * clampedDeltaSeconds +
+      ((this.rotationVelocity - targetRotationVelocity) * (1 - decay)) /
+        response;
+    this.cameraAzimuth += rotationDelta;
+    this.rotationVelocity =
+      targetRotationVelocity +
+      (this.rotationVelocity - targetRotationVelocity) * decay;
+    if (rotationInput === 0 && Math.abs(this.rotationVelocity) < 0.01) {
+      this.rotationVelocity = 0;
+    }
+
+    const targetPanVelocity = new THREE.Vector3();
+    if (forwardInput !== 0 || leftInput !== 0) {
       const forward = new THREE.Vector3(0, 0, -1).applyAxisAngle(
         Y_AXIS,
         this.cameraAzimuth * DEG2RAD
@@ -167,19 +195,33 @@ export class CameraManager implements ICameraManager {
         Y_AXIS,
         this.cameraAzimuth * DEG2RAD
       );
-      const movement = forward
+      targetPanVelocity
+        .copy(forward)
         .multiplyScalar(forwardInput)
         .add(left.multiplyScalar(leftInput))
         .normalize()
-        .multiplyScalar(
-          (CONFIG.CAMERA.KEYBOARD_PAN_SPEED / this.cameraRadius) *
-            clampedDeltaSeconds
-        );
-
-      this.cameraOrigin.add(movement);
+        .multiplyScalar(CONFIG.CAMERA.KEYBOARD_PAN_SPEED / this.cameraRadius);
     }
+
+    const movement = targetPanVelocity
+      .clone()
+      .multiplyScalar(clampedDeltaSeconds)
+      .add(
+        this.panVelocity
+          .clone()
+          .sub(targetPanVelocity)
+          .multiplyScalar((1 - decay) / response)
+      );
+    this.cameraOrigin.add(movement);
+    this.panVelocity
+      .multiplyScalar(decay)
+      .add(targetPanVelocity.multiplyScalar(1 - decay));
+    if (forwardInput === 0 && leftInput === 0 && this.panVelocity.lengthSq() < 1e-6) {
+      this.panVelocity.set(0, 0, 0);
+    }
+
     this.updateCameraPosition();
-    if (isPanning) this.onFocusChanged(this.getFocus());
+    if (movement.lengthSq() > 0) this.onFocusChanged(this.getFocus());
   }
 
   public onMouseMove(event: MouseEvent): void {

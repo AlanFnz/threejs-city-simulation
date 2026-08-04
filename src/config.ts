@@ -4,6 +4,8 @@ export interface Config {
     KEYBOARD_PAN_SPEED: number;
     /** degrees rotated around the camera focus per second */
     KEYBOARD_ROTATION_SPEED: number;
+    /** how quickly keyboard movement reaches its target velocity, per second */
+    KEYBOARD_RESPONSE: number;
   };
   ATTRIBUTES: {
     ROAD_ACCESS: {
@@ -149,6 +151,7 @@ const CONFIG = {
   CAMERA: {
     KEYBOARD_PAN_SPEED: 5,
     KEYBOARD_ROTATION_SPEED: 90,
+    KEYBOARD_RESPONSE: 12,
   },
   ATTRIBUTES: {
     ROAD_ACCESS: {

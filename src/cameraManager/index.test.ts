@@ -47,9 +47,42 @@ describe('CameraManager', () => {
     expect(onFocusChanged).toHaveBeenCalledOnce();
 
     cameraManager.onKeyUp({ code: 'KeyW' } as KeyboardEvent);
+    const releasedFocus = cameraManager.getFocus();
+    cameraManager.update(0.1);
+    expect(cameraManager.getFocus()).not.toEqual(releasedFocus);
+
+    for (let frame = 0; frame < 100; frame += 1) {
+      cameraManager.update(0.1);
+    }
     const stoppedFocus = cameraManager.getFocus();
     cameraManager.update(0.1);
     expect(cameraManager.getFocus()).toEqual(stoppedFocus);
+  });
+
+  it('eases into movement and stays consistent across frame rates', () => {
+    const gameWindow = { clientWidth: 800, clientHeight: 600 } as HTMLElement;
+    const atSixtyFps = new CameraManager(gameWindow, 16);
+    const atTenFps = new CameraManager(gameWindow, 16);
+    const pressForward = (manager: CameraManager) =>
+      manager.onKeyDown({
+        code: 'KeyW',
+        altKey: false,
+        ctrlKey: false,
+        metaKey: false,
+        preventDefault: vi.fn(),
+      } as unknown as KeyboardEvent);
+
+    pressForward(atSixtyFps);
+    pressForward(atTenFps);
+    for (let frame = 0; frame < 60; frame += 1) {
+      atSixtyFps.update(1 / 60);
+    }
+    for (let frame = 0; frame < 10; frame += 1) {
+      atTenFps.update(0.1);
+    }
+
+    expect(atSixtyFps.getFocus().x).toBeCloseTo(atTenFps.getFocus().x, 5);
+    expect(atSixtyFps.getFocus().y).toBeCloseTo(atTenFps.getFocus().y, 5);
   });
 
   it('normalizes diagonal movement and clears held input on blur', () => {
@@ -140,7 +173,7 @@ describe('CameraManager', () => {
     expect(cameraManager.getFocus()).toEqual(initialFocus);
     expect(onFocusChanged).not.toHaveBeenCalled();
 
-    cameraManager.onKeyUp({ code: 'KeyQ' } as KeyboardEvent);
+    cameraManager.clearKeyboardState();
     press('KeyE');
     cameraManager.update(0.1);
     expect(cameraManager.camera.position.x).toBeCloseTo(initialPosition.x);

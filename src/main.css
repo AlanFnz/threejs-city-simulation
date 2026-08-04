@@ -2769,6 +2769,7 @@ details:not([open]) .panel-collapse-indicator {
 }
 
 .city-minimap-focus {
+  position: relative;
   width: 128px;
   height: 128px;
   margin: 8px auto 6px;
@@ -2799,10 +2800,16 @@ details:not([open]) .panel-collapse-indicator {
 }
 
 #city-minimap canvas {
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
   display: block;
   image-rendering: auto;
+}
+
+#city-minimap .city-minimap-focus-layer {
+  pointer-events: none;
 }
 
 .city-minimap-legend {
