@@ -405,7 +405,7 @@ Bump `CONFIG.CITY.SIZE` - camera framing/zoom limits and the shadow-camera frust
 
 ## 6. Testing & tooling
 
-- `npm run typecheck` (`tsc --noEmit`), `npm run lint` (ESLint), `npm run test` (Vitest) all exist and pass on `main` - run all three before committing, there's no CI.
+- `npm run typecheck` (`tsc --noEmit`), `npm run lint` (ESLint), `npm run test` (Vitest) all exist and pass on `main`. `.github/workflows/ci.yml` runs those three plus `npm run build` on every push to `main` and every PR - run them locally before committing so CI is a confirmation, not a discovery.
 - Tests live alongside the code they test (`*.test.ts`). Sim-affecting randomness should be seeded/mocked in tests via `src/utils/rng.ts`'s `setSeed` (or `vi.mock`) rather than left nondeterministic.
 - `npm run format` (Prettier) is available but not enforced by a pre-commit hook - run it if you're touching a file with inconsistent formatting.
 

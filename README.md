@@ -2,7 +2,7 @@
 
 A SimCity-style city builder that runs entirely in the browser. Zone land, lay roads and power lines, build up civic services, and watch your city grow: buildings develop and level up, citizens move in and look for jobs, traffic appears on your streets - and neglected neighborhoods fall into abandonment (unless you've built the services to prevent it).
 
-Built with **Three.js** and **TypeScript**. No framework, no backend - just a simulation model, a renderer, and a grid full of possibilities.
+Built with **Three.js**, **React**, and **TypeScript**. No backend - just a simulation model, a renderer, a typed HUD, and a grid full of possibilities.
 
 <!-- TODO: add screenshot or GIF here -->
 <!-- ![screenshot](docs/screenshot.png) -->

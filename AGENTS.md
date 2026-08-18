@@ -2,7 +2,7 @@
 
 Agent-agnostic contributor guide (works as CLAUDE.md, AGENTS.md, .cursorrules source, or Copilot instructions).
 
-SimCity-style city builder rendered with Three.js. TypeScript, no framework - plain DOM for UI, webpack for bundling. Single-player, browser-only, no backend. Persistence is local-only: one save slot in `localStorage` (`src/game/saveGame`).
+SimCity-style city builder rendered with Three.js. TypeScript, React for the HUD, webpack for bundling. Single-player, browser-only, no backend. Persistence is local-only: one save slot in `localStorage` (`src/game/saveGame`).
 
 ## Commands
 
@@ -16,13 +16,13 @@ npm run test       # vitest run
 npm run format     # prettier --write .
 ```
 
-TypeScript is `strict: true` - keep it that way. Run typecheck, lint, and test before committing; there is no CI.
+TypeScript is `strict: true` - keep it that way. Run typecheck, lint, and test before committing. CI (`.github/workflows/ci.yml`) runs typecheck, lint, test, and build on every push to `main` and every PR, so a break lands publicly - catch it locally first.
 
 ## Architecture in one paragraph
 
 `src/main.ts` instantiates `Game` (`src/game`). `Game` owns two worlds that must stay in sync: the **simulation model** (`City` → `Tile[][]` → `Building` + attribute objects, pure data, no Three.js) and the **render layer** (`SceneManager` + `AssetManager` + `CameraManager`, all Three.js). A single `setInterval(step, 1000)` ticks the sim once per second; each `step()` calls `city.simulate()` (every tile → building → attributes, economy accrual, `MilestoneTracker`/`RandomEventsSystem` checks), then `sceneManager.update(city)` which diff-rebuilds meshes flagged `isMeshOutOfDate`. Rendering runs independently at display rate via `renderer.setAnimationLoop`. Vehicles live in a separate `VehicleGraph` (a `THREE.Group` holding a node/edge network built from road tiles) and update every frame, not every sim tick. Cross-cutting state changes (a building placed, a citizen moving in, a zone leveling up, money changing) publish through a typed `EventBus` (`src/events`) rather than being read by polling. Game tools (select/bulldoze/zone/road/civic) implement a common `Tool` interface (`src/game/tools`) so `Game` dispatches through one path instead of an if/else chain. Every placement costs money and every tile of infrastructure accrues upkeep (`CONFIG.ECONOMY`); power plants and civic buildings (fire/police/hospital/school) each cover a bounded radius and gate progression through `MilestoneTracker`; the whole city state (economy, zones, citizens, milestones, zone level caps) round-trips through one `localStorage` save slot (`src/game/saveGame`).
 
-See `docs/ARCHITECTURE.md` for the full deep dive, data-flow diagrams, and extension recipes.
+See `ARCHITECTURE.md` for the full deep dive, data-flow diagrams, and extension recipes.
 
 ## Directory map
 
@@ -53,15 +53,15 @@ src/
   sceneManager/        Three.js scene, InstancedMesh lifecycle for terrain/buildings, raycasting/picking, highlight/select
   cameraManager/       orthographic camera: orbit (RMB), pan (Ctrl+RMB / two-finger), zoom (wheel); origin/zoom/shadow bounds scale with CONFIG.CITY.SIZE
   assetManager/        GLB loading, InstancedMesh pool geometry baking, model-name resolution, textures, icons
-  ui/                  DOM-built UI: TopBar (population, money), ToolBar (tools, locked/unlocked via MilestoneTracker), InfoPanel (tile details incl. road/power/civic access, power-plant capacity), GoalsPanel (next milestone)
+  ui/                  React HUD mounted once by createUi(); components read a serializable UiState store and call back through typed actions. TopBar (city name, day, population, money), ToolBar (tools, locked/unlocked via MilestoneTracker), InfoPanel (tile details incl. road/power/civic access, power-plant capacity), GoalsPanel (milestone roadmap), ZoneCapacityPanel, CityMap, NotificationCenter, SimulationStatus, ControlsLegend
 html/index.html        template; #render-target is the canvas host
 ```
 
 ## Core conventions
 
-- **Model/render separation is sacred.** Simulation classes (`src/city/**`) never touch Three.js objects or the DOM (exception: `toHTML()` methods return HTML strings for the info panel). Rendering reads the model; the model never reads the scene.
+- **Model/render separation is sacred.** Simulation classes (`src/city/**`) never touch Three.js objects or the DOM, and never generate markup. The HUD reads plain serializable state derived in `src/game` (`inspector.ts`, `census.ts`, `goals.ts`, `zoneCapacity.ts`, `cityServices.ts`, `cityMap.ts`); rendering reads the model; the model never reads the scene.
 - **Mesh invalidation**: any state change that should change a building's appearance must set `isMeshOutOfDate = true` (usually via a setter, see `DevelopmentAttribute.level/state`). `SceneManager.update()` picks it up on the next tick and re-resolves the tile's building instance - it also compares the newly-resolved model/transform/tint against what's already there, so a redundant flag-set (e.g. `Road.simulate()` sets it every tick regardless of whether connectivity actually changed) is a no-op rather than a pool churn.
-- **Attribute composition over inheritance**: new building behaviors go in `src/city/building/attributes/` as classes that take the owning zone/tile in the constructor and expose `simulate/update(city)`, `dispose()`, `toHTML()`. Zones compose them and forward calls.
+- **Attribute composition over inheritance**: new building behaviors go in `src/city/building/attributes/` as classes that take the owning zone/tile in the constructor and expose `simulate/update(city)` (or `recompute(city)` for reactively-derived ones) and `dispose()` where they own teardown. Zones compose them and forward calls. Attributes hold plain data; anything the HUD needs is derived in `src/game`, not rendered by the attribute.
 - **Determinism**: sim code uses `random()` from `src/utils/rng.ts`, not bare `Math.random()` - keep it that way so behavior stays seedable/testable. Rendering-only randomness (which vehicle model spawns) can stay on `Math.random()`.
 - **Events over polling**: when one part of the sim needs to react to another (UI refresh, vehicle graph updates), prefer publishing/subscribing through the `EventBus` (`src/events`) over adding a new poll loop.
 - **Adding a building type** touches, in order: `BUILDING_TYPE` constant → new class in `zones/` (or sibling of `road.ts`/`powerPlant.ts`) → `buildingCreator.ts` switch + `BuildingEntity` union → `ModelKey` enum + `models/index.ts` entry (+ GLB import in `modelsFiles.ts` - only imports listed there get bundled) → `AssetManager.resolveBuildingInstance` (or `resolveFixedBuildingInstance` for a fixed, non-developing building) → toolbar button in `ui/constants.ts` + `createTools()` → `CONFIG.ECONOMY.BUILD_COST`/`UPKEEP` entries → decide whether it starts in `STARTING_UNLOCKED_TOOLS` (`game/milestones/index.ts`) or is gated behind a new milestone.
