@@ -1,4 +1,5 @@
 import { BUILDING_TYPE } from '../city/building/constants';
+import { CAMERA_DRAG_BUTTONS } from '../cameraManager/constants';
 import { ISceneManager } from '../sceneManager';
 
 function isActiveToolIdValid(
@@ -15,6 +16,21 @@ export function setupEventListeners(
 ) {
   document.addEventListener('wheel', onMouseScroll, {
     passive: false,
+  });
+
+  const canvas = document.querySelector<HTMLCanvasElement>('#render-target > canvas')!;
+  canvas.addEventListener('pointerdown', (event) => {
+    if (!(event.buttons & CAMERA_DRAG_BUTTONS)) return;
+    event.preventDefault();
+    canvas.setPointerCapture(event.pointerId);
+  });
+  canvas.addEventListener('pointermove', (event) => {
+    if ((event.buttons & CAMERA_DRAG_BUTTONS) && canvas.hasPointerCapture(event.pointerId)) {
+      sceneManager.cameraManager.onMouseMove(event);
+    }
+  });
+  canvas.addEventListener('auxclick', (event) => {
+    if (event.button === 1) event.preventDefault();
   });
 
   document.addEventListener('mousedown', onMouseDown, false);

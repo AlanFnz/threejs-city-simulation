@@ -39,7 +39,7 @@ Built with **Three.js**, **React**, and **TypeScript**. No backend - just a simu
 | Move camera                                 | W / A / S / D                                                                                                                                  |
 | Rotate camera                               | Q / E                                                                                                                                          |
 | Use active tool (place / select / bulldoze) | Left click (drag to paint)                                                                                                                     |
-| Orbit camera                                | Right click + drag                                                                                                                             |
+| Orbit and tilt camera                       | Middle or right drag (horizontal to orbit, vertical to tilt)                                                                                                                             |
 | Pan camera                                  | Ctrl + right click + drag (or two-finger drag on touch)                                                                                        |
 | Zoom                                        | Mouse wheel                                                                                                                                    |
 | Switch tools                                | Toolbar (select, residential, commercial, industrial, road, power plant, power line, fire station, police station, hospital, school, bulldoze) |

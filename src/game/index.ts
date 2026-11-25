@@ -38,6 +38,7 @@ import { createToolRejectionNotification } from './toolFeedback';
 import { createZoneCapacityUiState } from './zoneCapacity';
 import { createCityServicesUiState } from './cityServices';
 import { createCityMapUiState } from './cityMap';
+import { CAMERA_DRAG_BUTTONS } from '../cameraManager/constants';
 import type { CameraFocus } from '../cameraManager';
 import { bulldozeTile } from './tools/bulldozeTool';
 
@@ -434,7 +435,7 @@ export class Game implements IGame {
   }
 
   private onMouseDown(event: MouseEvent): void {
-    if (event.button === 0) {
+    if (event.button === 0 && !(event.buttons & CAMERA_DRAG_BUTTONS)) {
       event.stopPropagation();
       if (this.isEventFromUiElement(event)) return;
       const selectedObject = this.sceneManager.getSelectedObject(event);
@@ -443,6 +444,7 @@ export class Game implements IGame {
   }
 
   private onMouseMove(event: MouseEvent): void {
+    if (event.buttons & CAMERA_DRAG_BUTTONS) return;
     if (Date.now() - this.lastMove < 16) return;
     if (this.isEventFromUiElement(event)) return;
     this.lastMove = Date.now();
@@ -453,7 +455,6 @@ export class Game implements IGame {
       this.useActiveTool(hoverObject as THREE.Object3D, true);
     }
 
-    this.sceneManager.cameraManager.onMouseMove(event);
   }
 
   private updatePreview(object: THREE.Object3D | null): void {

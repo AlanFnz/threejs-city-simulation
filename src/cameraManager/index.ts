@@ -3,6 +3,7 @@ import CONFIG from '../config';
 import {
   DEG2RAD,
   RIGHT_MOUSE_BUTTON,
+  MIDDLE_BUTTON_MASK,
   CAMERA_SIZE,
   MIN_CAMERA_RADIUS_AT_SIZE_16,
   MAX_CAMERA_RADIUS,
@@ -265,16 +266,14 @@ export class CameraManager implements ICameraManager {
   }
 
   public onMouseMove(event: MouseEvent): void {
-    if (event.buttons & RIGHT_MOUSE_BUTTON && !event.ctrlKey) {
+    if ((event.buttons & MIDDLE_BUTTON_MASK) || ((event.buttons & RIGHT_MOUSE_BUTTON) && !event.ctrlKey)) {
       this.cameraAzimuth += -(event.movementX * AZIMUTH_SENSITIVITY);
       this.cameraElevation += event.movementY * ELEVATION_SENSITIVITY;
       this.cameraElevation = Math.min(
         MAX_CAMERA_ELEVATION,
         Math.max(MIN_CAMERA_ELEVATION, this.cameraElevation)
       );
-    }
-
-    if (event.buttons & RIGHT_MOUSE_BUTTON && event.ctrlKey) {
+    } else if ((event.buttons & RIGHT_MOUSE_BUTTON) && event.ctrlKey) {
       const forward = new THREE.Vector3(0, 0, 1).applyAxisAngle(
         Y_AXIS,
         this.cameraAzimuth * DEG2RAD

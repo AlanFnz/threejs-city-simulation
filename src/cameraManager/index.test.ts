@@ -29,6 +29,20 @@ describe('CameraManager', () => {
     expect(onFocusChanged).toHaveBeenCalledOnce();
   });
 
+  it('orbits and tilts with a middle drag while preserving the focus and zoom', () => {
+    const camera = new CameraManager({ clientWidth: 800, clientHeight: 600 } as HTMLElement, 32);
+    const focus = camera.getFocus();
+    const before = camera.camera.position.clone();
+    const zoom = camera.camera.zoom;
+    camera.onMouseMove({ buttons: 4, movementX: 60, movementY: 100 } as MouseEvent);
+    expect(camera.camera.position.y).toBeCloseTo(100 * Math.sin(65 * Math.PI / 180));
+    expect(camera.camera.position.x).not.toBeCloseTo(before.x);
+    expect(camera.getFocus()).toEqual(focus);
+    expect(camera.camera.zoom).toBe(zoom);
+    camera.onMouseMove({ buttons: 4, movementX: 0, movementY: -3000 } as MouseEvent);
+    expect(camera.camera.position.y).toBeCloseTo(100 * Math.sin(10 * Math.PI / 180));
+  });
+
   it('pans smoothly with held camera-relative WASD input', () => {
     const gameWindow = { clientWidth: 800, clientHeight: 600 } as HTMLElement;
     const onFocusChanged = vi.fn();

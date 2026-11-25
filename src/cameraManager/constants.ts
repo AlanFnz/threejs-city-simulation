@@ -6,6 +6,10 @@ export const LEFT_MOUSE_BUTTON = 0;
 export const MIDDLE_MOUSE_BUTTON = 1;
 export const RIGHT_MOUSE_BUTTON = 2;
 
+// MouseEvent.buttons is a bit mask, distinct from MouseEvent.button.
+export const MIDDLE_BUTTON_MASK = 4;
+export const CAMERA_DRAG_BUTTONS = RIGHT_MOUSE_BUTTON | MIDDLE_BUTTON_MASK;
+
 export const CAMERA_SIZE = 10;
 /** Zoom-out limit tuned for a 16-tile map; CameraManager scales this by 16/citySize. */
 export const MIN_CAMERA_RADIUS_AT_SIZE_16 = 0.1;
@@ -13,11 +17,11 @@ export const MIN_CAMERA_RADIUS_AT_SIZE_16 = 0.1;
 export const MAX_CAMERA_RADIUS = 1.5;
 export const INIT_CAMERA_ELEVATION = 45;
 export const MIN_CAMERA_ELEVATION = 10;
-export const MAX_CAMERA_ELEVATION = 90;
+export const MAX_CAMERA_ELEVATION = 89;
 export const INIT_CAMERA_AZIMUTH = 225;
 
 export const AZIMUTH_SENSITIVITY = 0.2;
-export const ELEVATION_SENSITIVITY = 0.02;
+export const ELEVATION_SENSITIVITY = 0.2;
 export const ZOOM_SENSITIVITY = 0.002;
 export const PAN_SENSITIVITY = -0.03;
 

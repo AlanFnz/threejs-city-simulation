@@ -4,7 +4,7 @@ const CONTROL_HINTS = [
   { action: 'Move camera', input: 'W · A · S · D' },
   { action: 'Rotate camera', input: 'Q · E' },
   { action: 'Select / build', input: 'Left click' },
-  { action: 'Orbit camera', input: 'Right drag' },
+  { action: 'Orbit / tilt', input: 'Middle or right drag' },
   { action: 'Pan camera', input: 'Ctrl + right drag' },
   { action: 'Zoom camera', input: 'Wheel' },
   { action: 'Build tools', input: '1–9 · R · B' },
