@@ -73,8 +73,10 @@ export class Game implements IGame {
   simulationSpeed: SimulationSpeed = 1;
   focusedObject: ITile | null = null;
   lastMove: number = Date.now();
-  private readonly isExample = new URLSearchParams(window.location.search).get('city') === PUERTO_CLARO;
-  private readonly saveKey = this.isExample ? SAVE_KEY + '/' + PUERTO_CLARO : SAVE_KEY;
+  private readonly query = new URLSearchParams(window.location.search);
+  private readonly isExample = this.query.get('city') === PUERTO_CLARO;
+  private readonly worksView = this.isExample && this.query.get('view') === 'works';
+  private readonly saveKey = this.isExample ? SAVE_KEY + '/' + PUERTO_CLARO + (this.worksView ? '/works' : '') : SAVE_KEY;
   private minuteOfDay = STARTING_MINUTE;
   private lightingMode: LightingMode = 'Auto';
   private tickCount: number = 0;
@@ -167,6 +169,7 @@ export class Game implements IGame {
         this.updateGoalsPanel();
         this.refreshInfoOverlayIfFocused(payload);
       }),
+      cityEvents.on('constructionStageChanged', (tile) => this.refreshInfoOverlayIfFocused(tile)),
       cityEvents.on('levelChanged', (payload) => {
         this.scheduleCityMetricsUpdate();
         this.refreshInfoOverlayIfFocused(payload);
@@ -323,7 +326,8 @@ export class Game implements IGame {
     deserialize(data, this.city, this.milestoneTracker);
     this.selectTool(TOOLBAR_BUTTONS.SELECT.id);
     this.onGameStateReplaced();
-    this.sceneManager.cameraManager.frameLots(data.tiles);
+    const site = this.worksView && data.tiles.find(tile => tile.constructionTicks !== undefined);
+    this.sceneManager.cameraManager.frameLots(site ? [site] : data.tiles);
   }
 
   private startExampleCity(): void {

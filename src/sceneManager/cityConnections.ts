@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { StreetFurniture } from './streetFurniture';
-import { ModelKey } from '../assetManager/constants';
+import { isConstructionSite, ModelKey } from '../assetManager/constants';
 import { ENTRANCES, SIDES } from '../assetManager/frontage';
 import { getSidewalkSurface } from '../assetManager/roadSurface';
 import { BUILDING_TYPE, type BuildingType } from '../city/building/constants';
@@ -188,7 +188,7 @@ export class CityConnections extends THREE.Group {
           halfWidth,
           vertices
         );
-        if (!lot.abandoned && lot.modelKey !== ModelKey.UNDER_CONSTRUCTION) {
+        if (!lot.abandoned && !isConstructionSite(lot.modelKey)) {
           const frontage = { door: start, curb: end, road: road.matrix, stop };
           if (lot.buildingType === BUILDING_TYPE.RESIDENTIAL)
             homes.push(frontage);

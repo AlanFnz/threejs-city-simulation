@@ -8,7 +8,7 @@ import { ICity } from '../../city';
 function fakeContext(canAfford: boolean = true): GameContext {
   return {
     city: {
-      simulate: vi.fn(),
+      refreshInfrastructure: vi.fn(),
       spend: vi.fn(() => canAfford),
       canAfford: vi.fn(() => canAfford),
     } as unknown as ICity,
@@ -21,7 +21,7 @@ function fakeContext(canAfford: boolean = true): GameContext {
 }
 
 describe('BuildingTool', () => {
-  it('places its building type on an empty tile, then simulates and re-renders', () => {
+  it('places its building type on an empty tile, then refreshes infrastructure and re-renders', () => {
     const tool = new BuildingTool(BUILDING_TYPE.COMMERCIAL);
     const tile = new Tile(1, 1);
     const context = fakeContext();
@@ -31,7 +31,7 @@ describe('BuildingTool', () => {
 
     expect(result).toEqual({ status: 'applied' });
     expect(tile.building?.type).toBe(BUILDING_TYPE.COMMERCIAL);
-    expect(context.city.simulate).toHaveBeenCalledTimes(1);
+    expect(context.city.refreshInfrastructure).toHaveBeenCalledTimes(1);
     expect(context.sceneManager.update).toHaveBeenCalledWith(context.city);
   });
 
@@ -46,7 +46,7 @@ describe('BuildingTool', () => {
 
     expect(result).toEqual({ status: 'rejected', reason: 'occupiedTile' });
     expect(tile.building?.type).toBe(BUILDING_TYPE.RESIDENTIAL);
-    expect(context.city.simulate).not.toHaveBeenCalled();
+    expect(context.city.refreshInfrastructure).not.toHaveBeenCalled();
   });
 
   it('exposes the building type as its id', () => {
@@ -69,7 +69,7 @@ describe('BuildingTool', () => {
     });
     expect(tile.building).toBeFalsy();
     expect(context.city.spend).toHaveBeenCalled();
-    expect(context.city.simulate).not.toHaveBeenCalled();
+    expect(context.city.refreshInfrastructure).not.toHaveBeenCalled();
   });
 });
 

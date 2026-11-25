@@ -97,6 +97,10 @@ function getBuildingState(
     title: defaultName ? BUILDING_LABELS[building.type] : building.name,
     category: BUILDING_LABELS[building.type],
     state: isZone ? building.development.state : null,
+    construction: isZone && building.development.constructionStage ? {
+      stage: building.development.constructionStage === 'frame' ? 'Structural frame' : 'Foundations',
+      target: building.development.targetLevel,
+    } : null,
     level: isZone ? building.development.level : null,
     maximumLevel: isZone ? building.development.maxLevel : null,
     buildCost: getBuildCost(building.type),

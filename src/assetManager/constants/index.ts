@@ -20,6 +20,8 @@ enum ModelKey {
   /**
    * terrain and buildings
    */
+  FOUNDATIONS = 'FOUNDATIONS',
+  STRUCTURAL_FRAME = 'STRUCTURAL-FRAME',
   UNDER_CONSTRUCTION = 'UNDER-CONSTRUCTION',
   RESIDENTIAL_A1 = 'RESIDENTIAL-A1',
   RESIDENTIAL_B1 = 'RESIDENTIAL-B1',
@@ -83,3 +85,7 @@ const modelType = {
 };
 
 export { AssetId, AssetCreators, ModelKey, ModelEntry, modelType };
+
+export function isConstructionSite(key: ModelKey): boolean {
+  return key === ModelKey.UNDER_CONSTRUCTION || key === ModelKey.FOUNDATIONS || key === ModelKey.STRUCTURAL_FRAME;
+}

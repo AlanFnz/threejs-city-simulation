@@ -37,6 +37,7 @@ export interface InspectorOccupancyUiState {
 }
 
 export interface InspectorBuildingUiState {
+  construction: { stage: string; target: number } | null;
   type: string;
   title: string;
   category: string;

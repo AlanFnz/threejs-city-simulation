@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
-import { ModelKey } from '../assetManager/constants';
+import { isConstructionSite, ModelKey } from '../assetManager/constants';
 import { BUILDING_TYPE, type BuildingType } from '../city/building/constants';
 import { coloredShape } from './coast';
 
@@ -217,7 +217,7 @@ export class StreetFurniture extends THREE.Group {
     paving: number[]
   ): BenchStop | undefined {
     if (
-      model === ModelKey.UNDER_CONSTRUCTION ||
+      isConstructionSite(model) ||
       (type !== BUILDING_TYPE.INDUSTRIAL && type !== BUILDING_TYPE.COMMERCIAL)
     )
       return;

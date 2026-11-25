@@ -67,8 +67,8 @@ function BuildingCard({ building }: { building: InspectorBuildingUiState }) {
           <h3>{building.title}</h3>
         </div>
         {building.state && (
-          <span className={`status-badge state-${building.state}`}>
-            {formatLabel(building.state)}
+          <span className={`status-badge state-${building.construction ? 'under-construction' : building.state}`}>
+            {building.construction?.stage ?? formatLabel(building.state)}
           </span>
         )}
       </div>
@@ -77,7 +77,9 @@ function BuildingCard({ building }: { building: InspectorBuildingUiState }) {
         {building.level !== null && (
           <Metric
             label="Level"
-            value={`${building.level} / ${building.maximumLevel}`}
+            value={building.construction && building.construction.target !== building.level
+              ? `${building.level} → ${building.construction.target}`
+              : `${building.level} / ${building.maximumLevel}`}
           />
         )}
         {building.buildCost !== null && (

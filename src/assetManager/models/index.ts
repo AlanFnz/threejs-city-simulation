@@ -1,7 +1,7 @@
 import { ModelEntry, ModelKey, modelType } from '../constants';
 import modelsFiles from './modelsFiles';
 
-const models: Record<ModelKey, ModelEntry> = {
+const models: Record<Exclude<ModelKey, ModelKey.FOUNDATIONS | ModelKey.STRUCTURAL_FRAME>, ModelEntry> = {
   /**
    * terrain and buildings
    */

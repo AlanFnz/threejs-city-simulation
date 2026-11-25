@@ -10,7 +10,7 @@ export function bulldozeTile(
     return { status: 'rejected', reason: 'emptyTile' };
   }
   tile.removeBuilding();
-  context.city.simulate();
+  context.city.refreshInfrastructure();
   context.sceneManager.update(context.city);
   return { status: 'applied' };
 }

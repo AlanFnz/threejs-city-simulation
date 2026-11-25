@@ -456,9 +456,21 @@ export class SceneManager implements ISceneManager {
     return { pool, slot };
   }
 
-  private freeBuildingSlot(record: BuildingSlotRecord): void {
+  private freeBuildingSlot(
+    record: BuildingSlotRecord,
+    replacement?: { pool: BuildingPool; slot: number } | null
+  ): void {
     const pool = this.buildingPools.get(record.modelKey);
     if (!pool) return;
+    // Follow the selected lot through a change of construction stage.
+    if (this.activeObject === pool.mesh && this.activeInstanceIndex === record.slot) {
+      this.activeObject = replacement?.pool.mesh ?? null;
+      this.activeInstanceIndex = replacement?.slot ?? null;
+    }
+    if (this.hoverObject === pool.mesh && this.hoverInstanceIndex === record.slot) {
+      this.hoverObject = replacement?.pool.mesh ?? null;
+      this.hoverInstanceIndex = replacement?.slot ?? null;
+    }
     pool.mesh.setMatrixAt(record.slot, HIDDEN_INSTANCE_MATRIX);
     pool.mesh.instanceMatrix.needsUpdate = true;
     pool.tileAtSlot[record.slot] = null;
@@ -471,6 +483,7 @@ export class SceneManager implements ISceneManager {
     matrix: THREE.Matrix4
   ): void {
     pool.mesh.setMatrixAt(slot, matrix);
+    pool.mesh.boundingSphere = null;
     pool.mesh.instanceMatrix.needsUpdate = true;
   }
 
@@ -600,8 +613,8 @@ export class SceneManager implements ISceneManager {
                   existing.abandoned = abandoned;
                 }
               } else {
-                if (existing) this.freeBuildingSlot(existing);
                 const allocation = this.allocateBuildingSlot(modelKey, tile);
+                if (existing) this.freeBuildingSlot(existing, allocation);
                 if (allocation) {
                   const { pool, slot } = allocation;
                   this.setBuildingSlotTransform(pool, slot, matrix);

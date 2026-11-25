@@ -1,3 +1,5 @@
+import { Zone } from './building/zones/zone';
+import { DevelopmentState } from './building/attributes/development';
 import { ResidentialZone } from './building/zones/residentialZone';
 import { CommercialZone } from './building/zones/commercialZone';
 import { IndustrialZone } from './building/zones/industrialZone';
@@ -19,6 +21,8 @@ export interface ICity {
   readonly population: number;
   readonly money: number;
   simulate(): void;
+  refreshInfrastructure(): void;
+  reserveUpgradeCrew(): boolean;
   getTileByCoordinate(coordinate: ICoordinate): ITile | null;
   findTile(
     start: ICoordinate,
@@ -45,6 +49,7 @@ export interface ICity {
 export class City implements ICity {
   size: number;
   tiles: ITile[][];
+  private freeCrews = 0;
   private powerGrid: PowerGrid = new PowerGrid();
   private _money: number = CONFIG.ECONOMY.STARTING_MONEY;
   /** Multiplies upkeep before it's charged - milestone rewards can reduce
@@ -346,9 +351,32 @@ export class City implements ICity {
     return population;
   }
 
+  reserveUpgradeCrew(): boolean {
+    if (this.freeCrews <= 0) return false;
+    this.freeCrews--;
+    return true;
+  }
+
+  // Keep neighbouring shops and homes active while individual lots are rebuilt.
   simulate(): void {
+    let developed = 0;
+    let ongoing = 0;
+    for (const column of this.tiles) for (const { building } of column) {
+      if (!(building instanceof Zone) || building.development.state !== DevelopmentState.DEVELOPED) continue;
+      developed++;
+      if (building.development.constructionTicks !== null) ongoing++;
+    }
+    this.freeCrews = Math.ceil(developed / CONFIG.ZONE.ZONES_PER_UPGRADE_CREW) - ongoing;
     this.tiles.forEach((row) => row.forEach((tile) => tile.simulate(this)));
-    this.collectEconomy();
+    this.updateEconomy(true);
+  }
+
+  // Edits and restores need current road shapes and income projections even when paused.
+  refreshInfrastructure(): void {
+    for (const column of this.tiles) for (const tile of column) {
+      if (tile.building?.type === BUILDING_TYPE.ROAD) tile.simulate(this);
+    }
+    this.updateEconomy(false);
   }
 
   get money(): number {
@@ -416,7 +444,7 @@ export class City implements ICity {
    * or workers yet, so they naturally contribute nothing until they finish
    * developing.
    */
-  private collectEconomy(): void {
+  private updateEconomy(collect: boolean): void {
     let income = 0;
     let upkeep = 0;
 
@@ -439,8 +467,10 @@ export class City implements ICity {
 
     const discountedUpkeep = upkeep * this._upkeepDiscount;
     this.lastNetIncome = income - discountedUpkeep;
-    this.earn(income);
-    this.chargeUpkeep(discountedUpkeep);
+    if (collect) {
+      this.earn(income);
+      this.chargeUpkeep(discountedUpkeep);
+    }
     cityEvents.emit('economyUpdated', {
       income,
       upkeep: discountedUpkeep,

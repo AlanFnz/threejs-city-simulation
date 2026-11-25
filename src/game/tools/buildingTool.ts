@@ -27,7 +27,7 @@ export class BuildingTool implements Tool {
       return { status: 'rejected', reason: 'insufficientFunds' };
     }
     tile.placeBuilding(this.id);
-    context.city.simulate();
+    context.city.refreshInfrastructure();
     context.sceneManager.update(context.city);
     return { status: 'applied' };
   }

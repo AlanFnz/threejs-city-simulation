@@ -23,8 +23,68 @@ export class DevelopmentAttribute {
    */
   private abandonmentCounter: number = 0;
 
-  // counter for days under construction
-  private constructionCounter: number = 0;
+  private workTicks: number | null = null;
+
+  get constructionTicks(): number | null {
+    return this.workTicks;
+  }
+
+  get targetLevel(): number {
+    return this.state === DevelopmentState.DEVELOPED && this.workTicks !== null
+      ? this.level + 1
+      : this.level;
+  }
+
+  private get duration(): number {
+    return this.state === DevelopmentState.UNDER_CONSTRUCTION
+      ? CONFIG.ZONE.CONSTRUCTION_TIME
+      : CONFIG.ZONE.UPGRADE_TIME;
+  }
+
+  get constructionStage(): 'foundations' | 'frame' | null {
+    if (this.workTicks === null) return null;
+    return this.workTicks < this.duration / 2 ? 'foundations' : 'frame';
+  }
+
+  private notifyConstructionStage(): void {
+    this.zone.isMeshOutOfDate = true;
+    cityEvents.emit('constructionStageChanged', {
+      x: this.zone.x,
+      y: this.zone.y,
+    });
+  }
+
+  restoreConstruction(ticks: number | undefined): void {
+    if (
+      ticks === undefined ||
+      !Number.isFinite(ticks) ||
+      !(
+        this.state === DevelopmentState.UNDER_CONSTRUCTION ||
+        (this.state === DevelopmentState.DEVELOPED &&
+          this.level < this.maxLevel)
+      )
+    )
+      return;
+    this.workTicks = Math.max(
+      0,
+      Math.min(Math.trunc(ticks), this.duration - 1)
+    );
+    this.zone.isMeshOutOfDate = true;
+  }
+
+  private advanceConstruction(): void {
+    const previous = this.constructionStage;
+    this.workTicks = (this.workTicks ?? 0) + 1;
+    if (this.workTicks >= this.duration) {
+      const target = this.targetLevel;
+      this.workTicks = null;
+      if (this.state === DevelopmentState.UNDER_CONSTRUCTION)
+        this.state = DevelopmentState.DEVELOPED;
+      this.level = target;
+    } else if (this.constructionStage !== previous) {
+      this.notifyConstructionStage();
+    }
+  }
 
   constructor(zone: Zone, maxLevel: number = 3) {
     this.zone = zone;
@@ -55,6 +115,9 @@ export class DevelopmentAttribute {
 
   set state(value: DevelopmentState) {
     const previousState = this._state;
+    if (value !== previousState) {
+      this.workTicks = value === DevelopmentState.UNDER_CONSTRUCTION ? 0 : null;
+    }
     this._state = value;
     this.zone.isMeshOutOfDate = true;
     if (value !== previousState) {
@@ -77,15 +140,10 @@ export class DevelopmentAttribute {
           random() < CONFIG.ZONE.REDEVELOP_CHANCE
         ) {
           this.state = DevelopmentState.UNDER_CONSTRUCTION;
-          this.constructionCounter = 0;
         }
         break;
       case DevelopmentState.UNDER_CONSTRUCTION:
-        if (++this.constructionCounter === CONFIG.ZONE.CONSTRUCTION_TIME) {
-          this.state = DevelopmentState.DEVELOPED;
-          this.level = 1;
-          this.constructionCounter = 0;
-        }
+        this.advanceConstruction();
         break;
       case DevelopmentState.DEVELOPED:
         if (this.abandonmentCounter > CONFIG.ZONE.ABANDONMENT_THRESHOLD) {
@@ -98,14 +156,21 @@ export class DevelopmentAttribute {
           ) {
             this.state = DevelopmentState.ABANDONED;
           }
+        } else if (this.workTicks !== null) {
+          this.advanceConstruction();
         } else {
           const tile = city.getTile(this.zone.x, this.zone.y);
           const levelUpChance = tile?.schoolCoverage?.value
             ? CONFIG.ZONE.LEVEL_UP_CHANCE *
               CONFIG.CIVIC_SERVICES.SCHOOL.LEVEL_UP_CHANCE_MULTIPLIER
             : CONFIG.ZONE.LEVEL_UP_CHANCE;
-          if (this.level < this.maxLevel && random() < levelUpChance) {
-            this.level++;
+          if (
+            this.level < this.maxLevel &&
+            random() < levelUpChance &&
+            city.reserveUpgradeCrew()
+          ) {
+            this.workTicks = 0;
+            this.notifyConstructionStage();
           }
         }
         break;

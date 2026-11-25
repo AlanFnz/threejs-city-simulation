@@ -73,6 +73,8 @@ export interface Config {
     NO_JOBS_MOVE_IN_MULTIPLIER: number;
     /** simulation ticks to finish construction */
     CONSTRUCTION_TIME: number;
+    UPGRADE_TIME: number;
+    ZONES_PER_UPGRADE_CREW: number;
   };
   CITY: {
     MINUTES_PER_TICK: number;
@@ -160,6 +162,8 @@ export interface Config {
   };
 }
 
+const minutesPerTick = 15;
+
 const CONFIG = {
   CAMERA: {
     KEYBOARD_PAN_SPEED: 5,
@@ -207,9 +211,11 @@ const CONFIG = {
     RESIDENT_MOVE_IN_CHANCE: 0.5,
     NO_JOBS_MOVE_IN_MULTIPLIER: 0.15,
     CONSTRUCTION_TIME: 3,
+    UPGRADE_TIME: Math.ceil((2 * 24 * 60) / minutesPerTick),
+    ZONES_PER_UPGRADE_CREW: 10,
   },
   CITY: {
-    MINUTES_PER_TICK: 15,
+    MINUTES_PER_TICK: minutesPerTick,
     SIZE: 32,
   },
   VEHICLE: {

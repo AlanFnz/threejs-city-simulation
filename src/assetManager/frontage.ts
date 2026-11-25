@@ -8,6 +8,8 @@ const factoryDoor = [0, 0.277] as const;
 const oldFactoryDoor = [0, 0.373] as const;
 const warehouseDoor = [0.17, 0.2] as const;
 export const ENTRANCES: Partial<Record<ModelKey, readonly [number, number]>> = {
+  [ModelKey.FOUNDATIONS]: [0, 0.40],
+  [ModelKey.STRUCTURAL_FRAME]: [0, 0.40],
   [ModelKey.UNDER_CONSTRUCTION]: [0, 0.415],
   [ModelKey.RESIDENTIAL_A1]: [-0.065, 0.225],
   [ModelKey.RESIDENTIAL_B1]: [0, 0.222],

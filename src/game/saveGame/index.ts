@@ -41,6 +41,8 @@ export function serialize(
         saved.rotation = building.rotation;
         saved.developmentState = building.development.state;
         saved.developmentLevel = building.development.level;
+        if (building.development.constructionTicks !== null)
+          saved.constructionTicks = building.development.constructionTicks;
         saved.developmentMaxLevel = building.development.maxLevel;
       }
 
@@ -123,6 +125,7 @@ export function deserialize(
       if (savedTile.developmentLevel !== undefined) {
         building.development.level = savedTile.developmentLevel;
       }
+      building.development.restoreConstruction(savedTile.constructionTicks);
     }
 
     if (building instanceof ResidentialZone && savedTile.residents) {
@@ -149,9 +152,5 @@ export function deserialize(
     }
   }
 
-  // Road styles are recomputed each simulate() pass, not on placement - one
-  // extra tick here just fixes them up immediately instead of waiting up to
-  // 1s for the next natural tick (an acceptable one-tick-early economy/growth
-  // pass, not worth special-casing around).
-  city.simulate();
+  city.refreshInfrastructure();
 }

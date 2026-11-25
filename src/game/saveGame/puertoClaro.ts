@@ -88,6 +88,8 @@ export function puertoClaroSave(size: number): SaveGameV1 {
         tile.developmentState = DevelopmentState.DEVELOPED;
         tile.developmentLevel =
           symbol === 't' || symbol === 'C' ? 3 : symbol === 'h' ? 2 : 1;
+        // The house just across from the shops is about to finish its foundations.
+        if (row === 2 && col === 8) tile.constructionTicks = Math.floor(CONFIG.ZONE.UPGRADE_TIME / 2) - 6;
         tile.rotation = { x: 0, y: 0 };
         if (buildingType === BUILDING_TYPE.RESIDENTIAL) {
           const surname = surnames[households++ % surnames.length];

@@ -108,6 +108,29 @@ describe('saveGame - serialize/deserialize', () => {
     expect(loadedZone.development.level).toBe(2);
   });
 
+  it('preserves an upgrade across reloads and still reads older saves without work progress', () => {
+    const city = new City(32);
+    const tracker = new MilestoneTracker(city);
+    const save = puertoClaroSave(city.size);
+    const site = save.tiles.find(tile => tile.constructionTicks !== undefined)!;
+    deserialize(save, city, tracker);
+    const zone = () => city.getTile(site.x, site.y)!.building as ResidentialZone;
+    expect(zone().development.constructionStage).toBe('foundations');
+    const snapshot = serialize(city, tracker);
+    deserialize(snapshot, city, tracker);
+    expect(zone().development.constructionTicks).toBe(site.constructionTicks);
+    expect(zone().development.level).toBe(site.developmentLevel);
+    expect(city.money).toBe(save.money);
+    delete site.constructionTicks;
+    deserialize(save, city, tracker);
+    expect(zone().development.constructionStage).toBeNull();
+    site.developmentState = DevelopmentState.UNDER_CONSTRUCTION;
+    deserialize(save, city, tracker);
+    expect(zone().development.constructionTicks).toBe(0);
+    tracker.dispose();
+    city.dispose();
+  });
+
   it('round-trips a resident and a separately-employed citizen, including workplace linkage', () => {
     const city = new City(10);
     const homeTile = city.getTile(1, 1)!;
@@ -163,9 +186,6 @@ describe('saveGame - serialize/deserialize', () => {
     deserialize(data, loadedCity, loadedTracker);
 
     expect(loadedTracker.isCompleted('pop-10')).toBe(true);
-    // the post-load simulate() pass legitimately calls earn(income) as part
-    // of ordinary tax collection (even earn(0) on an empty city) - what
-    // must NOT happen is the milestone's own $2000 reward firing again
     expect(earnSpy).not.toHaveBeenCalledWith(2000);
   });
 

@@ -50,6 +50,7 @@ export interface CityEventMap {
     state: DevelopmentState;
     previousState: DevelopmentState;
   };
+  constructionStageChanged: { x: number; y: number };
   levelChanged: { x: number; y: number; level: number; previousLevel: number };
   citizenMovedIn: { citizenId: string; x: number; y: number };
   citizenMovedOut: { citizenId: string; x: number; y: number };

@@ -17,6 +17,7 @@ function mockCity(
   coverage: { police?: boolean; school?: boolean } = {}
 ): ICity {
   return {
+    reserveUpgradeCrew: () => true,
     getTile: () => ({
       roadAccess: { value: hasRoadAccess },
       powerAccess: { value: hasPowerAccess },
@@ -70,7 +71,7 @@ describe('DevelopmentAttribute', () => {
     const city = mockCity(true);
     advanceThroughConstruction(zone, city);
 
-    for (let i = 0; i < 10; i++) zone.development.simulate(city);
+    for (let i = 0; i < 2 * (1 + CONFIG.ZONE.UPGRADE_TIME); i++) zone.development.simulate(city);
 
     expect(zone.development.level).toBe(3);
   });
@@ -143,7 +144,16 @@ describe('DevelopmentAttribute', () => {
 
     const listener = vi.fn();
     cityEvents.on('levelChanged', listener);
-    zone.development.simulate(mockCity(true)); // level 1 -> 2
+    const city = mockCity(true);
+    zone.development.simulate(city);
+    expect(zone.development.constructionStage).toBe('foundations');
+    expect(zone.development.targetLevel).toBe(2);
+    expect(zone.development.level).toBe(1);
+    for (let tick = 1; tick < CONFIG.ZONE.UPGRADE_TIME; tick++) zone.development.simulate(city);
+    expect(zone.development.constructionStage).toBe('frame');
+    expect(listener).not.toHaveBeenCalled();
+    zone.development.simulate(city);
+    expect(zone.development.constructionStage).toBeNull();
 
     expect(listener).toHaveBeenCalledWith({
       x: 1,
@@ -208,6 +218,7 @@ describe('DevelopmentAttribute', () => {
     expect(zone.development.level).toBe(1);
 
     zone.development.simulate(mockCity(true, true, { school: true }));
-    expect(zone.development.level).toBe(2);
+    expect(zone.development.targetLevel).toBe(2);
+    expect(zone.development.constructionStage).toBe('foundations');
   });
 });

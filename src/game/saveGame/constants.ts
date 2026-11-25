@@ -28,6 +28,7 @@ export interface SavedTile {
   developmentState?: DevelopmentState;
   developmentLevel?: number;
   developmentMaxLevel?: number;
+  constructionTicks?: number;
   /** ResidentialZone only */
   residents?: SavedCitizen[];
 }

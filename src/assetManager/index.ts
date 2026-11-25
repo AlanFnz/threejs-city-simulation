@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 import { getBuildingFacing } from './frontage';
 import { matchRoadVerge } from './roadSurface';
+import { createConstructionSite } from './constructionSite';
 import { textures } from './textures';
 import { ITile } from '../city/tile';
 import { IZone } from '../city/building/interfaces';
@@ -49,6 +50,7 @@ export interface IAssetManager {
 }
 
 export class AssetManager implements IAssetManager {
+  private siteScales = new Map<ModelKey, THREE.Vector3>();
   private gltfLoader = new GLTFLoader();
   private onLoad: () => void = () => {};
   private modelCount: number = 0;
@@ -70,14 +72,14 @@ export class AssetManager implements IAssetManager {
     this.loadedModelCount = 0;
 
     for (const [modelName, meta] of Object.entries(models)) {
-      this.loadModel(modelName as ModelKey, meta);
+      this.loadModel(modelName as keyof typeof models, meta);
     }
 
     this.onLoad = onLoad;
   }
 
   loadModel(
-    name: ModelKey,
+    name: keyof typeof models,
     {
       file,
       scale = 1,
@@ -177,6 +179,9 @@ export class AssetManager implements IAssetManager {
     modelKey: ModelKey,
     count: number
   ): THREE.InstancedMesh | null {
+    if (modelKey === ModelKey.FOUNDATIONS || modelKey === ModelKey.STRUCTURAL_FRAME) {
+      return createConstructionSite(modelKey === ModelKey.STRUCTURAL_FRAME, count);
+    }
     const root = this.loadedModels[modelKey];
     if (!root) return null;
 
@@ -249,23 +254,29 @@ export class AssetManager implements IAssetManager {
       throw new Error('Tile does not have a valid building.');
     }
 
-    let modelName: string;
-    switch (zone.development.state) {
-      case DevelopmentState.UNDER_CONSTRUCTION:
-      case DevelopmentState.UNDEVELOPED:
-        modelName = 'UNDER-CONSTRUCTION';
-        break;
-      default:
-        modelName = this.resolveZoneModelName(zone.type, zone.style, zone.development.level);
-        break;
-    }
-
+    const development = zone.development;
+    const target = this.resolveZoneModelName(zone.type, zone.style, development.targetLevel) as ModelKey;
+    let modelKey = target;
     const matrix = new THREE.Matrix4();
     matrix.makeRotationY(facing == null ? (zone.rotation?.y ?? 0) : facing * Math.PI / 2);
+    if (development.constructionStage) {
+      modelKey = development.constructionStage === 'frame' ? ModelKey.STRUCTURAL_FRAME : ModelKey.FOUNDATIONS;
+      let scale = this.siteScales.get(target);
+      if (!scale) {
+        const size = new THREE.Box3().setFromObject(this.loadedModels[target]).getSize(new THREE.Vector3());
+        const clamp = THREE.MathUtils.clamp;
+        scale = new THREE.Vector3(clamp(size.x / 0.54, 0.68, 1.12),
+          clamp(size.y / 0.61, 0.48, 2.5), clamp(size.z / 0.49, 0.68, 1.12));
+        this.siteScales.set(target, scale);
+      }
+      matrix.scale(new THREE.Vector3(scale.x, modelKey === ModelKey.FOUNDATIONS ? 1 : scale.y, scale.z));
+    } else if (development.state === DevelopmentState.UNDEVELOPED) {
+      modelKey = ModelKey.UNDER_CONSTRUCTION;
+    }
     matrix.setPosition(zone.x, 0, zone.y);
 
     return {
-      modelKey: modelName as ModelKey,
+      modelKey,
       matrix,
       abandoned: zone.development.state === DevelopmentState.ABANDONED,
     };
