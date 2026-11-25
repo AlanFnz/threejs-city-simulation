@@ -1,3 +1,5 @@
+import CONFIG from '../config';
+import { Crosswalk } from '../city/vehicle/crosswalk';
 import * as THREE from 'three';
 import { ModelKey } from '../assetManager/constants';
 import { coloredShape } from './coast';
@@ -25,6 +27,7 @@ function join(a: Node, b: Node): void {
 // Neighbouring triangles meet at the middle of their shared edge. This also
 // stitches the sidewalk meshes together at the seams between road tiles.
 export class Footpaths {
+  readonly crossings = new Map<THREE.Vector3, Crosswalk>();
   readonly shoppingWalks = new Map<
     Node,
     { shop: FrontDoor; points: THREE.Vector3[] }
@@ -85,7 +88,12 @@ export class Footpaths {
             road
           )
         );
-        if (sides[0] && sides[1]) join(sides[0], sides[1]);
+        if (sides[0] && sides[1]) {
+          join(sides[0], sides[1]);
+          const crossing = new Crosswalk(sides[0].point, sides[1].point);
+          this.crossings.set(sides[0].point, crossing);
+          this.crossings.set(sides[1].point, crossing);
+        }
       }
     }
   }
@@ -171,12 +179,15 @@ const fabric = new THREE.MeshLambertMaterial({ vertexColors: true });
 const pants = new THREE.MeshLambertMaterial({ color: 0x334654 });
 const leg = new THREE.BoxGeometry(0.016, 0.048, 0.018).translate(0, -0.024, 0);
 
+const WALK_SPEED = 0.27;
+
 class Walker extends THREE.Group {
   readonly legs = [new THREE.Mesh(leg, pants), new THREE.Mesh(leg, pants)];
   points: THREE.Vector3[] = [];
   distances: number[] = [];
   yaw = 0;
   elapsed = 0;
+  private crossings: { crossing: Crosswalk; start: number; end: number }[] = [];
   routeId = '';
 
   constructor(shirt: number, complexion: number) {
@@ -201,15 +212,29 @@ class Walker extends THREE.Group {
     });
   }
 
-  setRoute(points: THREE.Vector3[], yaw: number, phase: number): void {
+  setRoute(
+    points: THREE.Vector3[],
+    yaw: number,
+    phase: number,
+    crossings: Map<THREE.Vector3, Crosswalk>
+  ): void {
     this.points = points.filter(
       (p, i) => !i || p.distanceToSquared(points[i - 1]) > 0.000001
     );
     this.distances = [0];
+    this.crossings = [];
     for (let i = 1; i < this.points.length; i++) {
       this.distances.push(
         this.distances[i - 1] + this.points[i].distanceTo(this.points[i - 1])
       );
+      const crossing = crossings.get(this.points[i]);
+      if (crossing && crossing === crossings.get(this.points[i - 1])) {
+        this.crossings.push({
+          crossing,
+          start: this.distances[i - 1],
+          end: this.distances[i],
+        });
+      }
     }
     this.yaw = yaw;
     const id = this.points
@@ -221,18 +246,53 @@ class Walker extends THREE.Group {
   }
 
   get travelTime(): number {
-    return this.distances[this.distances.length - 1] / 0.27;
+    return this.distances[this.distances.length - 1] / WALK_SPEED;
   }
   get cycleLength(): number {
     return 2 * this.travelTime + 9;
   }
 
-  advance(dt: number): void {
+  advance(
+    dt: number,
+    requested?: Set<Crosswalk>,
+    occupied?: (crossing: Crosswalk) => boolean,
+    approaching?: Set<Crosswalk>
+  ): void {
     if (!this.points.length) {
       this.visible = false;
       return;
     }
-    this.elapsed = (this.elapsed + dt) % this.cycleLength;
+    let next = this.elapsed + dt;
+    let waiting = false;
+    if (requested && occupied) {
+      const travel = this.travelTime;
+      const returning = this.elapsed >= travel + 5;
+      for (const { crossing, start, end } of this.crossings) {
+        const enter = returning
+          ? 2 * travel + 5 - end / WALK_SPEED
+          : start / WALK_SPEED;
+        const leave = returning
+          ? 2 * travel + 5 - start / WALK_SPEED
+          : end / WALK_SPEED;
+        if (
+          next >= enter - CONFIG.VEHICLE.CROSSWALK_TRAFFIC_LEAD &&
+          this.elapsed < enter
+        ) {
+          approaching?.add(crossing);
+        }
+        if (
+          next < enter - CONFIG.VEHICLE.CROSSWALK_APPROACH / WALK_SPEED ||
+          this.elapsed > leave + 0.06
+        )
+          continue;
+        requested.add(crossing);
+        if (this.elapsed <= enter && next >= enter && occupied(crossing)) {
+          next = enter;
+          waiting = true;
+        }
+      }
+    }
+    this.elapsed = next % this.cycleLength;
     const t = this.elapsed,
       travel = this.travelTime;
     const seated = t >= travel && t < travel + 5;
@@ -240,9 +300,9 @@ class Walker extends THREE.Group {
     this.visible = t < 2 * travel + 5;
     if (!this.visible) return;
     const distance = THREE.MathUtils.clamp(
-      (returning ? 2 * travel + 5 - t : t) * 0.27,
+      (returning ? 2 * travel + 5 - t : t) * WALK_SPEED,
       0,
-      travel * 0.27
+      travel * WALK_SPEED
     );
     let i = 1;
     while (i < this.points.length - 1 && distance > this.distances[i]) i++;
@@ -264,7 +324,9 @@ class Walker extends THREE.Group {
     this.legs.forEach((part, index) => {
       part.rotation.x = seated
         ? -1.4
-        : Math.sin(t * 12 + index * Math.PI) * 0.43;
+        : waiting
+          ? 0
+          : Math.sin(t * 12 + index * Math.PI) * 0.43;
     });
   }
 }
@@ -325,7 +387,8 @@ export class Pedestrians extends THREE.Group {
         walker.setRoute(
           trip.points,
           trip.shop.stop!.yaw,
-          trips[i] ? i * 0.12 : 0.5
+          trips[i] ? i * 0.12 : 0.5,
+          paths.crossings
         );
       else {
         walker.points = [];
@@ -335,7 +398,17 @@ export class Pedestrians extends THREE.Group {
     }
   }
 
-  advance(dt: number): void {
-    for (const walker of this.walkers) walker.advance(dt);
+  readonly approaching = new Set<Crosswalk>();
+  private requested = new Set<Crosswalk>();
+
+  advance(
+    dt: number,
+    occupied: (crossing: Crosswalk) => boolean
+  ): ReadonlySet<Crosswalk> {
+    this.requested.clear();
+    this.approaching.clear();
+    for (const walker of this.walkers)
+      walker.advance(dt, this.requested, occupied, this.approaching);
+    return this.requested;
   }
 }

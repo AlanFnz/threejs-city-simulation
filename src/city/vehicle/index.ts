@@ -1,140 +1,126 @@
-import * as THREE from "three";
-import { VehicleGraphNode } from "./vehicleGraphNode";
-import CONFIG from "../../config";
-import { IAssetManager } from "../../assetManager";
+import * as THREE from 'three';
+import { VehicleGraphNode } from './vehicleGraphNode';
+import CONFIG from '../../config';
+import type { IAssetManager } from '../../assetManager';
+import type { Crosswalk } from './crosswalk';
 
 const FORWARD = new THREE.Vector3(1, 0, 0);
 
 export class Vehicle extends THREE.Group {
-  private createdTime: number;
-  private cycleStartTime: number;
-  private origin: VehicleGraphNode | null;
-  private destination: VehicleGraphNode | null;
-  private originWorldPosition: THREE.Vector3;
-  private destinationWorldPosition: THREE.Vector3;
-  private originToDestination: THREE.Vector3;
-  private orientation: THREE.Vector3;
-  private mesh: THREE.Mesh | null;
+  readonly heading = new THREE.Vector3();
+  private speed = CONFIG.VEHICLE.SPEED * 1000;
+  private remaining = 0;
+  private movingAge = 0;
+  private materials = new Set<THREE.Material>();
+  private end = new THREE.Vector3();
 
   constructor(
-    origin: VehicleGraphNode,
-    destination: VehicleGraphNode,
+    private origin: VehicleGraphNode,
+    private destination: VehicleGraphNode,
     assetManager: IAssetManager
   ) {
     super();
-
-    this.createdTime = Date.now();
-    this.cycleStartTime = this.createdTime;
-
-    this.origin = origin;
-    this.destination = destination;
-
-    this.originWorldPosition = new THREE.Vector3();
-    this.destinationWorldPosition = new THREE.Vector3();
-    this.originToDestination = new THREE.Vector3();
-    this.orientation = new THREE.Vector3();
-
-    this.mesh = assetManager.createRandomVehicleMesh();
-    if (this.mesh) {
-      this.add(this.mesh);
-    } else {
-      console.error("Failed to create a random vehicle mesh.");
+    const mesh = assetManager.createRandomVehicleMesh();
+    if (mesh) {
+      this.add(mesh);
+      mesh.traverse((object) => {
+        const part = object as THREE.Mesh;
+        if (!part.isMesh) return;
+        const materials = Array.isArray(part.material)
+          ? part.material
+          : [part.material];
+        for (const material of materials) this.materials.add(material);
+      });
     }
-
-    this.updateWorldPositions();
-  }
-
-  get cycleTime(): number {
-    const distance = this.originToDestination.length();
-    const cycleDuration = distance / CONFIG.VEHICLE.SPEED;
-    const value = (Date.now() - this.cycleStartTime) / cycleDuration;
-
-    return Math.max(0, Math.min(value, 1));
-  }
-
-  get age(): number {
-    return Date.now() - this.createdTime;
-  }
-
-  update(): void {
-    if (!this.origin || !this.destination) {
-      this.dispose();
-      return;
-    }
-    
-    if (!this.destination.parent) {
-      this.dispose();
-      return;
-    }
-    
-    if (this.age > CONFIG.VEHICLE.MAX_LIFETIME) {
-      this.dispose();
-      return;
-    }
-
-    if (this.cycleTime === 1) {
-      this.pickNewDestination();
-    } else {
-      this.position.copy(this.originWorldPosition);
-      this.position.lerp(this.destinationWorldPosition, this.cycleTime);
-    }
-
+    this.startSegment();
     this.updateOpacity();
   }
 
-  updateOpacity(): void {
-    const setOpacity = (opacity: number) => {
-      this.traverse((obj) => {
-        if ((obj as THREE.Mesh).material) {
-          ((obj as THREE.Mesh).material as THREE.Material).opacity = Math.max(
-            0,
-            Math.min(opacity, 1)
-          );
-        }
-      });
-    };
-
-    if (this.age < CONFIG.VEHICLE.FADE_TIME) {
-      setOpacity(this.age / CONFIG.VEHICLE.FADE_TIME);
-    } else if (CONFIG.VEHICLE.MAX_LIFETIME - this.age < CONFIG.VEHICLE.FADE_TIME) {
-      setOpacity(
-        (CONFIG.VEHICLE.MAX_LIFETIME - this.age) / CONFIG.VEHICLE.FADE_TIME
-      );
-    } else {
-      setOpacity(1);
-    }
+  private startSegment(): void {
+    this.origin.getWorldPosition(this.position);
+    this.destination.getWorldPosition(this.end);
+    this.heading.subVectors(this.end, this.position);
+    this.remaining = this.heading.length();
+    this.heading.normalize();
+    this.quaternion.setFromUnitVectors(FORWARD, this.heading);
   }
 
-  pickNewDestination(): void {
-    this.origin = this.destination;
-    this.destination = this.origin?.getRandomNextNode() || null;
-    this.updateWorldPositions();
-    this.cycleStartTime = Date.now();
+  private gapToCar(other: Vehicle): number {
+    if (other === this || this.heading.dot(other.heading) < 0.9)
+      return Infinity;
+    const dx = other.position.x - this.position.x;
+    const dz = other.position.z - this.position.z;
+    const ahead = dx * this.heading.x + dz * this.heading.z;
+    const lateral = Math.abs(dx * this.heading.z - dz * this.heading.x);
+    if (ahead <= 0 || lateral > 0.035) return Infinity;
+    return Math.max(0, ahead - CONFIG.VEHICLE.FOLLOWING_GAP);
   }
 
-  updateWorldPositions(): void {
-    if (!this.origin || !this.destination) {
+  update(
+    dt: number,
+    crossings: ReadonlySet<Crosswalk>,
+    traffic: readonly Vehicle[]
+  ): void {
+    if (
+      !this.origin.parent ||
+      !this.destination.parent ||
+      this.movingAge >= CONFIG.VEHICLE.MAX_LIFETIME
+    ) {
+      this.dispose();
       return;
     }
+    if (this.remaining <= 1e-8) {
+      const next = this.destination.getRandomNextNode();
+      if (!next) {
+        this.dispose();
+        return;
+      }
+      this.origin = this.destination;
+      this.destination = next;
+      this.startSegment();
+    }
 
-    this.origin.getWorldPosition(this.originWorldPosition);
-    this.destination.getWorldPosition(this.destinationWorldPosition);
+    let gap = Infinity;
+    for (const crossing of crossings) {
+      gap = Math.min(
+        gap,
+        crossing.stoppingDistance(this.position, this.heading)
+      );
+    }
+    for (const car of traffic) {
+      if (car.parent) gap = Math.min(gap, this.gapToCar(car));
+    }
+    const cruise = CONFIG.VEHICLE.SPEED * 1000;
+    const target = Math.min(
+      cruise,
+      Math.sqrt(2 * CONFIG.VEHICLE.BRAKING * gap)
+    );
+    this.speed = THREE.MathUtils.clamp(
+      target,
+      this.speed - CONFIG.VEHICLE.BRAKING * dt,
+      this.speed + CONFIG.VEHICLE.ACCELERATION * dt
+    );
+    const distance = Math.min(this.speed * dt, gap, this.remaining);
+    this.position.addScaledVector(this.heading, distance);
+    this.remaining -= distance;
+    if (distance === gap) this.speed = 0;
+    this.movingAge += distance / CONFIG.VEHICLE.SPEED;
+    this.updateOpacity();
+  }
 
-    this.originToDestination.copy(this.destinationWorldPosition);
-    this.originToDestination.sub(this.originWorldPosition);
-
-    this.orientation.copy(this.originToDestination);
-    this.orientation.normalize();
-
-    this.quaternion.setFromUnitVectors(FORWARD, this.orientation);
+  private updateOpacity(): void {
+    const fade = CONFIG.VEHICLE.FADE_TIME;
+    const opacity = THREE.MathUtils.clamp(
+      Math.min(this.movingAge, CONFIG.VEHICLE.MAX_LIFETIME - this.movingAge) /
+        fade,
+      0,
+      1
+    );
+    for (const material of this.materials) material.opacity = opacity;
   }
 
   dispose(): void {
-    this.traverse((obj) => {
-      if ((obj as THREE.Mesh).material) {
-        ((obj as THREE.Mesh).material as THREE.Material).dispose();
-      }
-    });
+    for (const material of this.materials) material.dispose();
     this.removeFromParent();
   }
 }

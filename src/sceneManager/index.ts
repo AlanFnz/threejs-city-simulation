@@ -621,6 +621,8 @@ export class SceneManager implements ISceneManager {
           tile.building.isMeshOutOfDate = false;
           if (tile.building.type === BUILDING_TYPE.ROAD) {
             this.vehicleGraph.updateTile(x, y, tile.building as unknown as IRoad);
+          } else if (existing?.buildingType === BUILDING_TYPE.ROAD) {
+            this.vehicleGraph.updateTile(x, y, null);
           }
         }
       }
@@ -681,8 +683,13 @@ export class SceneManager implements ISceneManager {
     this.grid.material.opacity = this.reduceMotion.matches ? opacity :
       THREE.MathUtils.damp(this.grid.material.opacity,opacity,10,Math.min(deltaSeconds,0.2));
     this.grid.visible = this.grid.material.opacity > 0.002;
-    this.connections.pedestrians.advance(this.reduceMotion.matches ? 0 : Math.min(deltaSeconds,0.15) * this.playbackSpeed());
-    this.vehicleGraph.updateVehicles();
+    let trafficTime = this.reduceMotion.matches ? 0 : Math.min(deltaSeconds, 0.15) * speed;
+    while (trafficTime > 0) {
+      const step = Math.min(trafficTime, 0.05);
+      const crossings = this.connections.pedestrians.advance(step, this.vehicleGraph.isCrossingOccupied);
+      this.vehicleGraph.updateVehicles(step, crossings, this.connections.pedestrians.approaching);
+      trafficTime -= step;
+    }
     this.sea.material.uniforms.time.value = this.reduceMotion.matches ? 0 : time / 1000;
     this.renderer.render(this.scene, this.cameraManager.camera);
   }

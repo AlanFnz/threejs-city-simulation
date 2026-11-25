@@ -12,6 +12,7 @@ interface VehicleGraphConnection {
 }
 
 export class VehicleGraphTile extends THREE.Group {
+  roadStyle = '';
   roadRotation: number;
   left: VehicleGraphConnection;
   right: VehicleGraphConnection;
@@ -55,7 +56,7 @@ export class VehicleGraphTile extends THREE.Group {
   }
 
   disconnectAll(): void {
-    for (const node of this.children) {
+    for (const node of [...this.children]) {
       if (node instanceof VehicleGraphNode) {
         node.disconnectAll();
         node.removeFromParent();

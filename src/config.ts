@@ -82,9 +82,19 @@ export interface Config {
   VEHICLE: {
     /** distance per millisecond */
     SPEED: number;
+    /** Tiles per second squared when braking or pulling away. */
+    BRAKING: number;
+    ACCELERATION: number;
+    /** Centre of the vehicle to the crossing centreline, in tiles. */
+    STOP_LINE_GAP: number;
+    CROSSWALK_CLEARANCE: number;
+    FOLLOWING_GAP: number;
+    /** How far from the curb a walker requests right of way, in tiles. */
+    CROSSWALK_APPROACH: number;
+    CROSSWALK_TRAFFIC_LEAD: number;
     /** milliseconds spent fading in/out at either end of a vehicle's life */
     FADE_TIME: number;
-    /** milliseconds before a vehicle is removed regardless of route progress */
+    /** milliseconds of driving before a vehicle is removed */
     MAX_LIFETIME: number;
     /** hard cap on vehicles in the scene at once */
     MAX_VEHICLE_COUNT: number;
@@ -204,6 +214,13 @@ const CONFIG = {
   },
   VEHICLE: {
     SPEED: 0.0005,
+    BRAKING: 0.9,
+    ACCELERATION: 0.65,
+    STOP_LINE_GAP: 0.125,
+    CROSSWALK_CLEARANCE: 0.105,
+    FOLLOWING_GAP: 0.18,
+    CROSSWALK_APPROACH: 0.13,
+    CROSSWALK_TRAFFIC_LEAD: 1.8, // seconds before a walker reaches the curb
     FADE_TIME: 1000,
     MAX_LIFETIME: 10000,
     MAX_VEHICLE_COUNT: 10,
