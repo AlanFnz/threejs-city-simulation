@@ -64,6 +64,22 @@ const surnames = [
   'Soler',
 ];
 
+function streetOrigin(size: number) {
+  return {
+    west: Math.floor((size - streets[0].length) / 2),
+    north: Math.floor((size - streets.length) / 2),
+  };
+}
+
+// The four front gardens face the shops across the northern shopping street.
+export function puertoClaroGardenBlock(size: number) {
+  const { west, north } = streetOrigin(size);
+  return [
+    { x: west + 10, y: north + 2 },
+    { x: west + 13, y: north + 3 },
+  ];
+}
+
 export function puertoClaroSave(size: number): SaveGameV1 {
   const save = blankSave();
   save.cityName = 'Puerto Claro';
@@ -85,8 +101,7 @@ export function puertoClaroSave(size: number): SaveGameV1 {
   );
   save.zoneLevelCaps.RESIDENTIAL = 4;
 
-  const west = Math.floor((size - streets[0].length) / 2);
-  const north = Math.floor((size - streets.length) / 2);
+  const { west, north } = streetOrigin(size);
   let households = 0;
   let residents = 0;
   for (const [row, street] of streets.entries()) {

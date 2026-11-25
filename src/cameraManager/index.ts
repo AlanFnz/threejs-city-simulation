@@ -21,11 +21,16 @@ export interface CameraFocus {
   y: number;
 }
 
+interface FramingOptions {
+  minimumHeight?: number;
+  azimuth?: number;
+}
+
 export interface ICameraManager {
   camera: THREE.OrthographicCamera;
   getFocus(): CameraFocus;
   focusOnTile(x: number, y: number): void;
-  frameLots(lots: readonly CameraFocus[]): void;
+  frameLots(lots: readonly CameraFocus[], options?: FramingOptions): void;
   update(deltaSeconds: number): void;
   onKeyDown(event: KeyboardEvent): void;
   onKeyUp(event: KeyboardEvent): void;
@@ -115,7 +120,7 @@ export class CameraManager implements ICameraManager {
     this.camera.lookAt(this.cameraOrigin);
   }
 
-  public frameLots(lots: readonly CameraFocus[]): void {
+  public frameLots(lots: readonly CameraFocus[], options: FramingOptions = {}): void {
     if (!lots.length) return;
     let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
     for (const { x, y } of lots) {
@@ -126,7 +131,8 @@ export class CameraManager implements ICameraManager {
     }
     const span = Math.hypot(maxX - minX + 1, maxY - minY + 1);
     const aspect = (this.camera.right - this.camera.left) / CAMERA_SIZE;
-    const height = Math.max(10, span + 2, (span + 4) / aspect);
+    if (options.azimuth !== undefined) this.cameraAzimuth = options.azimuth;
+    const height = Math.max(options.minimumHeight ?? 10, span + 2, (span + 4) / aspect);
     this.targetCameraRadius = this.cameraRadius = THREE.MathUtils.clamp(
       CAMERA_SIZE / height, this.minCameraRadius, MAX_CAMERA_RADIUS
     );

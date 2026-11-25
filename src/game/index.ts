@@ -18,7 +18,7 @@ import {
   deserialize,
   SaveGameV1,
 } from './saveGame';
-import { PUERTO_CLARO, puertoClaroSave } from './saveGame/puertoClaro';
+import { PUERTO_CLARO, puertoClaroGardenBlock, puertoClaroSave } from './saveGame/puertoClaro';
 import { createInspectorUiState } from './inspector';
 import { createGoalsUiState } from './goals';
 import {
@@ -75,8 +75,10 @@ export class Game implements IGame {
   lastMove: number = Date.now();
   private readonly query = new URLSearchParams(window.location.search);
   private readonly isExample = this.query.get('city') === PUERTO_CLARO;
-  private readonly worksView = this.isExample && this.query.get('view') === 'works';
-  private readonly saveKey = this.isExample ? SAVE_KEY + '/' + PUERTO_CLARO + (this.worksView ? '/works' : '') : SAVE_KEY;
+  private readonly exampleView = this.isExample ? this.query.get('view') : null;
+  private readonly saveKey = this.isExample
+    ? `${SAVE_KEY}/${PUERTO_CLARO}` + (this.exampleView === 'works' || this.exampleView === 'barrio' ? '/' + this.exampleView : '')
+    : SAVE_KEY;
   private minuteOfDay = STARTING_MINUTE;
   private lightingMode: LightingMode = 'Auto';
   private tickCount: number = 0;
@@ -326,8 +328,12 @@ export class Game implements IGame {
     deserialize(data, this.city, this.milestoneTracker);
     this.selectTool(TOOLBAR_BUTTONS.SELECT.id);
     this.onGameStateReplaced();
-    const site = this.worksView && data.tiles.find(tile => tile.constructionTicks !== undefined);
-    this.sceneManager.cameraManager.frameLots(site ? [site] : data.tiles);
+    const site = this.exampleView === 'works' && data.tiles.find(tile => tile.constructionTicks !== undefined);
+    if (this.exampleView === 'barrio') {
+      this.sceneManager.cameraManager.frameLots(puertoClaroGardenBlock(this.city.size), { minimumHeight: 6, azimuth: 22 });
+    } else {
+      this.sceneManager.cameraManager.frameLots(site ? [site] : data.tiles);
+    }
   }
 
   private startExampleCity(): void {

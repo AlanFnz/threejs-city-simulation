@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
+import { FrontGardens } from './frontGardens';
 import { StreetFurniture } from './streetFurniture';
 import { isConstructionSite, ModelKey } from '../assetManager/constants';
 import { ENTRANCES, SIDES } from '../assetManager/frontage';
@@ -80,6 +81,26 @@ function isPoleOrPlant(
   );
 }
 
+// Include homes opposite a shop and the house next door along the same street.
+function facesShops(
+  lots: Lots,
+  x: number,
+  y: number,
+  side: { x: number; y: number }
+): boolean {
+  for (const offset of [0, -1, 1]) {
+    const dx = x + side.y * offset,
+      dy = y - side.x * offset;
+    if (
+      lots[dx + side.x]?.[dy + side.y]?.buildingType === BUILDING_TYPE.ROAD &&
+      lots[dx + 2 * side.x]?.[dy + 2 * side.y]?.buildingType ===
+        BUILDING_TYPE.COMMERCIAL
+    )
+      return true;
+  }
+  return false;
+}
+
 function pathWidth(type: BuildingType): number {
   if (type === BUILDING_TYPE.RESIDENTIAL) return 0.105;
   if (type === BUILDING_TYPE.INDUSTRIAL) return 0.22;
@@ -97,17 +118,20 @@ export class CityConnections extends THREE.Group {
 
   readonly pedestrians = new Pedestrians();
   private furniture: StreetFurniture;
+  private gardens: FrontGardens;
   private promenade = new Promenade();
 
   constructor(size: number, darkness: { value: number }) {
     super();
     this.paths.receiveShadow = true;
     this.wires.castShadow = true;
+    this.gardens = new FrontGardens(size);
     this.furniture = new StreetFurniture(size, darkness);
     this.add(
       this.paths,
       this.wires,
       this.furniture,
+      this.gardens,
       this.promenade,
       this.pedestrians
     );
@@ -132,6 +156,7 @@ export class CityConnections extends THREE.Group {
     const homes: FrontDoor[] = [],
       shops: ShopFront[] = [];
     this.furniture.clearInstances();
+    this.gardens.clearInstances();
     for (const column of lots)
       for (const road of column) {
         if (road?.buildingType !== BUILDING_TYPE.ROAD) continue;
@@ -190,8 +215,11 @@ export class CityConnections extends THREE.Group {
         );
         if (!lot.abandoned && !isConstructionSite(lot.modelKey)) {
           const frontage = { door: start, curb: end, road: road.matrix, stop };
-          if (lot.buildingType === BUILDING_TYPE.RESIDENTIAL)
+          if (lot.buildingType === BUILDING_TYPE.RESIDENTIAL) {
             homes.push(frontage);
+            if (facesShops(lots, x, y, side))
+              this.gardens.addHome(lot.matrix, start, end, halfWidth);
+          }
           if (stop)
             shops.push({
               ...frontage,
@@ -217,6 +245,7 @@ export class CityConnections extends THREE.Group {
       }
     }
     this.furniture.finishUpdate();
+    this.gardens.finishUpdate();
     this.promenade.rebuild(
       shops,
       (x, z) => lots[x]?.[z]?.buildingType === BUILDING_TYPE.ROAD,
