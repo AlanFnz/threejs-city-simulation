@@ -10,6 +10,9 @@ import { SaveGameV1, SavedTile } from './constants';
 import { DEFAULT_CITY_NAME, normalizeCityName } from '../cityName';
 import {
   normalizeSimulationDay,
+  normalizeMinute,
+  STARTING_MINUTE,
+  type LightingMode,
   STARTING_SIMULATION_DAY,
 } from '../simulationDay';
 
@@ -20,7 +23,9 @@ export function serialize(
   city: ICity,
   milestoneTracker: MilestoneTracker,
   cityName: string = DEFAULT_CITY_NAME,
-  simulationDay: number = STARTING_SIMULATION_DAY
+  simulationDay: number = STARTING_SIMULATION_DAY,
+  minuteOfDay: number = STARTING_MINUTE,
+  lightingMode: LightingMode = 'Auto'
 ): SaveGameV1 {
   const tiles: SavedTile[] = [];
 
@@ -60,6 +65,8 @@ export function serialize(
     version: 1,
     cityName: normalizeCityName(cityName),
     simulationDay: normalizeSimulationDay(simulationDay),
+    minuteOfDay: normalizeMinute(minuteOfDay),
+    lightingMode,
     money: city.money,
     upkeepDiscount: city.upkeepDiscount,
     zoneLevelCaps: { ...ZONE_LEVEL_CAPS },

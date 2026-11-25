@@ -75,6 +75,7 @@ export interface Config {
     CONSTRUCTION_TIME: number;
   };
   CITY: {
+    MINUTES_PER_TICK: number;
     /** tiles per side */
     SIZE: number;
   };
@@ -198,6 +199,7 @@ const CONFIG = {
     CONSTRUCTION_TIME: 3,
   },
   CITY: {
+    MINUTES_PER_TICK: 15,
     SIZE: 32,
   },
   VEHICLE: {

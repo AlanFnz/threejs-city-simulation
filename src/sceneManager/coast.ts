@@ -30,7 +30,7 @@ export function coloredShape(
 
 /** A single static coastal mesh outside the playable square. The shore rings
  * share samples so the meadow, beach and shallows meet at every vertex. */
-export function createCoast(size: number): THREE.Mesh {
+export function createCoast(size: number, dusk: { value: number }): THREE.Mesh {
   const pieces: THREE.BufferGeometry[] = [];
   const polygons: number[] = [];
   const colors: number[] = [];
@@ -182,6 +182,17 @@ export function createCoast(size: number): THREE.Mesh {
     geometry,
     new THREE.MeshLambertMaterial({ vertexColors: true })
   );
+  coast.material.onBeforeCompile = (shader) => {
+    shader.uniforms.dusk = dusk;
+    shader.fragmentShader =
+      'uniform float dusk;\n' +
+      shader.fragmentShader.replace(
+        '#include <emissivemap_fragment>',
+        `#include <emissivemap_fragment>
+      float lens = 1.0 - step(0.015, distance(vColor, vec3(1., 0.624, 0.188)));
+      totalEmissiveRadiance += lens * dusk * vec3(1.8, 1.1, .38);`
+      );
+  };
   coast.castShadow = true;
   coast.receiveShadow = true;
   coast.userData.nonInteractive = true;
@@ -196,6 +207,7 @@ export function createSea(
   const material = new THREE.ShaderMaterial({
     uniforms: {
       time: { value: 0 },
+      daylight: { value: 1 },
       center: { value: (size - 1) / 2 },
       halfSize: { value: size / 2 },
       shallows: { value: new THREE.Color(0x82c9bc) },
@@ -209,7 +221,7 @@ export function createSea(
         gl_Position = projectionMatrix * viewMatrix * world;
       }`,
     fragmentShader: `
-      uniform float time, center, halfSize;
+      uniform float time, center, halfSize, daylight;
       uniform vec3 shallows, deep;
       varying vec2 water;
       void main() {
@@ -220,7 +232,7 @@ export function createSea(
         vec3 color = mix(shallows, deep, depth * 0.88 + swell * 0.04);
         float line = sin(uv.y * 8.0 + sin(uv.x * 1.5 + time * 0.28) * 0.68 + time * 0.4);
         float fleck = sin(uv.x * 2.4 + uv.y * 4.3) * sin(uv.x * 0.8 - uv.y * 2.1 + time * 0.16);
-        color += smoothstep(0.9, 1.0, line) * smoothstep(0.52, 0.9, fleck) * 0.14;
+        color += smoothstep(0.9, 1.0, line) * smoothstep(0.52, 0.9, fleck) * mix(0.013, 0.14, daylight);
         gl_FragColor = vec4(color, 1.0);
         #include <colorspace_fragment>
       }`,

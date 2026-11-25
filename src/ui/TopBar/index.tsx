@@ -3,6 +3,7 @@ import personIcon from '../../assetManager/icons/person.png';
 import { PUERTO_CLARO } from '../../game/saveGame/puertoClaro';
 import { BudgetPanel } from './BudgetPanel';
 import { CityName } from './CityName';
+import { normalizeLightingMode, type LightingMode } from '../../game/simulationDay';
 import type { SimulationSpeed } from '../../game/simulationSpeed';
 import type { CensusUiState } from '../store';
 import type { UiNotification } from '../store';
@@ -13,6 +14,9 @@ type OpenTopBarPanel = 'budget' | 'population' | 'menu' | null;
 
 interface TopBarProps {
   isExample: boolean;
+  lightingMode: LightingMode;
+  minuteOfDay: number;
+  onSetLightingMode: (mode: LightingMode) => void;
   cityName: string;
   simulationDay: number;
   money: number;
@@ -35,6 +39,9 @@ interface TopBarProps {
 
 function TopBar({
   isExample,
+  onSetLightingMode,
+  lightingMode,
+  minuteOfDay,
   cityName,
   simulationDay,
   money,
@@ -54,6 +61,8 @@ function TopBar({
   onActivityRead,
   onHideHud,
 }: TopBarProps) {
+  const clock = [Math.floor(minuteOfDay / 60), minuteOfDay % 60]
+    .map(part => String(part).padStart(2, '0')).join(':');
   const [openPanel, setOpenPanel] = useState<OpenTopBarPanel>(null);
   const budgetContainer = useRef<HTMLDivElement>(null);
   const budgetButton = useRef<HTMLButtonElement>(null);
@@ -121,7 +130,7 @@ function TopBar({
         <div className="city-identity-copy">
           <CityName name={cityName} onRename={onRenameCity} />
           <span className={`city-status${isPaused ? ' paused' : ''}`}>
-            <span>Day {simulationDay.toLocaleString()}</span>
+            <span>Day {simulationDay.toLocaleString()} · <time dateTime={clock}>{clock}</time></span>
             <span className="city-status-separator" aria-hidden="true">
               ·
             </span>
@@ -136,6 +145,16 @@ function TopBar({
         id="ui-topbar-left-items"
         className="ui-topbar-items ui-topbar-left-items"
       >
+        <label className="daylight-picker" title="Scene lighting">
+          <span aria-hidden="true">◐</span>
+          <select aria-label="Scene lighting" value={lightingMode}
+            onChange={event => onSetLightingMode(normalizeLightingMode(event.target.value))}>
+            <option value="Auto">Auto cycle</option>
+            <option value="Day">Day</option>
+            <option value="Dusk">Dusk</option>
+            <option value="Night">Night</option>
+          </select>
+        </label>
         <div className="city-budget" ref={budgetContainer}>
           <button
             id="city-budget-button"

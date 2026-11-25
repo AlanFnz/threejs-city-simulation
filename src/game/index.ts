@@ -29,6 +29,8 @@ import {
 import { DEFAULT_CITY_NAME, normalizeCityName } from './cityName';
 import {
   normalizeSimulationDay,
+  MINUTES_PER_DAY, STARTING_MINUTE, LIGHTING_HOURS,
+  normalizeMinute, normalizeLightingMode, type LightingMode,
   STARTING_SIMULATION_DAY,
 } from './simulationDay';
 import { createCensusUiState } from './census';
@@ -72,6 +74,8 @@ export class Game implements IGame {
   lastMove: number = Date.now();
   private readonly isExample = new URLSearchParams(window.location.search).get('city') === PUERTO_CLARO;
   private readonly saveKey = this.isExample ? SAVE_KEY + '/' + PUERTO_CLARO : SAVE_KEY;
+  private minuteOfDay = STARTING_MINUTE;
+  private lightingMode: LightingMode = 'Auto';
   private tickCount: number = 0;
   private startTime: number = Date.now();
   private city: ICity = new City(CONFIG.CITY.SIZE);
@@ -109,6 +113,11 @@ export class Game implements IGame {
 
   constructor() {
     this.ui = createUi(this.getInitialUiState(), {
+      setLightingMode: (mode) => {
+        this.lightingMode = mode;
+        this.updateLighting(true);
+        this.ui.update({ lightingMode: mode });
+      },
       selectTool: (toolId) => this.selectTool(toolId),
       focusMapTile: (x, y) => this.focusMapTile(x, y),
       bulldozeFocusedTile: () => this.bulldozeFocusedTile(),
@@ -225,8 +234,13 @@ export class Game implements IGame {
   step(): void {
     if (this.isPaused) return;
     this.tickCount++;
-    this.simulationDay++;
-    this.ui.update({ simulationDay: this.simulationDay });
+    this.minuteOfDay += CONFIG.CITY.MINUTES_PER_TICK;
+    if (this.minuteOfDay >= MINUTES_PER_DAY) {
+      this.minuteOfDay %= MINUTES_PER_DAY;
+      this.simulationDay++;
+    }
+    this.updateLighting(false);
+    this.ui.update({ simulationDay: this.simulationDay, minuteOfDay: this.minuteOfDay });
     this.updateDebugOverlay();
     this.city.simulate();
     this.randomEventsSystem.tick();
@@ -235,12 +249,19 @@ export class Game implements IGame {
     if (this.tickCount % AUTOSAVE_INTERVAL_TICKS === 0) this.saveGame();
   }
 
+  private updateLighting(immediate: boolean): void {
+    const hour = this.lightingMode === 'Auto' ? this.minuteOfDay / 60 : LIGHTING_HOURS[this.lightingMode];
+    this.sceneManager.setLightingHour(hour, immediate);
+  }
+
   saveGame(): void {
     const data = serialize(
       this.city,
       this.milestoneTracker,
       this.cityName,
-      this.simulationDay
+      this.simulationDay,
+      this.minuteOfDay,
+      this.lightingMode
     );
     localStorage.setItem(this.saveKey, JSON.stringify(data));
   }
@@ -295,6 +316,9 @@ export class Game implements IGame {
   private restoreCity(data: SaveGameV1): void {
     this.cityName = normalizeCityName(data.cityName);
     this.simulationDay = normalizeSimulationDay(data.simulationDay);
+    this.minuteOfDay = normalizeMinute(data.minuteOfDay);
+    this.lightingMode = normalizeLightingMode(data.lightingMode);
+    this.updateLighting(true);
     deserialize(data, this.city, this.milestoneTracker);
     this.selectTool(TOOLBAR_BUTTONS.SELECT.id);
     this.onGameStateReplaced();
@@ -503,6 +527,8 @@ export class Game implements IGame {
     this.ui.update({
       cityName: this.cityName,
       simulationDay: this.simulationDay,
+      minuteOfDay: this.minuteOfDay,
+      lightingMode: this.lightingMode,
       population: this.city.population,
       census: createCensusUiState(this.city),
       zoneCapacity: createZoneCapacityUiState(this.city),
@@ -602,6 +628,8 @@ export class Game implements IGame {
       isExample: this.isExample,
       cityName: this.cityName,
       simulationDay: this.simulationDay,
+      minuteOfDay: this.minuteOfDay,
+      lightingMode: this.lightingMode,
       money: this.city.money,
       income: 0,
       upkeep: 0,

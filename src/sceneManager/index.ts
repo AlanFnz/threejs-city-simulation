@@ -1,5 +1,8 @@
+import CONFIG from '../config';
 import * as THREE from 'three';
-import { PowerView } from './powerView';
+import { daylightAt } from './daylight';
+import { STARTING_MINUTE } from '../game/simulationDay';
+import { PowerView, addWindowLighting } from './powerView';
 import { CityConnections } from './cityConnections';
 import { getBuildingFacing, isPowerNode } from '../assetManager/frontage';
 import { Woodland } from './woodland';
@@ -73,6 +76,7 @@ interface BuildingSlotRecord {
 }
 
 export interface ISceneManager {
+  setLightingHour(hour: number, immediate: boolean): void;
   start(): void;
   stop(): void;
   update(city: ICity): void;
@@ -98,7 +102,13 @@ export class SceneManager implements ISceneManager {
   private terrainMesh: THREE.InstancedMesh | null = null;
   private terrainTints: THREE.Color[] = [];
   private woodland: Woodland;
+  private lightingHour = STARTING_MINUTE / 60;
+  private targetHour = this.lightingHour;
+  private streetlightsOn = false;
+  private dusk = { value: 0 };
   private powerView: PowerView;
+  private sun = new THREE.DirectionalLight();
+  private sky = new THREE.HemisphereLight();
   private grid!: THREE.Mesh<THREE.BoxGeometry, THREE.MeshBasicMaterial>;
   private connections: CityConnections;
   private sea: ReturnType<typeof createSea>;
@@ -136,8 +146,8 @@ export class SceneManager implements ISceneManager {
     this.sea = createSea(city.size);
     this.woodland = new Woodland(city.size);
     this.powerView = new PowerView(city.size);
-    this.connections = new CityConnections(city.size);
-    this.scene.add(this.sea, this.woodland, createCoast(city.size), this.connections, this.powerView);
+    this.connections = new CityConnections(city.size, this.dusk);
+    this.scene.add(this.sea, this.woodland, createCoast(city.size, this.dusk), this.connections, this.powerView);
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     this.gameWindow = document.getElementById('render-target') as HTMLElement;
     this.assetManager = new AssetManager(() => {
@@ -265,7 +275,7 @@ export class SceneManager implements ISceneManager {
     // than just its side, plus margin for tall buildings poking above y=0.
     const halfExtent = citySize * 0.75;
 
-    const sun = new THREE.DirectionalLight(0xffedcf, 1.65);
+    const sun = this.sun;
     const reach = Math.max(16, citySize);
     sun.position.set(center - reach, reach * 1.3, center - reach * 0.6);
     sun.target.position.set(center, 0, center);
@@ -281,7 +291,40 @@ export class SceneManager implements ISceneManager {
     sun.shadow.camera.far = reach * 3 + 8;
     this.root.add(sun);
     this.root.add(sun.target);
-    this.root.add(new THREE.HemisphereLight(0xfff9ec, 0xc0d9cc, 1.45));
+    this.root.add(this.sky);
+    this.applyLighting();
+  }
+
+  setLightingHour(hour: number, immediate: boolean): void {
+    this.targetHour = hour;
+    if (immediate) {
+      this.lightingHour = hour;
+      this.applyLighting();
+    }
+  }
+
+  private applyLighting(): void {
+    const { a, b, mix } = daylightAt(this.lightingHour);
+    const lerp = THREE.MathUtils.lerp;
+    const center = this.sea.material.uniforms.center.value as number;
+    const reach = Math.max(16, center * 2 + 1);
+    this.sun.position.set(center + reach * lerp(a.x, b.x, mix),
+      reach * lerp(a.height, b.height, mix), center - reach * 0.66);
+    this.sun.color.lerpColors(a.sun, b.sun, mix);
+    this.sun.intensity = lerp(a.sunStrength, b.sunStrength, mix);
+    this.sky.color.lerpColors(a.sky, b.sky, mix);
+    this.sky.groundColor.lerpColors(a.ground, b.ground, mix);
+    this.sky.intensity = lerp(a.skyStrength, b.skyStrength, mix);
+    this.sea.material.uniforms.shallows.value.lerpColors(a.shallows, b.shallows, mix);
+    this.sea.material.uniforms.deep.value.lerpColors(a.deep, b.deep, mix);
+    this.renderer.setClearColor(this.sea.material.uniforms.deep.value);
+    this.dusk.value = lerp(a.lamps, b.lamps, mix);
+    this.sea.material.uniforms.daylight.value = 1 - this.dusk.value;
+    const streetlightsOn = this.dusk.value > 0.02;
+    if (streetlightsOn !== this.streetlightsOn) {
+      this.streetlightsOn = streetlightsOn;
+      this.connections.updateLights(this.powerView, streetlightsOn);
+    }
   }
 
   private setupGrid(city: ICity): void {
@@ -321,6 +364,7 @@ export class SceneManager implements ISceneManager {
     );
     if (!mesh) return null;
 
+    if (/^(RESIDENTIAL|COMMERCIAL|INDUSTRIAL)-/.test(modelKey)) addWindowLighting(mesh,this.dusk);
     for (let i = 0; i < INITIAL_POOL_CAPACITY; i++) {
       mesh.setMatrixAt(i, HIDDEN_INSTANCE_MATRIX);
     }
@@ -353,6 +397,7 @@ export class SceneManager implements ISceneManager {
       newCapacity
     );
     if (!newMesh) return pool;
+    if (pool.mesh.geometry.hasAttribute('windowPower')) addWindowLighting(newMesh,this.dusk);
 
     const matrix = new THREE.Matrix4();
     const color = new THREE.Color();
@@ -586,7 +631,20 @@ export class SceneManager implements ISceneManager {
     }
     if (wiresChanged) this.connections.updateWires(this.buildingSlots);
 
-    this.powerView.updateSupply(city);
+    const supplyChanged = this.powerView.updateSupply(city);
+    if (supplyChanged || pathsChanged) {
+      this.connections.updateLights(this.powerView, this.streetlightsOn);
+      for (const pool of this.buildingPools.values()) {
+        const power = pool.mesh.geometry.getAttribute('windowPower');
+        if (!power) continue;
+        for (const [i,tile] of pool.tileAtSlot.entries()) {
+          const value = Number(!!tile?.powerAccess?.value && !this.buildingSlots[tile.x][tile.y]?.abandoned);
+          if (power.getX(i) === value) continue;
+          power.setX(i,value);
+          power.needsUpdate = true;
+        }
+      }
+    }
     if (terrainMatrixChanged && this.terrainMesh) {
       this.terrainMesh.instanceMatrix.needsUpdate = true;
     }
@@ -606,6 +664,13 @@ export class SceneManager implements ISceneManager {
       this.lastFrameTime === null ? 0 : (time - this.lastFrameTime) / 1000;
     this.lastFrameTime = time;
     this.cameraManager.update(deltaSeconds);
+    const speed = this.playbackSpeed();
+    if (speed && this.lightingHour !== this.targetHour) {
+      const ahead = THREE.MathUtils.euclideanModulo(this.targetHour - this.lightingHour, 24);
+      const step = Math.min(deltaSeconds * speed * CONFIG.CITY.MINUTES_PER_TICK / 60, ahead);
+      this.lightingHour = step >= ahead ? this.targetHour : (this.lightingHour + step) % 24;
+      this.applyLighting();
+    }
     const tool = this.activeTool();
     const electric = tool === 'POWER_PLANT' || tool === 'POWER_LINE';
     if (this.powerView.visible !== electric) {

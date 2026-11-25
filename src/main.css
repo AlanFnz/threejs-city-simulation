@@ -3625,6 +3625,32 @@ details:not([open]) .panel-collapse-indicator {
   }
 }
 
+.daylight-picker {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 5px;
+  margin-right: 12px;
+  color: #ead198;
+  border: 1px solid var(--hud-line);
+  border-radius: 8px;
+  background: #1a332d;
+}
+.daylight-picker select {
+  max-width: 100%;
+  cursor: pointer;
+  color: var(--hud-text);
+  background: #1a332d;
+  border: 0;
+  font: inherit;
+  font-size: .78rem;
+  font-weight: 700;
+}
+.city-status time { font-variant-numeric: tabular-nums; }
 .power-key { display: inline-flex; align-items: center; gap: 4px; }
 .power-key i { width: 8px; height: 8px; border-radius: 50%; background: #75edc5; }
 .power-key i:nth-of-type(2) { background: #ff975e; margin-left: 4px; }
+@media (max-width: 720px) {
+  .daylight-picker { margin-right: 4px; padding: 1px; }
+  .daylight-picker span { display: none; }
+  .daylight-picker select { font-size: .65rem; }
+}

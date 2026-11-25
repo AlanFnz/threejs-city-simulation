@@ -4,6 +4,7 @@ import { ModelKey } from '../assetManager/constants';
 import { BUILDING_TYPE, type BuildingType } from '../city/building/constants';
 import { coloredShape } from './coast';
 
+import type { PowerView } from './powerView';
 import type { BenchStop } from './pedestrians';
 
 const IRON = 0x31483f;
@@ -112,11 +113,12 @@ const LAMP_SITES: Partial<
 
 export class StreetFurniture extends THREE.Group {
   private lamps: THREE.InstancedMesh;
+  private pools: THREE.InstancedMesh;
   private benches: THREE.InstancedMesh;
   private signs: THREE.InstancedMesh;
   private transform = new THREE.Matrix4();
 
-  constructor(size: number) {
+  constructor(size: number, darkness: { value: number }) {
     super();
     const finish = new THREE.MeshLambertMaterial({ vertexColors: true });
     const glass = new THREE.MeshBasicMaterial({ vertexColors: true });
@@ -126,6 +128,29 @@ export class StreetFurniture extends THREE.Group {
       [finish, glass],
       tiles * 2
     );
+    const poolMaterial = new THREE.ShaderMaterial({
+      uniforms: { darkness },
+      transparent: true,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+      vertexShader: `varying vec2 localUv;
+        void main(){localUv = uv; gl_Position = projectionMatrix * modelViewMatrix * instanceMatrix * vec4(position,1.);}`,
+      fragmentShader: `uniform float darkness; varying vec2 localUv;
+        void main(){float glow = max(0., 1. - 2. * length(localUv - .5));
+          gl_FragColor = vec4(1., .58, .19, glow * glow * .66 * darkness);
+          #include <colorspace_fragment>
+        }`,
+    });
+    this.pools = new THREE.InstancedMesh(
+      new THREE.PlaneGeometry(0.85, 0.85).rotateX(-Math.PI / 2),
+      poolMaterial,
+      tiles * 2
+    );
+    this.pools.count = 0;
+    this.pools.visible = false;
+    this.pools.userData.nonInteractive = true;
+    this.pools.raycast = () => {};
+    this.add(this.pools);
     this.benches = new THREE.InstancedMesh(benchGeometry(), finish, tiles);
     this.signs = new THREE.InstancedMesh(signGeometry(), finish, tiles);
     for (const batch of [this.lamps, this.benches, this.signs]) {
@@ -147,6 +172,30 @@ export class StreetFurniture extends THREE.Group {
       batch.instanceMatrix.needsUpdate = true;
       batch.computeBoundingSphere();
     }
+  }
+
+  updateLights(power: PowerView, dusk: boolean): void {
+    this.pools.count = 0;
+    const tint = new THREE.Color();
+    for (let i = 0; i < this.lamps.count; i++) {
+      this.lamps.getMatrixAt(i, this.transform);
+      const e = this.transform.elements;
+      const x = Math.round(e[12]),
+        z = Math.round(e[14]);
+      let powered = false;
+      for (let dx = -1; dx <= 1; dx++)
+        for (let dz = -1; dz <= 1; dz++) {
+          powered ||= power.isPowered(x + dx, z + dz);
+        }
+      this.lamps.setColorAt(i, tint.setScalar(!dusk || powered ? 1 : 0.14));
+      if (!powered || !dusk) continue;
+      e[13] = 0.024;
+      this.pools.setMatrixAt(this.pools.count++, this.transform);
+    }
+    if (this.lamps.instanceColor) this.lamps.instanceColor.needsUpdate = true;
+    this.pools.visible = dusk && this.pools.count > 0;
+    this.pools.instanceMatrix.needsUpdate = true;
+    this.pools.computeBoundingSphere();
   }
 
   addCorner(model: ModelKey, road: THREE.Matrix4): void {

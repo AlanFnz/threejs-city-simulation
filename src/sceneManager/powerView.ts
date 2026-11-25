@@ -127,3 +127,34 @@ export class PowerView extends THREE.InstancedMesh {
     return true;
   }
 }
+
+// The final swatch in the shared model atlas is architectural glass.
+export function addWindowLighting(
+  mesh: THREE.InstancedMesh,
+  dusk: { value: number }
+): void {
+  mesh.geometry.setAttribute(
+    'windowPower',
+    new THREE.InstancedBufferAttribute(new Float32Array(mesh.count), 1)
+  );
+  const material = mesh.material as THREE.MeshLambertMaterial;
+  material.onBeforeCompile = (shader) => {
+    shader.uniforms.dusk = dusk;
+    shader.vertexShader =
+      'attribute float windowPower; varying float paneLight;\n' +
+      shader.vertexShader.replace(
+        '#include <uv_vertex>',
+        `#include <uv_vertex>
+      float glass = step(0.875, uv.x) * step(0.875, uv.y);
+      float floorBand = floor(position.y * 7.0 + 0.3);
+      float occupied = fract(sin(dot(instanceMatrix[3].xz, vec2(27.1, 61.7)) + floorBand * 8.3) * 1743.37);
+      paneLight = glass * windowPower * mix(0.4, 1.0, step(0.32, occupied));`
+      );
+    shader.fragmentShader =
+      'uniform float dusk; varying float paneLight;\n' +
+      shader.fragmentShader.replace(
+        '#include <emissivemap_fragment>',
+        '#include <emissivemap_fragment>\ntotalEmissiveRadiance += vec3(1.45, 0.72, 0.24) * paneLight * dusk;'
+      );
+  };
+}

@@ -1,3 +1,4 @@
+import type { LightingMode } from '../game/simulationDay';
 import type { SimulationSpeed } from '../game/simulationSpeed';
 
 export interface GoalProgressUiState {
@@ -144,6 +145,8 @@ export interface UiState {
   isExample: boolean;
   cityName: string;
   simulationDay: number;
+  minuteOfDay: number;
+  lightingMode: LightingMode;
   money: number;
   income: number;
   upkeep: number;
@@ -168,6 +171,7 @@ export interface UiState {
 }
 
 export interface UiActions {
+  setLightingMode(mode: LightingMode): void;
   renameCity(name: string): void;
   selectTool(toolId: string): void;
   focusMapTile(x: number, y: number): void;

@@ -67,10 +67,12 @@ describe('saveGame - serialize/deserialize', () => {
   it('stores normalized game metadata while remaining compatible with legacy saves', () => {
     const city = new City(10);
     const tracker = new MilestoneTracker(city);
-    const data = serialize(city, tracker, '  Harbor Heights  ', 18.9);
+    const data = serialize(city, tracker, '  Harbor Heights  ', 18.9, 1395, 'Night');
 
     expect(data.cityName).toBe('Harbor Heights');
     expect(data.simulationDay).toBe(18);
+    expect(data.minuteOfDay).toBe(1395);
+    expect(data.lightingMode).toBe('Night');
     expect(blankSave().cityName).toBe('My City');
     expect(blankSave().simulationDay).toBe(1);
 

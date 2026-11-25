@@ -174,6 +174,9 @@ describe('React UI shell', () => {
           onNewGame: noop,
           onActivityRead: noop,
           onHideHud: noop,
+          onSetLightingMode: noop,
+          lightingMode: 'Auto',
+          minuteOfDay: 540,
         })
       ),
       renderToStaticMarkup(
@@ -543,6 +546,8 @@ describe('UI store', () => {
     isExample: false,
     cityName: 'My City',
     simulationDay: 1,
+    lightingMode: 'Auto',
+    minuteOfDay: 540,
     money: 10000,
     income: 0,
     upkeep: 0,

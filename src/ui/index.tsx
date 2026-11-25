@@ -42,6 +42,9 @@ function Ui({ actions, store }: UiProps) {
       >
         <TopBar
           isExample={state.isExample}
+          onSetLightingMode={actions.setLightingMode}
+          lightingMode={state.lightingMode}
+          minuteOfDay={state.minuteOfDay}
           cityName={state.cityName}
           simulationDay={state.simulationDay}
           money={state.money}

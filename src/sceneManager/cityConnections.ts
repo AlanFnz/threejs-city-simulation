@@ -7,6 +7,7 @@ import { getSidewalkSurface } from '../assetManager/roadSurface';
 import { BUILDING_TYPE, type BuildingType } from '../city/building/constants';
 
 import { Footpaths, Pedestrians, type FrontDoor } from './pedestrians';
+import type { PowerView } from './powerView';
 
 interface ConnectionLot {
   abandoned: boolean;
@@ -96,11 +97,11 @@ export class CityConnections extends THREE.Group {
   readonly pedestrians = new Pedestrians();
   private furniture: StreetFurniture;
 
-  constructor(size: number) {
+  constructor(size: number, darkness: { value: number }) {
     super();
     this.paths.receiveShadow = true;
     this.wires.castShadow = true;
-    this.furniture = new StreetFurniture(size);
+    this.furniture = new StreetFurniture(size, darkness);
     this.add(this.paths, this.wires, this.furniture, this.pedestrians);
   }
 
@@ -108,6 +109,10 @@ export class CityConnections extends THREE.Group {
     const material = this.wires.material as THREE.MeshLambertMaterial;
     material.color.setHex(active ? 0xffe086 : 0x414840);
     material.emissive.setHex(active ? 0xc39338 : 0);
+  }
+
+  updateLights(power: PowerView, dusk: boolean): void {
+    this.furniture.updateLights(power, dusk);
   }
 
   updatePaths(
