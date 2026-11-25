@@ -159,23 +159,12 @@ export class City implements ICity {
     } else {
       this.powerGrid.unregisterPlant(coordinate);
     }
-    this.cascadePowerAccessChange(x, y);
+    this.cascadePowerAccessChange(x, y, true);
   }
 
-  /**
-   * Zones now conduct power to already-connected neighbors (see
-   * isPowerConductive/findReachablePlants), so a single change can ripple
-   * arbitrarily far across a chain of zones - a bounded-radius recompute
-   * around just the edited tile isn't enough. Instead this is an
-   * incremental worklist: seed it with the same bounded-radius
-   * neighborhood the edited tile could possibly affect, then only expand
-   * to a tile's neighbors when that tile's own power access actually
-   * flips - an unchanged tile can't newly affect what its neighbors see.
-   * Cost is proportional to the size of the network region that actually
-   * changes, not the total map size, so this stays cheap regardless of
-   * how large the city grid grows.
-   */
-  private cascadePowerAccessChange(startX: number, startY: number): void {
+  /** A cable edit can affect customers arbitrarily far along the same line.
+   * Check existing zones on topology changes. Ordinary lot edits start local. */
+  private cascadePowerAccessChange(startX: number, startY: number, networkChanged = false): void {
     const radius = CONFIG.ATTRIBUTES.POWER_ACCESS.SEARCH_DISTANCE;
     const queue: ITile[] = [];
     const queued = new Set<string>();
@@ -186,11 +175,23 @@ export class City implements ICity {
       }
     };
 
-    for (let dx = -radius; dx <= radius; dx++) {
-      for (let dy = -radius; dy <= radius; dy++) {
-        if (Math.abs(dx) + Math.abs(dy) > radius) continue;
-        enqueue(this.getTile(startX + dx, startY + dy));
+    const enqueueNearby = (x: number, y: number): void => {
+      for (let dx = -radius; dx <= radius; dx++) {
+        for (let dy = -radius; dy <= radius; dy++) {
+          if (Math.abs(dx) + Math.abs(dy) <= radius) enqueue(this.getTile(x + dx, y + dy));
+        }
       }
+    };
+    if (networkChanged) {
+      // Check current customers first, freeing any lost capacity before
+      // considering new assignments.
+      for (const powered of [true, false]) {
+        for (const column of this.tiles) for (const tile of column) {
+          if (this.isZoneType(tile.building?.type) && tile.powerAccess?.value === powered) enqueue(tile);
+        }
+      }
+    } else {
+      enqueueNearby(startX, startY);
     }
 
     while (queue.length > 0) {
@@ -202,7 +203,7 @@ export class City implements ICity {
       const before = tile.powerAccess.value;
       tile.powerAccess.recompute(this);
       if (tile.powerAccess.value !== before) {
-        this.getTileNeighbors(tile.x, tile.y).forEach(enqueue);
+        enqueueNearby(tile.x, tile.y);
       }
     }
   }

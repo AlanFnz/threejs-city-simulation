@@ -262,6 +262,22 @@ describe('power lines', () => {
     expect(zoneTile.powerAccess?.value).toBe(false);
   });
 
+  it('updates a distant customer and plant load when a long line is cut and repaired', () => {
+    const city = new City(30);
+    const plant = city.getTile(1, 1)!;
+    plant.placeBuilding(BUILDING_TYPE.POWER_PLANT);
+    for (let x = 2; x <= 18; x++) city.getTile(x, 1)!.placeBuilding(BUILDING_TYPE.POWER_LINE);
+    const house = city.getTile(18, 2)!;
+    house.placeBuilding(BUILDING_TYPE.RESIDENTIAL);
+    const link = city.getTile(3, 1)!;
+    link.removeBuilding();
+    expect(house.powerAccess?.value).toBe(false);
+    expect(city.getPowerPlantLoad(plant)).toBe(0);
+    link.placeBuilding(BUILDING_TYPE.POWER_LINE);
+    expect(house.powerAccess?.value).toBe(true);
+    expect(city.getPowerPlantLoad(plant)).toBe(1);
+  });
+
   it('lets a zone directly adjacent to a bare plant stay powered with no lines at all', () => {
     const city = new City(10);
     city.getTile(5, 5)!.placeBuilding(BUILDING_TYPE.POWER_PLANT);
