@@ -206,6 +206,7 @@ function ToolBar({
         }}
       >
         <img className="toolbar-icon" src={getIcon(button.icon)} alt="" />
+        <span className="dock-label">{label.toLowerCase()}</span>
         {button.shortcut && (
           <kbd className="tool-shortcut-badge">
             {formatShortcut(button.shortcut)}
@@ -248,6 +249,7 @@ function ToolBar({
           }}
         >
           <img className="toolbar-icon" src={getIcon(category.icon)} alt="" />
+          <span className="dock-label">{category.label}</span>
           <span className="category-indicator" aria-hidden="true" />
         </button>
 
@@ -364,17 +366,10 @@ function ToolBar({
         }${canAffordActiveTool ? '' : ' insufficient-funds'}`}
         aria-label={`${activeButton.uiText}. ${activeInstruction}. ${affordabilityText}`}
       >
-        <span className="active-tool-icon" aria-hidden="true">
-          <img src={getIcon(activeButton.icon)} alt="" />
-        </span>
-        <span className="active-tool-copy">
-          <small>Active tool</small>
-          <strong>{activeButton.uiText}</strong>
-        </span>
-        <span className="active-tool-detail">
-          <small>{activeInstruction}</small>
-          <strong>{affordabilityText}</strong>
-        </span>
+        <span className="tool-context-dot" aria-hidden="true" />
+        <strong>{activeButton.uiText.toLowerCase()}</strong>
+        <span>{activeInstruction}</span>
+        {isPlacementTool && <b>{affordabilityText}</b>}
       </div>
       {renderDirectTool(DIRECT_TOOL_IDS[0])}
       {renderCategory(TOOL_CATEGORIES[0])}

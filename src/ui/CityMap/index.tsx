@@ -19,7 +19,7 @@ interface CityMapProps {
 
 const MAP_SIZE = 128;
 const COLOR_BY_KIND: Record<CityMapTileKind, string> = {
-  empty: '#44763f',
+  empty: '#9bb76c',
   road: '#c2c9c7',
   residential: '#8bd37e',
   commercial: '#69b8e8',
@@ -261,13 +261,23 @@ function CityMap({ map, focus, onFocusTile }: CityMapProps) {
     context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
     context.clearRect(0, 0, MAP_SIZE, MAP_SIZE);
     const terrain = context.createLinearGradient(0, 0, MAP_SIZE, MAP_SIZE);
-    terrain.addColorStop(0, '#54864a');
+    terrain.addColorStop(0, '#b2c779');
     terrain.addColorStop(0.55, COLOR_BY_KIND.empty);
-    terrain.addColorStop(1, '#315f38');
+    terrain.addColorStop(1, '#94b267');
     context.fillStyle = terrain;
     context.fillRect(0, 0, MAP_SIZE, MAP_SIZE);
 
     const tileSize = MAP_SIZE / map.size;
+    context.beginPath();
+    for (let i = 1; i < map.size; i++) {
+      context.moveTo(i * tileSize, 0);
+      context.lineTo(i * tileSize, MAP_SIZE);
+      context.moveTo(0, i * tileSize);
+      context.lineTo(MAP_SIZE, i * tileSize);
+    }
+    context.lineWidth = 0.45;
+    context.strokeStyle = 'rgba(52, 84, 54, 0.22)';
+    context.stroke();
     map.tiles.forEach((kind, index) => {
       const x = Math.floor(index / map.size);
       const y = index % map.size;

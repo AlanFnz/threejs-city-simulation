@@ -14,7 +14,10 @@ function formatProgressValue(progress: GoalProgressUiState): string {
 }
 
 function GoalsPanel({ goals }: GoalsPanelProps) {
-  const disclosure = useDisclosurePreference('goals');
+  const disclosure = useDisclosurePreference(
+    'goals',
+    typeof window === 'undefined' || !window.matchMedia('(max-width: 680px)').matches
+  );
   const current = goals.milestones.find(
     (milestone) => milestone.status === 'current'
   );
@@ -46,7 +49,6 @@ function GoalsPanel({ goals }: GoalsPanelProps) {
       >
         <summary className="panel-heading goals-heading">
           <div>
-            <span className="panel-eyebrow">City progression</span>
             <h2>Milestones</h2>
           </div>
           <span className="goals-heading-meta">
@@ -76,7 +78,6 @@ function GoalsPanel({ goals }: GoalsPanelProps) {
               <span className="goal-card-label">Active objective</span>
               <h3>{current.title}</h3>
               <div className="current-goal-progress-copy">
-                <span>{current.progress.unit}</span>
                 <strong>{formatProgressValue(current.progress)}</strong>
               </div>
               <div
@@ -139,8 +140,8 @@ function GoalsPanel({ goals }: GoalsPanelProps) {
           )}
 
           {upcoming.length > 0 && (
-            <div className="goal-roadmap">
-              <span className="goal-card-label">On the horizon</span>
+            <details className="goal-roadmap">
+              <summary>Upcoming milestones</summary>
               <ol>
                 {upcoming.map((milestone) => {
                   const stage =
@@ -158,7 +159,7 @@ function GoalsPanel({ goals }: GoalsPanelProps) {
                   );
                 })}
               </ol>
-            </div>
+            </details>
           )}
         </div>
       </details>

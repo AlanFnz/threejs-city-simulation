@@ -109,6 +109,27 @@ function TopBar({
   return (
     <header id="ui-topbar" aria-label="City status">
       <div
+        id="ui-city-identity"
+        className="ui-topbar-items city-identity"
+      >
+        <span className="city-emblem" aria-hidden="true">
+          <i /><i /><i />
+        </span>
+        <div className="city-identity-copy">
+          <CityName name={cityName} onRename={onRenameCity} />
+          <span className={`city-status${isPaused ? ' paused' : ''}`}>
+            <span>Day {simulationDay.toLocaleString()}</span>
+            <span className="city-status-separator" aria-hidden="true">
+              ·
+            </span>
+            <span>
+              {isPaused ? 'Simulation paused' : `${simulationSpeed}× speed`}
+            </span>
+          </span>
+        </div>
+      </div>
+
+      <div
         id="ui-topbar-left-items"
         className="ui-topbar-items ui-topbar-left-items"
       >
@@ -162,22 +183,6 @@ function TopBar({
             />
           )}
         </div>
-      </div>
-
-      <div
-        id="ui-topbar-center-items"
-        className="ui-topbar-items ui-topbar-center-items"
-      >
-        <CityName name={cityName} onRename={onRenameCity} />
-        <span className={`city-status${isPaused ? ' paused' : ''}`}>
-          <span>Day {simulationDay.toLocaleString()}</span>
-          <span className="city-status-separator" aria-hidden="true">
-            ·
-          </span>
-          <span>
-            {isPaused ? 'Simulation paused' : `${simulationSpeed}× speed`}
-          </span>
-        </span>
       </div>
 
       <div
