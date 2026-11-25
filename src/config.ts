@@ -198,7 +198,7 @@ const CONFIG = {
     CONSTRUCTION_TIME: 3,
   },
   CITY: {
-    SIZE: 16,
+    SIZE: 32,
   },
   VEHICLE: {
     SPEED: 0.0005,
