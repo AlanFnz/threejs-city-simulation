@@ -130,7 +130,7 @@ export class SceneManager implements ISceneManager {
     this.scene = new THREE.Scene();
     this.sea = createSea(city.size);
     this.woodland = new Woodland(city.size);
-    this.connections = new CityConnections();
+    this.connections = new CityConnections(city.size);
     this.scene.add(this.sea, this.woodland, createCoast(city.size), this.connections);
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     this.gameWindow = document.getElementById('render-target') as HTMLElement;

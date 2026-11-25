@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
+import { StreetFurniture } from './streetFurniture';
 import { ModelKey } from '../assetManager/constants';
 import { ENTRANCES, SIDES } from '../assetManager/frontage';
 import { getSidewalkSurface } from '../assetManager/roadSurface';
@@ -90,12 +91,14 @@ export class CityConnections extends THREE.Group {
   );
   private sidewalks = new Map<ModelKey, THREE.Triangle[]>();
 
+  private furniture: StreetFurniture;
 
-  constructor() {
+  constructor(size: number) {
     super();
     this.paths.receiveShadow = true;
     this.wires.castShadow = true;
-    this.add(this.paths, this.wires);
+    this.furniture = new StreetFurniture(size);
+    this.add(this.paths, this.wires, this.furniture);
   }
 
   updatePaths(
@@ -103,6 +106,7 @@ export class CityConnections extends THREE.Group {
     getGeometry: (key: ModelKey) => THREE.BufferGeometry
   ): void {
     const vertices: number[] = [];
+    this.furniture.clearInstances();
     for (const column of lots)
       for (const road of column) {
         if (road?.buildingType !== BUILDING_TYPE.ROAD) continue;
@@ -111,6 +115,7 @@ export class CityConnections extends THREE.Group {
           surface = getSidewalkSurface(getGeometry(road.modelKey));
           this.sidewalks.set(road.modelKey, surface);
         }
+        this.furniture.addCorner(road.modelKey, road.matrix);
       }
     for (const [x, column] of lots.entries()) {
       for (const [y, lot] of column.entries()) {
@@ -148,6 +153,15 @@ export class CityConnections extends THREE.Group {
         const forward = end.clone().sub(start).normalize();
         end.addScaledVector(forward, 0.018);
         const halfWidth = pathWidth(lot.buildingType) / 2;
+        this.furniture.addFrontage(
+          lot.buildingType,
+          lot.modelKey,
+          lot.matrix,
+          start,
+          end,
+          halfWidth,
+          vertices
+        );
         const across = new THREE.Vector3(
           forward.z * halfWidth,
           0,
@@ -162,6 +176,7 @@ export class CityConnections extends THREE.Group {
         }
       }
     }
+    this.furniture.finishUpdate();
     if (!vertices.length) {
       replaceGeometry(this.paths, null);
       return;
