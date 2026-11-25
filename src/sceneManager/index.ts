@@ -1,6 +1,7 @@
 import CONFIG from '../config';
 import * as THREE from 'three';
 import { daylightAt } from './daylight';
+import { GroundShadowCamera } from './groundShadowCamera';
 import { STARTING_MINUTE } from '../game/simulationDay';
 import { PowerView, addWindowLighting } from './powerView';
 import { CityConnections } from './cityConnections';
@@ -261,34 +262,17 @@ export class SceneManager implements ISceneManager {
   }
 
   private setupLights(citySize: number): void {
-    // The shadow camera used to target the world origin, which is a corner
-    // of the grid (tiles span [0, citySize-1]) rather than its center. That
-    // was invisible at size 16 only because the old fixed frustum happened
-    // to be generous enough to reach past the map anyway; at real scale it
-    // clipped shadows well before the far edge. Centering the target on the
-    // grid (same point the camera and grid mesh use) and sizing a symmetric
-    // frustum around it scales correctly for any map size.
-    const center = citySize / 2 - 0.5;
-    // Half-extent of the ground's footprint as seen from the light: the
-    // frustum is axis-aligned to the light's own view direction, not the
-    // world, so it must fit the square's diagonal (citySize/sqrt(2)) rather
-    // than just its side, plus margin for tall buildings poking above y=0.
-    const halfExtent = citySize * 0.75;
-
-    const sun = this.sun;
+    const center = (citySize - 1) / 2;
     const reach = Math.max(16, citySize);
-    sun.position.set(center - reach, reach * 1.3, center - reach * 0.6);
+    // The map follows the island's ground axes; leave room for the beach.
+    const extent = citySize / 2 + 4;
+    const sun = this.sun;
     sun.target.position.set(center, 0, center);
     sun.castShadow = true;
-    sun.shadow.camera.left = -halfExtent;
-    sun.shadow.camera.right = halfExtent;
-    sun.shadow.camera.top = halfExtent;
-    sun.shadow.camera.bottom = -halfExtent;
-    const resolution = citySize > 32 ? 2048 : 1024;
+    sun.shadow.camera = new GroundShadowCamera(-extent, extent, extent, -extent, 1, reach * 3 + 8);
+    const resolution = Math.min(2048, this.renderer.capabilities.maxTextureSize);
     sun.shadow.mapSize.set(resolution, resolution);
-    sun.shadow.normalBias = 0.012;
-    sun.shadow.camera.near = 1;
-    sun.shadow.camera.far = reach * 3 + 8;
+    sun.shadow.normalBias = 0.004;
     this.root.add(sun);
     this.root.add(sun.target);
     this.root.add(this.sky);
