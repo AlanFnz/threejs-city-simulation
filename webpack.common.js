@@ -42,15 +42,8 @@ module.exports = {
       {
         // font files
         test: /\.(otf|ttf)$/i,
-        use: [
-          {
-            loader: 'file-loader',
-            options: {
-              outputPath: 'assets/fonts',
-              name: '[name].[ext]',
-            },
-          },
-        ],
+        type: 'asset/resource',
+        generator: { filename: 'assets/fonts/[name][ext]' },
       },
     ],
   },
