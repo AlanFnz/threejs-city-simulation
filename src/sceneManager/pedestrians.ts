@@ -25,6 +25,11 @@ function join(a: Node, b: Node): void {
 // Neighbouring triangles meet at the middle of their shared edge. This also
 // stitches the sidewalk meshes together at the seams between road tiles.
 export class Footpaths {
+  readonly shoppingWalks = new Map<
+    Node,
+    { shop: FrontDoor; points: THREE.Vector3[] }
+  >();
+  private landings = new Map<FrontDoor, Node>();
   private edges = new Map<string, Node>();
   private roads = new Map<THREE.Matrix4, Face[]>();
 
@@ -85,6 +90,38 @@ export class Footpaths {
     }
   }
 
+  private shopLanding(shop: FrontDoor, point: THREE.Vector3): Node {
+    let landing = this.landings.get(shop);
+    if (!landing) {
+      landing = { point, links: new Set() };
+      this.landings.set(shop, landing);
+      const curb = this.attach(shop.curb, shop.road);
+      if (curb) join(landing, curb);
+    }
+    return landing;
+  }
+
+  connectShops(a: FrontDoor, b: FrontDoor, points: THREE.Vector3[]): void {
+    const from = this.shopLanding(a, points[0]);
+    const to = this.shopLanding(b, points[points.length - 1]);
+    this.shoppingWalks.set(from, { shop: b, points: points.slice(1) });
+    this.shoppingWalks.set(to, {
+      shop: a,
+      points: points.slice(0, -1).reverse(),
+    });
+    let node = from;
+    for (const point of points.slice(1, -1)) {
+      const bend: Node = { point, links: new Set() };
+      join(node, bend);
+      node = bend;
+    }
+    join(node, to);
+  }
+
+  shopDestination(shop: FrontDoor): Node | undefined {
+    return this.landings.get(shop) ?? this.attach(shop.curb, shop.road);
+  }
+
   attach(point: THREE.Vector3, road: THREE.Matrix4): Node | undefined {
     let nearest: Node | undefined;
     let distance = Infinity;
@@ -105,10 +142,10 @@ export class Footpaths {
   }
 }
 
-function findShop(
+function findShop<T>(
   start: Node,
-  shops: Map<Node, FrontDoor>
-): { shop: FrontDoor; points: THREE.Vector3[] } | undefined {
+  shops: Map<Node, T>
+): { shop: T; points: THREE.Vector3[] } | undefined {
   const queue = [start],
     previous = new Map<Node, Node | null>([[start, null]]);
   for (let i = 0; i < queue.length; i++) {
@@ -251,14 +288,26 @@ export class Pedestrians extends THREE.Group {
   ): void {
     const shops = new Map<Node, FrontDoor>();
     for (const shop of stores) {
-      const node = paths.attach(shop.curb, shop.road);
+      const node = paths.shopDestination(shop);
       if (node) shops.set(node, shop);
     }
     const trips: { points: THREE.Vector3[]; shop: FrontDoor }[] = [];
     for (const home of homes) {
       if (!shops.size || trips.length === this.walkers.length) break;
       const start = paths.attach(home.curb, home.road);
-      const trip = start && findShop(start, shops);
+      if (!start) continue;
+      // One neighbour browses both shopfronts before sitting down. Others
+      // take their normal route to an available bench.
+      const stroll =
+        trips.length === 0 && paths.shoppingWalks.size > 0
+          ? findShop(start, paths.shoppingWalks)
+          : undefined;
+      const trip = stroll
+        ? {
+            shop: stroll.shop.shop,
+            points: [...stroll.points, ...stroll.shop.points],
+          }
+        : findShop(start, shops);
       if (!trip) continue;
       const stop = trip.shop.stop!;
       trips.push({

@@ -7,6 +7,7 @@ import { getSidewalkSurface } from '../assetManager/roadSurface';
 import { BUILDING_TYPE, type BuildingType } from '../city/building/constants';
 
 import { Footpaths, Pedestrians, type FrontDoor } from './pedestrians';
+import { Promenade, type ShopFront } from './promenade';
 import type { PowerView } from './powerView';
 
 interface ConnectionLot {
@@ -96,13 +97,20 @@ export class CityConnections extends THREE.Group {
 
   readonly pedestrians = new Pedestrians();
   private furniture: StreetFurniture;
+  private promenade = new Promenade();
 
   constructor(size: number, darkness: { value: number }) {
     super();
     this.paths.receiveShadow = true;
     this.wires.castShadow = true;
     this.furniture = new StreetFurniture(size, darkness);
-    this.add(this.paths, this.wires, this.furniture, this.pedestrians);
+    this.add(
+      this.paths,
+      this.wires,
+      this.furniture,
+      this.promenade,
+      this.pedestrians
+    );
   }
 
   setElectricView(active: boolean): void {
@@ -122,7 +130,7 @@ export class CityConnections extends THREE.Group {
     const vertices: number[] = [];
     const paths = new Footpaths();
     const homes: FrontDoor[] = [],
-      shops: FrontDoor[] = [];
+      shops: ShopFront[] = [];
     this.furniture.clearInstances();
     for (const column of lots)
       for (const road of column) {
@@ -184,7 +192,15 @@ export class CityConnections extends THREE.Group {
           const frontage = { door: start, curb: end, road: road.matrix, stop };
           if (lot.buildingType === BUILDING_TYPE.RESIDENTIAL)
             homes.push(frontage);
-          if (stop) shops.push(frontage);
+          if (stop)
+            shops.push({
+              ...frontage,
+              x,
+              z: y,
+              facing: lot.facing,
+              matrix: lot.matrix,
+              modelKey: lot.modelKey,
+            });
         }
         const across = new THREE.Vector3(
           forward.z * halfWidth,
@@ -201,6 +217,11 @@ export class CityConnections extends THREE.Group {
       }
     }
     this.furniture.finishUpdate();
+    this.promenade.rebuild(
+      shops,
+      (x, z) => lots[x]?.[z]?.buildingType === BUILDING_TYPE.ROAD,
+      (a, b, points) => paths.connectShops(a, b, points)
+    );
     this.pedestrians.updateRoutes(paths, homes, shops);
     if (!vertices.length) {
       replaceGeometry(this.paths, null);
