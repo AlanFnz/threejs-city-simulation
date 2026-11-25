@@ -122,7 +122,8 @@ export class SceneManager implements ISceneManager {
   constructor(
     city: ICity,
     onLoad: () => void,
-    onCameraFocusChanged: (focus: CameraFocus) => void = () => undefined
+    onCameraFocusChanged: (focus: CameraFocus) => void = () => undefined,
+    private playbackSpeed: () => number = () => 1
   ) {
     this.renderer = new THREE.WebGLRenderer({
       antialias: true,
@@ -597,6 +598,7 @@ export class SceneManager implements ISceneManager {
       this.lastFrameTime === null ? 0 : (time - this.lastFrameTime) / 1000;
     this.lastFrameTime = time;
     this.cameraManager.update(deltaSeconds);
+    this.connections.pedestrians.advance(this.reduceMotion.matches ? 0 : Math.min(deltaSeconds,0.15) * this.playbackSpeed());
     this.vehicleGraph.updateVehicles();
     this.sea.material.uniforms.time.value = this.reduceMotion.matches ? 0 : time / 1000;
     this.renderer.render(this.scene, this.cameraManager.camera);

@@ -6,8 +6,10 @@ import { ENTRANCES, SIDES } from '../assetManager/frontage';
 import { getSidewalkSurface } from '../assetManager/roadSurface';
 import { BUILDING_TYPE, type BuildingType } from '../city/building/constants';
 
+import { Footpaths, Pedestrians, type FrontDoor } from './pedestrians';
 
 interface ConnectionLot {
+  abandoned: boolean;
   modelKey: ModelKey;
   matrix: THREE.Matrix4;
   buildingType: BuildingType;
@@ -91,6 +93,7 @@ export class CityConnections extends THREE.Group {
   );
   private sidewalks = new Map<ModelKey, THREE.Triangle[]>();
 
+  readonly pedestrians = new Pedestrians();
   private furniture: StreetFurniture;
 
   constructor(size: number) {
@@ -98,7 +101,7 @@ export class CityConnections extends THREE.Group {
     this.paths.receiveShadow = true;
     this.wires.castShadow = true;
     this.furniture = new StreetFurniture(size);
-    this.add(this.paths, this.wires, this.furniture);
+    this.add(this.paths, this.wires, this.furniture, this.pedestrians);
   }
 
   updatePaths(
@@ -106,6 +109,9 @@ export class CityConnections extends THREE.Group {
     getGeometry: (key: ModelKey) => THREE.BufferGeometry
   ): void {
     const vertices: number[] = [];
+    const paths = new Footpaths();
+    const homes: FrontDoor[] = [],
+      shops: FrontDoor[] = [];
     this.furniture.clearInstances();
     for (const column of lots)
       for (const road of column) {
@@ -115,6 +121,7 @@ export class CityConnections extends THREE.Group {
           surface = getSidewalkSurface(getGeometry(road.modelKey));
           this.sidewalks.set(road.modelKey, surface);
         }
+        paths.addRoad(road.matrix, road.modelKey, surface);
         this.furniture.addCorner(road.modelKey, road.matrix);
       }
     for (const [x, column] of lots.entries()) {
@@ -153,7 +160,7 @@ export class CityConnections extends THREE.Group {
         const forward = end.clone().sub(start).normalize();
         end.addScaledVector(forward, 0.018);
         const halfWidth = pathWidth(lot.buildingType) / 2;
-        this.furniture.addFrontage(
+        const stop = this.furniture.addFrontage(
           lot.buildingType,
           lot.modelKey,
           lot.matrix,
@@ -162,6 +169,12 @@ export class CityConnections extends THREE.Group {
           halfWidth,
           vertices
         );
+        if (!lot.abandoned && lot.modelKey !== ModelKey.UNDER_CONSTRUCTION) {
+          const frontage = { door: start, curb: end, road: road.matrix, stop };
+          if (lot.buildingType === BUILDING_TYPE.RESIDENTIAL)
+            homes.push(frontage);
+          if (stop) shops.push(frontage);
+        }
         const across = new THREE.Vector3(
           forward.z * halfWidth,
           0,
@@ -177,6 +190,7 @@ export class CityConnections extends THREE.Group {
       }
     }
     this.furniture.finishUpdate();
+    this.pedestrians.updateRoutes(paths, homes, shops);
     if (!vertices.length) {
       replaceGeometry(this.paths, null);
       return;

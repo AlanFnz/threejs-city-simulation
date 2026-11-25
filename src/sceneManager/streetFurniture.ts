@@ -4,6 +4,7 @@ import { ModelKey } from '../assetManager/constants';
 import { BUILDING_TYPE, type BuildingType } from '../city/building/constants';
 import { coloredShape } from './coast';
 
+import type { BenchStop } from './pedestrians';
 
 const IRON = 0x31483f;
 const BRASS = 0xc39752;
@@ -165,7 +166,7 @@ export class StreetFurniture extends THREE.Group {
     end: THREE.Vector3,
     halfWidth: number,
     paving: number[]
-  ): void {
+  ): BenchStop | undefined {
     if (
       model === ModelKey.UNDER_CONSTRUCTION ||
       (type !== BUILDING_TYPE.INDUSTRIAL && type !== BUILDING_TYPE.COMMERCIAL)
@@ -204,6 +205,13 @@ export class StreetFurniture extends THREE.Group {
         const point = corners[index];
         paving.push(point.x, point.y, point.z);
       }
+      return {
+        approach: new THREE.Vector3(pathX, start.y, z).applyMatrix4(lot),
+        seat: new THREE.Vector3(x, start.y + 0.002, z + 0.003).applyMatrix4(
+          lot
+        ),
+        yaw: Math.atan2(lot.elements[8], lot.elements[10]),
+      };
     }
   }
 }

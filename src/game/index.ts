@@ -88,7 +88,8 @@ export class Game implements IGame {
         1000
       );
     },
-    (focus) => this.updateCameraFocus(focus)
+    (focus) => this.updateCameraFocus(focus),
+    () => this.isPaused ? 0 : this.simulationSpeed
   );
   private unsubscribers: Unsubscribe[] = [];
   private tools: Record<string, Tool> = createTools();
