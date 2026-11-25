@@ -104,6 +104,12 @@ export class CityConnections extends THREE.Group {
     this.add(this.paths, this.wires, this.furniture, this.pedestrians);
   }
 
+  setElectricView(active: boolean): void {
+    const material = this.wires.material as THREE.MeshLambertMaterial;
+    material.color.setHex(active ? 0xffe086 : 0x414840);
+    material.emissive.setHex(active ? 0xc39338 : 0);
+  }
+
   updatePaths(
     lots: Lots,
     getGeometry: (key: ModelKey) => THREE.BufferGeometry

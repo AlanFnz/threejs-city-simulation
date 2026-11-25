@@ -3623,3 +3623,7 @@ details:not([open]) .panel-collapse-indicator {
     animation-duration: 0.01ms !important;
   }
 }
+
+.power-key { display: inline-flex; align-items: center; gap: 4px; }
+.power-key i { width: 8px; height: 8px; border-radius: 50%; background: #75edc5; }
+.power-key i:nth-of-type(2) { background: #ff975e; margin-left: 4px; }

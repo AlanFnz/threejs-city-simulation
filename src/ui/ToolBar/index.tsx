@@ -368,7 +368,9 @@ function ToolBar({
       >
         <span className="tool-context-dot" aria-hidden="true" />
         <strong>{activeButton.uiText.toLowerCase()}</strong>
-        <span>{activeInstruction}</span>
+        {(activeToolId === 'POWER_PLANT' || activeToolId === 'POWER_LINE')
+          ? <span className="power-key"><i />Powered<i />Unpowered</span>
+          : <span>{activeInstruction}</span>}
         {isPlacementTool && <b>{affordabilityText}</b>}
       </div>
       {renderDirectTool(DIRECT_TOOL_IDS[0])}

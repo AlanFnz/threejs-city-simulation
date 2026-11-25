@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { PowerView } from './powerView';
 import { CityConnections } from './cityConnections';
 import { getBuildingFacing, isPowerNode } from '../assetManager/frontage';
 import { Woodland } from './woodland';
@@ -97,6 +98,8 @@ export class SceneManager implements ISceneManager {
   private terrainMesh: THREE.InstancedMesh | null = null;
   private terrainTints: THREE.Color[] = [];
   private woodland: Woodland;
+  private powerView: PowerView;
+  private grid!: THREE.Mesh<THREE.BoxGeometry, THREE.MeshBasicMaterial>;
   private connections: CityConnections;
   private sea: ReturnType<typeof createSea>;
   private reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
@@ -123,6 +126,7 @@ export class SceneManager implements ISceneManager {
     city: ICity,
     onLoad: () => void,
     onCameraFocusChanged: (focus: CameraFocus) => void = () => undefined,
+    private activeTool: () => string | null = () => 'SELECT',
     private playbackSpeed: () => number = () => 1
   ) {
     this.renderer = new THREE.WebGLRenderer({
@@ -131,8 +135,9 @@ export class SceneManager implements ISceneManager {
     this.scene = new THREE.Scene();
     this.sea = createSea(city.size);
     this.woodland = new Woodland(city.size);
+    this.powerView = new PowerView(city.size);
     this.connections = new CityConnections(city.size);
-    this.scene.add(this.sea, this.woodland, createCoast(city.size), this.connections);
+    this.scene.add(this.sea, this.woodland, createCoast(city.size), this.connections, this.powerView);
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     this.gameWindow = document.getElementById('render-target') as HTMLElement;
     this.assetManager = new AssetManager(() => {
@@ -299,6 +304,8 @@ export class SceneManager implements ISceneManager {
       new THREE.BoxGeometry(city.size, 0.1, city.size),
       gridMaterial
     );
+    this.grid = grid;
+    gridMaterial.opacity = 0;
     grid.position.set(city.size / 2 - 0.5, -0.04, city.size / 2 - 0.5);
     grid.userData.nonInteractive = true;
     this.root.add(grid);
@@ -579,6 +586,7 @@ export class SceneManager implements ISceneManager {
     }
     if (wiresChanged) this.connections.updateWires(this.buildingSlots);
 
+    this.powerView.updateSupply(city);
     if (terrainMatrixChanged && this.terrainMesh) {
       this.terrainMesh.instanceMatrix.needsUpdate = true;
     }
@@ -598,6 +606,16 @@ export class SceneManager implements ISceneManager {
       this.lastFrameTime === null ? 0 : (time - this.lastFrameTime) / 1000;
     this.lastFrameTime = time;
     this.cameraManager.update(deltaSeconds);
+    const tool = this.activeTool();
+    const electric = tool === 'POWER_PLANT' || tool === 'POWER_LINE';
+    if (this.powerView.visible !== electric) {
+      this.powerView.visible = electric;
+      this.connections.setElectricView(electric);
+    }
+    const opacity = tool && tool !== 'SELECT' ? 0.26 : 0;
+    this.grid.material.opacity = this.reduceMotion.matches ? opacity :
+      THREE.MathUtils.damp(this.grid.material.opacity,opacity,10,Math.min(deltaSeconds,0.2));
+    this.grid.visible = this.grid.material.opacity > 0.002;
     this.connections.pedestrians.advance(this.reduceMotion.matches ? 0 : Math.min(deltaSeconds,0.15) * this.playbackSpeed());
     this.vehicleGraph.updateVehicles();
     this.sea.material.uniforms.time.value = this.reduceMotion.matches ? 0 : time / 1000;

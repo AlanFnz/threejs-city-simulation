@@ -89,6 +89,7 @@ export class Game implements IGame {
       );
     },
     (focus) => this.updateCameraFocus(focus),
+    () => this.activeToolId,
     () => this.isPaused ? 0 : this.simulationSpeed
   );
   private unsubscribers: Unsubscribe[] = [];
