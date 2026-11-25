@@ -18,6 +18,7 @@ import {
   deserialize,
   SaveGameV1,
 } from './saveGame';
+import { PUERTO_CLARO, puertoClaroSave } from './saveGame/puertoClaro';
 import { createInspectorUiState } from './inspector';
 import { createGoalsUiState } from './goals';
 import {
@@ -69,6 +70,8 @@ export class Game implements IGame {
   simulationSpeed: SimulationSpeed = 1;
   focusedObject: ITile | null = null;
   lastMove: number = Date.now();
+  private readonly isExample = new URLSearchParams(window.location.search).get('city') === PUERTO_CLARO;
+  private readonly saveKey = this.isExample ? SAVE_KEY + '/' + PUERTO_CLARO : SAVE_KEY;
   private tickCount: number = 0;
   private startTime: number = Date.now();
   private city: ICity = new City(CONFIG.CITY.SIZE);
@@ -81,7 +84,7 @@ export class Game implements IGame {
   private sceneManager: ISceneManager = new SceneManager(
     this.city,
     () => {
-      this.loadGame();
+      if (!this.loadGame() && this.isExample) this.startExampleCity();
       this.sceneManager.start();
       this.simulationInterval = setInterval(
         this.runScheduledSteps.bind(this),
@@ -239,7 +242,7 @@ export class Game implements IGame {
       this.cityName,
       this.simulationDay
     );
-    localStorage.setItem(SAVE_KEY, JSON.stringify(data));
+    localStorage.setItem(this.saveKey, JSON.stringify(data));
   }
 
   private saveGameWithFeedback(): void {
@@ -252,7 +255,7 @@ export class Game implements IGame {
   }
 
   private loadGameWithFeedback(): void {
-    const hadSave = localStorage.getItem(SAVE_KEY) !== null;
+    const hadSave = localStorage.getItem(this.saveKey) !== null;
     const loaded = this.loadGame();
     this.ui.showNotification(
       loaded
@@ -274,7 +277,7 @@ export class Game implements IGame {
   /** Returns whether a save was found and loaded - never throws, so a
    * corrupt or missing save just leaves the current (fresh) city as-is. */
   loadGame(): boolean {
-    const raw = localStorage.getItem(SAVE_KEY);
+    const raw = localStorage.getItem(this.saveKey);
     if (!raw) return false;
 
     let data: SaveGameV1;
@@ -285,24 +288,36 @@ export class Game implements IGame {
       return false;
     }
 
+    this.restoreCity(data);
+    return true;
+  }
+
+  private restoreCity(data: SaveGameV1): void {
     this.cityName = normalizeCityName(data.cityName);
     this.simulationDay = normalizeSimulationDay(data.simulationDay);
     deserialize(data, this.city, this.milestoneTracker);
+    this.selectTool(TOOLBAR_BUTTONS.SELECT.id);
     this.onGameStateReplaced();
-    return true;
+    this.sceneManager.cameraManager.frameLots(data.tiles);
+  }
+
+  private startExampleCity(): void {
+    this.restoreCity(puertoClaroSave(this.city.size));
+    this.saveGame();
   }
 
   /** The one irreversible action here - confirm before wiping the save. */
   newGame(): boolean {
-    if (!window.confirm('Start a new game? This clears your current city.')) {
-      return false;
+    const question = this.isExample
+      ? 'Restore the original Puerto Claro? This replaces your changes to the example city.'
+      : 'Start a new game? This clears your current city.';
+    if (!window.confirm(question)) return false;
+    if (this.isExample) {
+      this.startExampleCity();
+    } else {
+      localStorage.removeItem(this.saveKey);
+      this.restoreCity(blankSave());
     }
-    localStorage.removeItem(SAVE_KEY);
-    const freshSave = blankSave();
-    this.cityName = normalizeCityName(freshSave.cityName);
-    this.simulationDay = normalizeSimulationDay(freshSave.simulationDay);
-    deserialize(freshSave, this.city, this.milestoneTracker);
-    this.onGameStateReplaced();
     return true;
   }
 
@@ -310,8 +325,8 @@ export class Game implements IGame {
     if (!this.newGame()) return;
     this.ui.showNotification({
       tone: 'success',
-      title: 'New city started',
-      message: 'A fresh map is ready for your plans.',
+      title: this.isExample ? 'Puerto Claro restored' : 'New city started',
+      message: this.isExample ? 'The original neighborhood is ready to play.' : 'A fresh map is ready for your plans.',
     });
   }
 
@@ -584,6 +599,7 @@ export class Game implements IGame {
 
   private getInitialUiState(): UiState {
     return {
+      isExample: this.isExample,
       cityName: this.cityName,
       simulationDay: this.simulationDay,
       money: this.city.money,

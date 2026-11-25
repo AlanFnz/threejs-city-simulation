@@ -141,6 +141,7 @@ export interface CityMapFocusUiState {
 }
 
 export interface UiState {
+  isExample: boolean;
   cityName: string;
   simulationDay: number;
   money: number;

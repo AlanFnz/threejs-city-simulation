@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import personIcon from '../../assetManager/icons/person.png';
+import { PUERTO_CLARO } from '../../game/saveGame/puertoClaro';
 import { BudgetPanel } from './BudgetPanel';
 import { CityName } from './CityName';
 import type { SimulationSpeed } from '../../game/simulationSpeed';
@@ -11,6 +12,7 @@ import { ActivityLog } from './ActivityLog';
 type OpenTopBarPanel = 'budget' | 'population' | 'menu' | null;
 
 interface TopBarProps {
+  isExample: boolean;
   cityName: string;
   simulationDay: number;
   money: number;
@@ -32,6 +34,7 @@ interface TopBarProps {
 }
 
 function TopBar({
+  isExample,
   cityName,
   simulationDay,
   money,
@@ -294,6 +297,13 @@ function TopBar({
                     <small>Restore your latest save</small>
                   </span>
                 </button>
+                {!isExample && (
+                  <a href={`?city=${PUERTO_CLARO}`} target="_blank" rel="noopener" role="menuitem"
+                    onClick={() => setOpenPanel(null)}>
+                    <span className="city-menu-icon" aria-hidden="true">↗</span>
+                    <span><strong>Open Puerto Claro</strong><small>Play the example city in a new tab</small></span>
+                  </a>
+                )}
                 <button
                   id="hide-hud-button"
                   type="button"
@@ -319,8 +329,8 @@ function TopBar({
                     +
                   </span>
                   <span>
-                    <strong>Start a new city</strong>
-                    <small>Clear this city and begin again</small>
+                    <strong>{isExample ? 'Reset Puerto Claro' : 'Start a new city'}</strong>
+                    <small>{isExample ? 'Restore the original example city' : 'Clear this city and begin again'}</small>
                   </span>
                 </button>
               </div>

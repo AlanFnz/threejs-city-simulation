@@ -2,7 +2,7 @@
 
 Agent-agnostic contributor guide (works as CLAUDE.md, AGENTS.md, .cursorrules source, or Copilot instructions).
 
-SimCity-style city builder rendered with Three.js. TypeScript, React for the HUD, webpack for bundling. Single-player, browser-only, no backend. Persistence is local-only: one save slot in `localStorage` (`src/game/saveGame`).
+SimCity-style city builder rendered with Three.js. TypeScript, React for the HUD, webpack for bundling. Single-player, browser-only, no backend. Persistence is local-only: one save slot per city in `localStorage` (`src/game/saveGame`).
 
 ## Commands
 
@@ -20,7 +20,7 @@ TypeScript is `strict: true` - keep it that way. Run typecheck, lint, and test b
 
 ## Architecture in one paragraph
 
-`src/main.ts` instantiates `Game` (`src/game`). `Game` owns two worlds that must stay in sync: the **simulation model** (`City` → `Tile[][]` → `Building` + attribute objects, pure data, no Three.js) and the **render layer** (`SceneManager` + `AssetManager` + `CameraManager`, all Three.js). A single `setInterval(step, 1000)` ticks the sim once per second; each `step()` calls `city.simulate()` (every tile → building → attributes, economy accrual, `MilestoneTracker`/`RandomEventsSystem` checks), then `sceneManager.update(city)` which diff-rebuilds meshes flagged `isMeshOutOfDate`. Rendering runs independently at display rate via `renderer.setAnimationLoop`. Vehicles live in a separate `VehicleGraph` (a `THREE.Group` holding a node/edge network built from road tiles) and update every frame, not every sim tick. Cross-cutting state changes (a building placed, a citizen moving in, a zone leveling up, money changing) publish through a typed `EventBus` (`src/events`) rather than being read by polling. Game tools (select/bulldoze/zone/road/civic) implement a common `Tool` interface (`src/game/tools`) so `Game` dispatches through one path instead of an if/else chain. Every placement costs money and every tile of infrastructure accrues upkeep (`CONFIG.ECONOMY`); power plants and civic buildings (fire/police/hospital/school) each cover a bounded radius and gate progression through `MilestoneTracker`; the whole city state (economy, zones, citizens, milestones, zone level caps) round-trips through one `localStorage` save slot (`src/game/saveGame`).
+`src/main.ts` instantiates `Game` (`src/game`). `Game` owns two worlds that must stay in sync: the **simulation model** (`City` → `Tile[][]` → `Building` + attribute objects, pure data, no Three.js) and the **render layer** (`SceneManager` + `AssetManager` + `CameraManager`, all Three.js). A single `setInterval(step, 1000)` ticks the sim once per second; each `step()` calls `city.simulate()` (every tile → building → attributes, economy accrual, `MilestoneTracker`/`RandomEventsSystem` checks), then `sceneManager.update(city)` which diff-rebuilds meshes flagged `isMeshOutOfDate`. Rendering runs independently at display rate via `renderer.setAnimationLoop`. Vehicles live in a separate `VehicleGraph` (a `THREE.Group` holding a node/edge network built from road tiles) and update every frame, not every sim tick. Cross-cutting state changes (a building placed, a citizen moving in, a zone leveling up, money changing) publish through a typed `EventBus` (`src/events`) rather than being read by polling. Game tools (select/bulldoze/zone/road/civic) implement a common `Tool` interface (`src/game/tools`) so `Game` dispatches through one path instead of an if/else chain. Every placement costs money and every tile of infrastructure accrues upkeep (`CONFIG.ECONOMY`); power plants and civic buildings (fire/police/hospital/school) each cover a bounded radius and gate progression through `MilestoneTracker`; the whole city state (economy, zones, citizens, milestones, zone level caps) round-trips through the active city’s `localStorage` save slot (`src/game/saveGame`).
 
 See `ARCHITECTURE.md` for the full deep dive, data-flow diagrams, and extension recipes.
 
@@ -36,7 +36,7 @@ src/
     tools/             Tool interface + SelectTool/BulldozeTool/BuildingTool (roads/civic buildings are BuildingTool(BUILDING_TYPE.X))
     milestones/        MilestoneTracker - watches population/money/developedZoneCount, applies cash/upkeepDiscount/zoneLevelCap/unlockTool rewards once each
     randomEvents/      RandomEventsSystem - per-tick windfall/fire/layoffs rolls
-    saveGame/          serialize/deserialize - single localStorage save slot, replays through public APIs (placeBuilding, development.state, jobs.hire)
+    saveGame/          serialize/deserialize - personal and Puerto Claro example slots, replays through public APIs (placeBuilding, development.state, jobs.hire)
   city/                simulation model (NO Three.js imports allowed here, except zone.ts's DEG2RAD)
     index.ts           City: tile grid, BFS findTile, population getter, economy (money/upkeep/netIncome), PowerGrid, civic-coverage recompute
     powerGrid.ts        PowerGrid: tracks plant capacity/load and tile→plant assignment (first-fit tryAssign)

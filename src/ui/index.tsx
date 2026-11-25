@@ -41,6 +41,7 @@ function Ui({ actions, store }: UiProps) {
         aria-hidden={state.isHudHidden}
       >
         <TopBar
+          isExample={state.isExample}
           cityName={state.cityName}
           simulationDay={state.simulationDay}
           money={state.money}

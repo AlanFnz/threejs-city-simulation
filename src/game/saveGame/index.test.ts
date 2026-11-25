@@ -11,6 +11,7 @@ import { MilestoneTracker } from '../milestones';
 import { cityEvents } from '../../events';
 import { serialize, deserialize } from '.';
 import { blankSave } from './constants';
+import { puertoClaroSave } from './puertoClaro';
 import { normalizeCityName } from '../cityName';
 
 describe('saveGame - serialize/deserialize', () => {
@@ -20,6 +21,27 @@ describe('saveGame - serialize/deserialize', () => {
 
   afterEach(() => {
     Object.assign(ZONE_LEVEL_CAPS, DEFAULT_ZONE_LEVEL_CAPS);
+  });
+
+  it('opens Puerto Claro with connected, developed lots and a working economy', () => {
+    const city = new City(32);
+    const tracker = new MilestoneTracker(city);
+    const example = puertoClaroSave(city.size);
+    deserialize(example, city, tracker);
+
+    expect(city.population).toBeGreaterThanOrEqual(34);
+    expect(city.netIncome).toBeGreaterThan(0);
+    for (const saved of example.tiles) {
+      const tile = city.getTile(saved.x, saved.y)!;
+      expect(tile.building?.type).toBe(saved.buildingType);
+      if (saved.developmentState === DevelopmentState.DEVELOPED) {
+        expect(tile.roadAccess?.value).toBe(true);
+        expect(tile.powerAccess?.value).toBe(true);
+      }
+    }
+    expect(tracker.isUnlocked(BUILDING_TYPE.POLICE_STATION)).toBe(true);
+    tracker.dispose();
+    city.dispose();
   });
 
   it('round-trips money, upkeep discount, and zone level caps', () => {

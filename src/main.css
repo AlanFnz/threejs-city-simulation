@@ -843,7 +843,8 @@ button:focus-visible {
   padding: 7px;
 }
 
-.city-menu-actions button {
+.city-menu-actions :is(button, a) {
+  text-decoration: none;
   width: 100%;
   padding: 9px;
   display: flex;
@@ -861,8 +862,8 @@ button:focus-visible {
     background-color var(--hud-transition);
 }
 
-.city-menu-actions button:hover,
-.city-menu-actions button:focus-visible {
+.city-menu-actions :is(button, a):hover,
+.city-menu-actions :is(button, a):focus-visible {
   color: var(--hud-text);
   border-color: var(--hud-line);
   background: var(--hud-bg-soft);
@@ -882,7 +883,7 @@ button:focus-visible {
   background: rgba(211, 186, 118, 0.08);
 }
 
-.city-menu-actions button > span:last-child {
+.city-menu-actions :is(button, a) > span:last-child {
   min-width: 0;
   display: flex;
   flex-direction: column;

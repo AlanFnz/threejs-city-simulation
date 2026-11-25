@@ -24,6 +24,7 @@ export interface ICameraManager {
   camera: THREE.OrthographicCamera;
   getFocus(): CameraFocus;
   focusOnTile(x: number, y: number): void;
+  frameLots(lots: readonly CameraFocus[]): void;
   update(deltaSeconds: number): void;
   onKeyDown(event: KeyboardEvent): void;
   onKeyUp(event: KeyboardEvent): void;
@@ -111,6 +112,24 @@ export class CameraManager implements ICameraManager {
       Math.cos(this.cameraElevation * DEG2RAD);
     this.camera.position.add(this.cameraOrigin);
     this.camera.lookAt(this.cameraOrigin);
+  }
+
+  public frameLots(lots: readonly CameraFocus[]): void {
+    if (!lots.length) return;
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    for (const { x, y } of lots) {
+      minX = Math.min(minX, x);
+      maxX = Math.max(maxX, x);
+      minY = Math.min(minY, y);
+      maxY = Math.max(maxY, y);
+    }
+    const span = Math.hypot(maxX - minX + 1, maxY - minY + 1);
+    const aspect = (this.camera.right - this.camera.left) / CAMERA_SIZE;
+    const height = Math.max(10, span + 2, (span + 4) / aspect);
+    this.targetCameraRadius = this.cameraRadius = THREE.MathUtils.clamp(
+      CAMERA_SIZE / height, this.minCameraRadius, MAX_CAMERA_RADIUS
+    );
+    this.focusOnTile((minX + maxX) / 2, (minY + maxY) / 2);
   }
 
   public focusOnTile(x: number, y: number): void {

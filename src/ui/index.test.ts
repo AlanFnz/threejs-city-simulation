@@ -155,6 +155,7 @@ describe('React UI shell', () => {
     const markup = [
       renderToStaticMarkup(
         createElement(TopBar, {
+          isExample: false,
           cityName: 'Harbor Heights',
           simulationDay: 27,
           money: 10000,
@@ -539,6 +540,7 @@ describe('React UI shell', () => {
 
 describe('UI store', () => {
   const initialState: UiState = {
+    isExample: false,
     cityName: 'My City',
     simulationDay: 1,
     money: 10000,
