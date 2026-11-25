@@ -71,11 +71,16 @@ export class CameraManager implements ICameraManager {
     const center = citySize / 2 - 0.5;
     this.cameraOrigin = new THREE.Vector3(center, 0, center);
     this.minCameraRadius = MIN_CAMERA_RADIUS_AT_SIZE_16 * (16 / citySize);
-    // Starting zoom shows the whole map plus a small margin, same as the
-    // original tuning (size 16, zoom 0.5, visible extent 20).
-    this.cameraRadius = Math.min(
-      MAX_CAMERA_RADIUS,
-      Math.max(this.minCameraRadius, CAMERA_SIZE / (citySize + 4))
+    // Fit the island's diagonal and leave room around its shoreline.
+    const islandSpan = citySize + 6;
+    const visibleHeight = Math.max(
+      islandSpan * 1.23,
+      (islandSpan * Math.SQRT2) / aspect
+    );
+    this.cameraRadius = THREE.MathUtils.clamp(
+      CAMERA_SIZE / visibleHeight,
+      this.minCameraRadius,
+      MAX_CAMERA_RADIUS
     );
     this.targetCameraRadius = this.cameraRadius;
     this.cameraAzimuth = 135;

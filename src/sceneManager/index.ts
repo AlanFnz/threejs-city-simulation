@@ -1,4 +1,6 @@
 import * as THREE from 'three';
+import { Woodland } from './woodland';
+import { createCoast, createSea } from './coast';
 import { ICity } from '../city';
 import { ITile } from '../city/tile';
 import { AssetManager, IAssetManager } from '../assetManager';
@@ -89,6 +91,10 @@ export class SceneManager implements ISceneManager {
   private buildingPoolByMesh: Map<THREE.InstancedMesh, BuildingPool> =
     new Map();
   private terrainMesh: THREE.InstancedMesh | null = null;
+  private terrainTints: THREE.Color[] = [];
+  private woodland: Woodland;
+  private sea: ReturnType<typeof createSea>;
+  private reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
   private terrainTiles: (ITile | null)[] = [];
   private terrainBaseMatrices: THREE.Matrix4[] = [];
   private terrainHidden: boolean[] = [];
@@ -117,6 +123,10 @@ export class SceneManager implements ISceneManager {
       antialias: true,
     });
     this.scene = new THREE.Scene();
+    this.sea = createSea(city.size);
+    this.woodland = new Woodland(city.size);
+    this.scene.add(this.sea, this.woodland, createCoast(city.size));
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     this.gameWindow = document.getElementById('render-target') as HTMLElement;
     this.assetManager = new AssetManager(() => {
       this.initialize(city);
@@ -132,7 +142,7 @@ export class SceneManager implements ISceneManager {
       this.gameWindow.offsetWidth,
       this.gameWindow.offsetHeight
     );
-    this.renderer.setClearColor(0x000000, 0);
+    this.renderer.setClearColor(0x568fa4);
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     this.gameWindow.appendChild(this.renderer.domElement);
@@ -175,6 +185,8 @@ export class SceneManager implements ISceneManager {
     this.terrainBaseMatrices = new Array(count);
     this.terrainHidden = new Array(count).fill(false);
 
+    const summerGrass = new THREE.Color(0xb2c986);
+    const meadowGrass = new THREE.Color(0x98b974);
     const matrix = new THREE.Matrix4();
     for (let x = 0; x < city.size; x++) {
       for (let y = 0; y < city.size; y++) {
@@ -184,7 +196,10 @@ export class SceneManager implements ISceneManager {
         this.terrainBaseMatrices[index] = matrix.clone();
         this.terrainTiles[index] = tile;
         mesh.setMatrixAt(index, tile ? matrix : HIDDEN_INSTANCE_MATRIX);
-        mesh.setColorAt(index, WHITE_TINT);
+        const meadow = 0.5 + 0.23 * Math.sin(x * 0.62 + y * 0.28)
+          + 0.19 * Math.cos(y * 0.71) + 0.08 * ((x + y) % 2);
+        this.terrainTints[index] = summerGrass.clone().lerp(meadowGrass, meadow);
+        mesh.setColorAt(index, this.terrainTints[index]);
       }
     }
     mesh.instanceMatrix.needsUpdate = true;
@@ -238,32 +253,32 @@ export class SceneManager implements ISceneManager {
     // than just its side, plus margin for tall buildings poking above y=0.
     const halfExtent = citySize * 0.75;
 
-    const sun = new THREE.DirectionalLight(0xffffff, 1);
-    sun.position.set(center + 10, 20, center + 20);
+    const sun = new THREE.DirectionalLight(0xffedcf, 1.65);
+    const reach = Math.max(16, citySize);
+    sun.position.set(center - reach, reach * 1.3, center - reach * 0.6);
     sun.target.position.set(center, 0, center);
     sun.castShadow = true;
     sun.shadow.camera.left = -halfExtent;
     sun.shadow.camera.right = halfExtent;
     sun.shadow.camera.top = halfExtent;
     sun.shadow.camera.bottom = -halfExtent;
-    sun.shadow.mapSize.width = 1024;
-    sun.shadow.mapSize.height = 1024;
+    const resolution = citySize > 32 ? 2048 : 1024;
+    sun.shadow.mapSize.set(resolution, resolution);
+    sun.shadow.normalBias = 0.012;
     sun.shadow.camera.near = 1;
-    // Distance from the light to its target is fixed at 30 (sqrt(10^2+20^2+20^2));
-    // the far plane needs to reach past the target by roughly the map's own
-    // extent to cover the far side of the ground from the light's viewpoint.
-    sun.shadow.camera.far = citySize + 50;
+    sun.shadow.camera.far = reach * 3 + 8;
     this.root.add(sun);
     this.root.add(sun.target);
-    this.root.add(new THREE.AmbientLight(0xffffff, 0.2));
+    this.root.add(new THREE.HemisphereLight(0xfff9ec, 0xc0d9cc, 1.45));
   }
 
   private setupGrid(city: ICity): void {
     const gridMaterial = new THREE.MeshBasicMaterial({
-      color: 0x000000,
+      color: 0x677546,
+      depthWrite: false,
       map: this.assetManager.textures.grid,
       transparent: true,
-      opacity: 0.2,
+      opacity: 0.26,
     });
 
     if (gridMaterial.map) {
@@ -427,7 +442,7 @@ export class SceneManager implements ISceneManager {
   }
 
   private getInstanceBaseTint(mesh: THREE.InstancedMesh, index: number): THREE.Color {
-    if (mesh === this.terrainMesh) return WHITE_TINT;
+    if (mesh === this.terrainMesh) return this.terrainTints[index];
     return this.buildingPoolByMesh.get(mesh)?.baseTintAtSlot[index] ?? WHITE_TINT;
   }
 
@@ -449,6 +464,7 @@ export class SceneManager implements ISceneManager {
   }
 
   update(city: ICity): void {
+    this.woodland.update(city);
     let terrainMatrixChanged = false;
 
     for (let x = 0; x < city.size; x++) {
@@ -556,6 +572,7 @@ export class SceneManager implements ISceneManager {
     this.lastFrameTime = time;
     this.cameraManager.update(deltaSeconds);
     this.vehicleGraph.updateVehicles();
+    this.sea.material.uniforms.time.value = this.reduceMotion.matches ? 0 : time / 1000;
     this.renderer.render(this.scene, this.cameraManager.camera);
   }
 

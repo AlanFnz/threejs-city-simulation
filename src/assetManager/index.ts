@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
+import { matchRoadVerge } from './roadSurface';
 import { textures } from './textures';
 import { ITile } from '../city/tile';
 import { IZone } from '../city/building/interfaces';
@@ -96,6 +97,10 @@ export class AssetManager implements IAssetManager {
               map: this.textures.base,
               specularMap: this.textures.specular,
             });
+            if (models[name].type === modelType.ROAD) {
+              matchRoadVerge((obj as THREE.Mesh).geometry);
+              material.vertexColors = true;
+            }
             (obj as THREE.Mesh).material = material;
             obj.receiveShadow = receiveShadow;
             obj.castShadow = castShadow;
@@ -197,21 +202,12 @@ export class AssetManager implements IAssetManager {
     return instancedMesh;
   }
 
-  /**
-   * One InstancedMesh shared by every grass tile. Grass uses its own tiled
-   * texture (not the shared base/specular atlas every other model uses), so
-   * it gets a dedicated material rather than cloning the loaded model's.
-   */
+  /** Tile colors are supplied per instance by SceneManager. */
   createTerrainInstancedMesh(count: number): THREE.InstancedMesh | null {
     const mesh = this.createModelInstancedMesh(ModelKey.GRASS, count);
     if (!mesh) return null;
-
-    const texture = this.textures.grass.clone();
-    texture.wrapS = THREE.RepeatWrapping;
-    texture.wrapT = THREE.RepeatWrapping;
-    texture.repeat.set(4, 4);
-    texture.needsUpdate = true;
-    mesh.material = new THREE.MeshLambertMaterial({ map: texture });
+    (mesh.material as THREE.Material).dispose();
+    mesh.material = new THREE.MeshLambertMaterial();
     // GRASS's ModelEntry doesn't set castShadow, so loadModel's default
     // (true) applies to the source mesh - but flat ground was never meant to
     // cast shadows onto itself/neighbors, only receive them.

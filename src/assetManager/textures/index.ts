@@ -48,6 +48,11 @@ const textures: Record<TextureKey, THREE.Texture> = {
   SPECULAR: loadTexture(SPECULAR),
 };
 
+// GLB UVs use the top-left texture origin. Both atlas maps share those UVs.
+textures.BASE.flipY = false;
+textures.SPECULAR.flipY = false;
+textures.BASE.colorSpace = THREE.SRGBColorSpace;
+
 function isValidTextureKey(key: string): key is TextureKey {
   return key in textures;
 }
