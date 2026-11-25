@@ -152,6 +152,7 @@ export class City implements ICity {
    * never hold capacity, so only plants register/unregister.
    */
   private handlePowerNetworkChanged(x: number, y: number): void {
+    this.invalidateNeighborMeshes(x, y);
     const coordinate = { x, y };
     if (this.getTile(x, y)?.building?.type === BUILDING_TYPE.POWER_PLANT) {
       this.powerGrid.registerPlant(coordinate);

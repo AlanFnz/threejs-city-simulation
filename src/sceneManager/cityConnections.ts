@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { ModelKey } from '../assetManager/constants';
 import { ENTRANCES, SIDES } from '../assetManager/frontage';
 import { getSidewalkSurface } from '../assetManager/roadSurface';
@@ -31,6 +32,49 @@ function replaceGeometry(
   mesh.visible = geometry !== null;
 }
 
+// The pole GLB has two upper ceramic insulators at ±0.13. The plant's
+// terminal pair sits over the flat rear roof, in its own rotated frame.
+function terminals(lot: ConnectionLot): THREE.Vector3[] {
+  return [-1, 1].map((sign) => {
+    const point =
+      lot.modelKey === ModelKey.POWER_PLANT
+        ? new THREE.Vector3(sign * 0.12, 0.62, -0.21 + sign * 0.055)
+        : new THREE.Vector3(sign * 0.13, 0.366, 0);
+    return point.applyMatrix4(lot.matrix);
+  });
+}
+
+function addSpan(
+  parts: THREE.BufferGeometry[],
+  a: ConnectionLot,
+  b: ConnectionLot
+): void {
+  const from = terminals(a);
+  const to = terminals(b);
+  // Match the nearest pair even when the crossarms turn in opposite directions.
+  if (
+    from[0].distanceToSquared(to[0]) + from[1].distanceToSquared(to[1]) >
+    from[0].distanceToSquared(to[1]) + from[1].distanceToSquared(to[0])
+  ) {
+    to.reverse();
+  }
+  for (let i = 0; i < from.length; i++) {
+    const midpoint = from[i].clone().lerp(to[i], 0.5);
+    midpoint.y -= 0.12 * from[i].distanceTo(to[i]);
+    const curve = new THREE.QuadraticBezierCurve3(from[i], midpoint, to[i]);
+    parts.push(new THREE.TubeGeometry(curve, 8, 0.0055, 5, false));
+  }
+}
+
+function isPoleOrPlant(
+  lot: ConnectionLot | null | undefined
+): lot is ConnectionLot {
+  return (
+    lot?.modelKey === ModelKey.POWER_LINE ||
+    lot?.modelKey === ModelKey.POWER_PLANT
+  );
+}
+
 function pathWidth(type: BuildingType): number {
   if (type === BUILDING_TYPE.RESIDENTIAL) return 0.105;
   if (type === BUILDING_TYPE.INDUSTRIAL) return 0.22;
@@ -41,13 +85,17 @@ export class CityConnections extends THREE.Group {
   private paths = decorativeMesh(
     new THREE.MeshLambertMaterial({ color: 0xcac1ad })
   );
+  private wires = decorativeMesh(
+    new THREE.MeshLambertMaterial({ color: 0x414840 })
+  );
   private sidewalks = new Map<ModelKey, THREE.Triangle[]>();
 
 
   constructor() {
     super();
     this.paths.receiveShadow = true;
-    this.add(this.paths);
+    this.wires.castShadow = true;
+    this.add(this.paths, this.wires);
   }
 
   updatePaths(
@@ -125,5 +173,49 @@ export class CityConnections extends THREE.Group {
     );
     geometry.computeVertexNormals();
     replaceGeometry(this.paths, geometry);
+  }
+
+  updateWires(lots: Lots): void {
+    const parts: THREE.BufferGeometry[] = [];
+    for (const [x, column] of lots.entries()) {
+      for (const [y, lot] of column.entries()) {
+        if (!isPoleOrPlant(lot)) continue;
+        if (
+          lot.modelKey === ModelKey.POWER_PLANT &&
+          SIDES.some(
+            (side) =>
+              lots[x + side.x]?.[y + side.y]?.modelKey === ModelKey.POWER_LINE
+          )
+        ) {
+          for (const pin of terminals(lot)) {
+            parts.push(
+              new THREE.CylinderGeometry(0.017, 0.023, 0.26, 6).translate(
+                pin.x,
+                pin.y - 0.13,
+                pin.z
+              )
+            );
+            parts.push(
+              new THREE.CylinderGeometry(0.032, 0.032, 0.025, 8).translate(
+                pin.x,
+                pin.y - 0.035,
+                pin.z
+              )
+            );
+          }
+        }
+        // Visit each shared edge once, regardless of placement order.
+        for (const neighbor of [lots[x + 1]?.[y], column[y + 1]]) {
+          if (
+            isPoleOrPlant(neighbor) &&
+            (lot.modelKey === ModelKey.POWER_LINE ||
+              neighbor.modelKey === ModelKey.POWER_LINE)
+          ) {
+            addSpan(parts, lot, neighbor);
+          }
+        }
+      }
+    }
+    replaceGeometry(this.wires, parts.length ? mergeGeometries(parts) : null);
   }
 }

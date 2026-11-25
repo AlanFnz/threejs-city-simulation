@@ -50,6 +50,14 @@ export const SIDES = [
   { x: -1, y: 0 },
 ] as const;
 
+export function isPowerNode(type: BuildingType | undefined): boolean {
+  return (
+    type === BUILDING_TYPE.POWER_LINE || type === BUILDING_TYPE.POWER_PLANT
+  );
+}
+
+/** Quarter turns from +Z. At a junction the crossarm bisects the two axes
+ * so that both conductors stay separated in each outgoing span. */
 export function getBuildingFacing(
   city: ICity,
   x: number,
@@ -57,7 +65,17 @@ export function getBuildingFacing(
   type: BuildingType
 ): number | null {
   if (type === BUILDING_TYPE.ROAD) return null;
-  if (type === BUILDING_TYPE.POWER_LINE) return null;
+  if (type === BUILDING_TYPE.POWER_LINE) {
+    let alongX = false;
+    let alongZ = false;
+    for (const side of SIDES) {
+      if (!isPowerNode(city.getTile(x + side.x, y + side.y)?.building?.type))
+        continue;
+      if (side.x) alongX = true;
+      else alongZ = true;
+    }
+    return alongX ? (alongZ ? 0.5 : 1) : 0;
+  }
   const side = SIDES.findIndex(
     (offset) =>
       city.getTile(x + offset.x, y + offset.y)?.building?.type ===

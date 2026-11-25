@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { CityConnections } from './cityConnections';
-import { getBuildingFacing } from '../assetManager/frontage';
+import { getBuildingFacing, isPowerNode } from '../assetManager/frontage';
 import { Woodland } from './woodland';
 import { createCoast, createSea } from './coast';
 import { ICity } from '../city';
@@ -473,6 +473,7 @@ export class SceneManager implements ISceneManager {
     this.woodland.update(city);
     let terrainMatrixChanged = false;
     let pathsChanged = false;
+    let wiresChanged = false;
 
     for (let x = 0; x < city.size; x++) {
       for (let y = 0; y < city.size; y++) {
@@ -496,6 +497,7 @@ export class SceneManager implements ISceneManager {
 
         if (!tile.building && existing) {
           pathsChanged ||= existing.buildingType !== BUILDING_TYPE.POWER_LINE;
+          wiresChanged ||= isPowerNode(existing.buildingType);
           this.freeBuildingSlot(existing);
           this.buildingSlots[x][y] = null;
           this.vehicleGraph.updateTile(x, y, null);
@@ -510,6 +512,7 @@ export class SceneManager implements ISceneManager {
           if (!resolved) {
             if (existing) {
               pathsChanged ||= existing.buildingType !== BUILDING_TYPE.POWER_LINE;
+              wiresChanged ||= isPowerNode(existing.buildingType);
               this.freeBuildingSlot(existing);
               this.buildingSlots[x][y] = null;
             }
@@ -526,6 +529,7 @@ export class SceneManager implements ISceneManager {
             if (!unchanged) {
               pathsChanged ||= buildingType !== BUILDING_TYPE.POWER_LINE ||
                 (existing !== null && existing.buildingType !== buildingType);
+              wiresChanged ||= isPowerNode(buildingType) || isPowerNode(existing?.buildingType);
               if (existing && existing.modelKey === modelKey) {
                 const pool = this.buildingPools.get(modelKey);
                 if (pool) {
@@ -572,6 +576,7 @@ export class SceneManager implements ISceneManager {
     if (pathsChanged) {
       this.connections.updatePaths(this.buildingSlots, key => this.buildingPools.get(key)!.mesh.geometry);
     }
+    if (wiresChanged) this.connections.updateWires(this.buildingSlots);
 
     if (terrainMatrixChanged && this.terrainMesh) {
       this.terrainMesh.instanceMatrix.needsUpdate = true;
