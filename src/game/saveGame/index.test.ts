@@ -23,13 +23,13 @@ describe('saveGame - serialize/deserialize', () => {
     Object.assign(ZONE_LEVEL_CAPS, DEFAULT_ZONE_LEVEL_CAPS);
   });
 
-  it('opens Puerto Claro with connected, developed lots and a working economy', () => {
-    const city = new City(32);
+  it('opens the expanded Puerto Claro with connected, developed lots and a working economy', () => {
+    const city = new City(48);
     const tracker = new MilestoneTracker(city);
     const example = puertoClaroSave(city.size);
     deserialize(example, city, tracker);
 
-    expect(city.population).toBeGreaterThanOrEqual(34);
+    expect(city.population).toBe(78);
     expect(city.netIncome).toBeGreaterThan(0);
     for (const saved of example.tiles) {
       const tile = city.getTile(saved.x, saved.y)!;
@@ -39,7 +39,17 @@ describe('saveGame - serialize/deserialize', () => {
         expect(tile.powerAccess?.value).toBe(true);
       }
     }
-    expect(tracker.isUnlocked(BUILDING_TYPE.POLICE_STATION)).toBe(true);
+    const roads = example.tiles.filter(tile => tile.buildingType === BUILDING_TYPE.ROAD);
+    const start = city.getTile(roads[0].x, roads[0].y)!;
+    const connected = new Set([start]);
+    for (const tile of connected) {
+      for (const neighbour of city.getTileNeighbors(tile.x, tile.y)) {
+        if (neighbour?.building?.type === BUILDING_TYPE.ROAD) connected.add(neighbour);
+      }
+    }
+    expect(connected.size).toBe(roads.length);
+    expect(tracker.isUnlocked(BUILDING_TYPE.HOSPITAL)).toBe(true);
+    expect(tracker.isUnlocked(BUILDING_TYPE.SCHOOL)).toBe(true);
     tracker.dispose();
     city.dispose();
   });

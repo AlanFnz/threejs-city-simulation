@@ -216,7 +216,7 @@ const CONFIG = {
   },
   CITY: {
     MINUTES_PER_TICK: minutesPerTick,
-    SIZE: 32,
+    SIZE: 48,
   },
   VEHICLE: {
     SPEED: 0.0005,

@@ -9,16 +9,20 @@ export const PUERTO_CLARO = 'puerto-claro';
 // Each row runs west to east. The feeder branches around the residential
 // blocks, while the freight road leaves the shopping street to the east.
 const streets = [
-  'P|||||||||......',
-  '...|.....|......',
-  '...|.rh.r|c.c...',
-  '...|.========...',
-  '...|r=h.t=cC=i.i',
-  '...|.=...=..====',
-  '...|F=..c=.S=.i.',
-  '...|.========...',
-  '...|.r.h.h..r...',
-  '...||||||||||||.',
+  'P|||||||||||||||||||||..',
+  '...|.....|...........|..',
+  '...|.rh.r|rhrr.......|..',
+  '...|.================|..',
+  '...|r=h.t=cC=ic.c..r=|..',
+  '...|.=...=..=========P..',
+  '...|F=.Hc=.S=.i.i.i.=...',
+  '...|.================...',
+  '...|.r.h.h..r..=.rEh=r..',
+  '...||||||||||||=...r=r..',
+  '..............|=r.ch=r..',
+  '..............|======...',
+  '..............|.rh.hr...',
+  '..............||||||||..',
 ];
 
 const buildings = {
@@ -26,6 +30,8 @@ const buildings = {
   '|': BUILDING_TYPE.POWER_LINE,
   '=': BUILDING_TYPE.ROAD,
   F: BUILDING_TYPE.FIRE_STATION,
+  H: BUILDING_TYPE.HOSPITAL,
+  E: BUILDING_TYPE.SCHOOL,
   S: BUILDING_TYPE.POLICE_STATION,
   r: BUILDING_TYPE.RESIDENTIAL,
   h: BUILDING_TYPE.RESIDENTIAL,
@@ -63,10 +69,19 @@ export function puertoClaroSave(size: number): SaveGameV1 {
   save.cityName = 'Puerto Claro';
   save.simulationDay = 84;
   save.money = 18500;
-  save.milestones.completed.push('pop-10', 'pop-15', 'pop-25', 'commercial-5');
+  save.milestones.completed.push(
+    'pop-10',
+    'pop-15',
+    'pop-25',
+    'pop-40',
+    'pop-60',
+    'commercial-5'
+  );
   save.milestones.unlockedToolIds.push(
     BUILDING_TYPE.FIRE_STATION,
-    BUILDING_TYPE.POLICE_STATION
+    BUILDING_TYPE.POLICE_STATION,
+    BUILDING_TYPE.HOSPITAL,
+    BUILDING_TYPE.SCHOOL
   );
   save.zoneLevelCaps.RESIDENTIAL = 4;
 
@@ -89,7 +104,8 @@ export function puertoClaroSave(size: number): SaveGameV1 {
         tile.developmentLevel =
           symbol === 't' || symbol === 'C' ? 3 : symbol === 'h' ? 2 : 1;
         // The house just across from the shops is about to finish its foundations.
-        if (row === 2 && col === 8) tile.constructionTicks = Math.floor(CONFIG.ZONE.UPGRADE_TIME / 2) - 6;
+        if (row === 2 && col === 8)
+          tile.constructionTicks = Math.floor(CONFIG.ZONE.UPGRADE_TIME / 2) - 6;
         tile.rotation = { x: 0, y: 0 };
         if (buildingType === BUILDING_TYPE.RESIDENTIAL) {
           const surname = surnames[households++ % surnames.length];
