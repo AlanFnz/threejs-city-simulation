@@ -93,12 +93,20 @@ export class City implements ICity {
     this.unsubscribers.forEach((unsubscribe) => unsubscribe());
   }
 
+  /** Front doors and crossarms depend on the tiles sharing an edge. */
+  private invalidateNeighborMeshes(x: number, y: number): void {
+    for (const tile of this.getTileNeighbors(x, y)) {
+      if (tile?.building) tile.building.isMeshOutOfDate = true;
+    }
+  }
+
   /**
    * A road changed at (x, y): every tile whose own road-access search
    * (radius SEARCH_DISTANCE) could reach (x, y) needs re-evaluating, which
    * is exactly the tiles within SEARCH_DISTANCE of (x, y) themselves.
    */
   private recomputeRoadAccessNear(x: number, y: number): void {
+    this.invalidateNeighborMeshes(x, y);
     const radius = CONFIG.ATTRIBUTES.ROAD_ACCESS.SEARCH_DISTANCE;
     for (let dx = -radius; dx <= radius; dx++) {
       for (let dy = -radius; dy <= radius; dy++) {

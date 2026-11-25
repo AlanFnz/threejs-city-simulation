@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
+import { getBuildingFacing } from './frontage';
 import { matchRoadVerge } from './roadSurface';
 import { textures } from './textures';
 import { ITile } from '../city/tile';
@@ -37,7 +38,7 @@ export interface IAssetManager {
     modelKey: ModelKey,
     count: number
   ): THREE.InstancedMesh | null;
-  resolveBuildingInstance(tile: ITile): ResolvedBuildingInstance | null;
+  resolveBuildingInstance(tile: ITile, facing?: number | null): ResolvedBuildingInstance | null;
   createRandomVehicleMesh(): THREE.Mesh | null;
   createPreviewMesh(
     tile: ITile,
@@ -221,19 +222,19 @@ export class AssetManager implements IAssetManager {
    * - without creating a mesh. SceneManager places this into the shared
    * InstancedMesh pool for that model.
    */
-  resolveBuildingInstance(tile: ITile): ResolvedBuildingInstance | null {
+  resolveBuildingInstance(tile: ITile, facing?: number | null): ResolvedBuildingInstance | null {
     if (!tile.building) return null;
 
     const fixedBuildingModelKey = FIXED_BUILDING_MODEL_KEYS[tile.building.type];
     if (fixedBuildingModelKey) {
-      return this.resolveFixedBuildingInstance(tile, fixedBuildingModelKey);
+      return this.resolveFixedBuildingInstance(tile, fixedBuildingModelKey, facing);
     }
 
     switch (tile.building.type) {
       case BUILDING_TYPE.RESIDENTIAL:
       case BUILDING_TYPE.COMMERCIAL:
       case BUILDING_TYPE.INDUSTRIAL:
-        return this.resolveZoneInstance(tile);
+        return this.resolveZoneInstance(tile, facing);
       case BUILDING_TYPE.ROAD:
         return this.resolveRoadInstance(tile);
       default:
@@ -242,7 +243,7 @@ export class AssetManager implements IAssetManager {
     }
   }
 
-  private resolveZoneInstance(tile: ITile): ResolvedBuildingInstance | null {
+  private resolveZoneInstance(tile: ITile, facing?: number | null): ResolvedBuildingInstance | null {
     const zone = tile.building as IZone | null;
     if (!zone) {
       throw new Error('Tile does not have a valid building.');
@@ -260,7 +261,7 @@ export class AssetManager implements IAssetManager {
     }
 
     const matrix = new THREE.Matrix4();
-    matrix.makeRotationY((zone.rotation?.y || 0) * DEG2RAD);
+    matrix.makeRotationY(facing == null ? (zone.rotation?.y ?? 0) : facing * Math.PI / 2);
     matrix.setPosition(zone.x, 0, zone.y);
 
     return {
@@ -306,9 +307,10 @@ export class AssetManager implements IAssetManager {
    * four civic services). */
   private resolveFixedBuildingInstance(
     tile: ITile,
-    modelKey: ModelKey
+    modelKey: ModelKey,
+    facing?: number | null
   ): ResolvedBuildingInstance {
-    const matrix = new THREE.Matrix4();
+    const matrix = new THREE.Matrix4().makeRotationY((facing ?? 0) * Math.PI / 2);
     matrix.setPosition(tile.x, 0, tile.y);
 
     return { modelKey, matrix, abandoned: false };
@@ -344,18 +346,10 @@ export class AssetManager implements IAssetManager {
       return mesh;
     }
 
-    const fixedBuildingModelKey = FIXED_BUILDING_MODEL_KEYS[buildingType];
-    if (fixedBuildingModelKey) {
-      // Built instantly like a road, not under-construction like a zone.
-      const mesh = this.cloneMesh(fixedBuildingModelKey, true);
-      if (!mesh) return null;
-      mesh.position.set(tile.x, 0, tile.y);
-      return mesh;
-    }
-
-    // RESIDENTIAL/COMMERCIAL/INDUSTRIAL all start out under construction.
-    const mesh = this.cloneMesh('UNDER-CONSTRUCTION' as ModelKey, true);
+    const modelKey = FIXED_BUILDING_MODEL_KEYS[buildingType] ?? ModelKey.UNDER_CONSTRUCTION;
+    const mesh = this.cloneMesh(modelKey, true);
     if (!mesh) return null;
+    mesh.rotation.y = (getBuildingFacing(city, tile.x, tile.y, buildingType) ?? 0) * Math.PI / 2;
     mesh.position.set(tile.x, 0, tile.y);
     return mesh;
   }

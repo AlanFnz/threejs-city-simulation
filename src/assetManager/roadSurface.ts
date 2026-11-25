@@ -23,3 +23,26 @@ export function matchRoadVerge(geometry: THREE.BufferGeometry): void {
   }
   geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
 }
+
+export function getSidewalkSurface(
+  geometry: THREE.BufferGeometry
+): THREE.Triangle[] {
+  const surface: THREE.Triangle[] = [];
+  const position = geometry.getAttribute('position');
+  const uv = geometry.getAttribute('uv');
+  const count = geometry.index?.count ?? position.count;
+  for (let i = 0; i < count; i += 3) {
+    const a = geometry.index?.getX(i) ?? i;
+    if (swatch(uv, a) !== 4 + 2 * 8) continue;
+    const b = geometry.index?.getX(i + 1) ?? i + 1;
+    const c = geometry.index?.getX(i + 2) ?? i + 2;
+    const triangle = new THREE.Triangle().setFromAttributeAndIndices(
+      position,
+      a,
+      b,
+      c
+    );
+    if (triangle.getNormal(new THREE.Vector3()).y > 0.9) surface.push(triangle);
+  }
+  return surface;
+}

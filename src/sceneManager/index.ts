@@ -1,4 +1,6 @@
 import * as THREE from 'three';
+import { CityConnections } from './cityConnections';
+import { getBuildingFacing } from '../assetManager/frontage';
 import { Woodland } from './woodland';
 import { createCoast, createSea } from './coast';
 import { ICity } from '../city';
@@ -11,7 +13,7 @@ import {
   CameraManager,
 } from '../cameraManager';
 import { VehicleGraph } from '../city/vehicle/vehicleGraph';
-import { BUILDING_TYPE } from '../city/building/constants';
+import { BUILDING_TYPE, type BuildingType } from '../city/building/constants';
 import { IRoad } from '../city/building/road';
 
 /** Matrix that collapses an instance to zero volume - InstancedMesh has no
@@ -61,6 +63,8 @@ interface BuildingPool {
  * (e.g. Road recomputes it every tick even when nothing about the tile's
  * connectivity actually changed) can be skipped instead of reallocating. */
 interface BuildingSlotRecord {
+  facing: number | null;
+  buildingType: BuildingType;
   modelKey: ModelKey;
   slot: number;
   matrix: THREE.Matrix4;
@@ -93,6 +97,7 @@ export class SceneManager implements ISceneManager {
   private terrainMesh: THREE.InstancedMesh | null = null;
   private terrainTints: THREE.Color[] = [];
   private woodland: Woodland;
+  private connections: CityConnections;
   private sea: ReturnType<typeof createSea>;
   private reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
   private terrainTiles: (ITile | null)[] = [];
@@ -125,7 +130,8 @@ export class SceneManager implements ISceneManager {
     this.scene = new THREE.Scene();
     this.sea = createSea(city.size);
     this.woodland = new Woodland(city.size);
-    this.scene.add(this.sea, this.woodland, createCoast(city.size));
+    this.connections = new CityConnections();
+    this.scene.add(this.sea, this.woodland, createCoast(city.size), this.connections);
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     this.gameWindow = document.getElementById('render-target') as HTMLElement;
     this.assetManager = new AssetManager(() => {
@@ -466,6 +472,7 @@ export class SceneManager implements ISceneManager {
   update(city: ICity): void {
     this.woodland.update(city);
     let terrainMatrixChanged = false;
+    let pathsChanged = false;
 
     for (let x = 0; x < city.size; x++) {
       for (let y = 0; y < city.size; y++) {
@@ -488,17 +495,21 @@ export class SceneManager implements ISceneManager {
         const existing = this.buildingSlots[x][y];
 
         if (!tile.building && existing) {
+          pathsChanged ||= existing.buildingType !== BUILDING_TYPE.POWER_LINE;
           this.freeBuildingSlot(existing);
           this.buildingSlots[x][y] = null;
           this.vehicleGraph.updateTile(x, y, null);
           continue;
         }
 
-        if (tile.building && tile.building.isMeshOutOfDate) {
-          const resolved = this.assetManager.resolveBuildingInstance(tile);
+        if (tile.building?.isMeshOutOfDate) {
+          const buildingType = tile.building.type;
+          const facing = getBuildingFacing(city, x, y, buildingType);
+          const resolved = this.assetManager.resolveBuildingInstance(tile, facing);
 
           if (!resolved) {
             if (existing) {
+              pathsChanged ||= existing.buildingType !== BUILDING_TYPE.POWER_LINE;
               this.freeBuildingSlot(existing);
               this.buildingSlots[x][y] = null;
             }
@@ -507,10 +518,14 @@ export class SceneManager implements ISceneManager {
             const unchanged =
               !!existing &&
               existing.modelKey === modelKey &&
+              existing.facing === facing &&
+              existing.buildingType === buildingType &&
               existing.abandoned === abandoned &&
               existing.matrix.equals(matrix);
 
             if (!unchanged) {
+              pathsChanged ||= buildingType !== BUILDING_TYPE.POWER_LINE ||
+                (existing !== null && existing.buildingType !== buildingType);
               if (existing && existing.modelKey === modelKey) {
                 const pool = this.buildingPools.get(modelKey);
                 if (pool) {
@@ -522,6 +537,8 @@ export class SceneManager implements ISceneManager {
                       abandoned ? ABANDONED_TINT : WHITE_TINT
                     );
                   }
+                  existing.facing = facing;
+                  existing.buildingType = buildingType;
                   existing.matrix = matrix;
                   existing.abandoned = abandoned;
                 }
@@ -536,7 +553,7 @@ export class SceneManager implements ISceneManager {
                     slot,
                     abandoned ? ABANDONED_TINT : WHITE_TINT
                   );
-                  this.buildingSlots[x][y] = { modelKey, slot, matrix, abandoned };
+                  this.buildingSlots[x][y] = { modelKey, slot, matrix, abandoned, buildingType, facing };
                 } else {
                   this.buildingSlots[x][y] = null;
                 }
@@ -550,6 +567,10 @@ export class SceneManager implements ISceneManager {
           }
         }
       }
+    }
+
+    if (pathsChanged) {
+      this.connections.updatePaths(this.buildingSlots, key => this.buildingPools.get(key)!.mesh.geometry);
     }
 
     if (terrainMatrixChanged && this.terrainMesh) {
