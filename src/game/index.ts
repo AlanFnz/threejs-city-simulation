@@ -76,9 +76,9 @@ export class Game implements IGame {
   private readonly isExample = this.query.get('city') === PUERTO_CLARO;
   private readonly exampleView = this.isExample ? this.query.get('view') : null;
   private readonly schoolPreview = this.exampleView === 'escuela' || this.exampleView === 'salida-escuela';
-  isPaused = this.schoolPreview;
+  isPaused = this.schoolPreview || this.exampleView === 'almuerzo';
   private readonly saveKey = this.isExample
-    ? `${SAVE_KEY}/${PUERTO_CLARO}` + (['works','barrio','repartos','cuadra','distritos','colectivo','escuela','salida-escuela'].includes(this.exampleView ?? '') ? '/' + this.exampleView : '')
+    ? `${SAVE_KEY}/${PUERTO_CLARO}` + (['works','barrio','repartos','cuadra','distritos','colectivo','escuela','salida-escuela','almuerzo'].includes(this.exampleView ?? '') ? '/' + this.exampleView : '')
     : SAVE_KEY;
   private minuteOfDay = STARTING_MINUTE;
   private lightingMode: LightingMode = 'Auto';
@@ -334,7 +334,10 @@ export class Game implements IGame {
     const site = this.exampleView === 'works' && data.tiles.find(tile => tile.constructionTicks !== undefined);
     const busStop = this.exampleView === 'colectivo' && this.sceneManager.getBusStop();
     const school = this.schoolPreview && this.sceneManager.getSchoolGate();
-    if (school) {
+    const counter = this.exampleView === 'almuerzo' && this.sceneManager.getLunchCounter();
+    if (counter) {
+      this.sceneManager.cameraManager.frameLots([counter], { minimumHeight: 1.42, padding: 0.04, azimuth: counter.azimuth, elevation: 47 });
+    } else if (school) {
       this.sceneManager.cameraManager.frameLots([school], { minimumHeight: 1.55, padding: .05, azimuth: school.azimuth, elevation: 36 });
     } else if (busStop) {
       this.sceneManager.cameraManager.frameLots([busStop], { minimumHeight: 1.5, padding: 0.08, azimuth: 225, elevation: 48 });
@@ -362,6 +365,7 @@ export class Game implements IGame {
 
   private startExampleCity(): void {
     const example = puertoClaroSave(this.city.size);
+    if (this.exampleView === 'almuerzo') example.minuteOfDay = CONFIG.LUNCH.FIRST_ARRIVAL + 39;
     if (this.exampleView === 'escuela') example.minuteOfDay = CONFIG.SCHOOL_DAY.START - 15;
     if (this.exampleView === 'salida-escuela') example.minuteOfDay = CONFIG.SCHOOL_DAY.DISMISSAL - 12;
     if (this.exampleView === 'colectivo') example.minuteOfDay = 7 * 60 + 30;

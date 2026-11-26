@@ -9,6 +9,8 @@ import CONFIG from '../config';
 import { Crosswalk } from '../city/vehicle/crosswalk';
 import * as THREE from 'three';
 import { ModelKey } from '../assetManager/constants';
+import { RetailLunch, queueEntrance, type LunchRoute } from './retailLunch';
+import { SidewalkWalk } from './sidewalkWalk';
 import { SchoolDay } from './schoolDay';
 import { ResidentFigure } from './residentFigure';
 
@@ -193,6 +195,7 @@ const MAX_SHOPPING_DISTANCE = 5; // sidewalk tiles, one way
 type Walk = {
   purpose: 'work' | 'shopping';
   points: THREE.Vector3[];
+  shop?: FrontDoor;
   stop?: BenchStop;
 };
 
@@ -383,6 +386,7 @@ const MAX_WALKERS = 32;
 
 export class Pedestrians extends THREE.Group {
   readonly schoolDay = new SchoolDay();
+  readonly lunch = new RetailLunch();
 
   private walkers: Walker[] = [];
   private paths = new Footpaths();
@@ -424,10 +428,43 @@ export class Pedestrians extends THREE.Group {
       const node = paths.attach(door.curb, door.road);
       if (node) this.workplaces.set(door.x + ',' + door.z, { node, door });
     }
+    const counters = new Map<Node, StreetDoor>();
     for (const shop of shops) {
       const node = paths.shopDestination(shop);
-      if (node && shop.stop) this.shops.set(node, shop);
+      if (node && shop.stop) {
+        this.shops.set(node, shop);
+        counters.set(node, shop);
+      }
     }
+    const lunchRoutes: LunchRoute[] = [];
+    const origins = [
+      ...this.homes,
+      ...[...this.workplaces.values()].map(
+        ({ door, node }) => [door, node] as const
+      ),
+    ];
+    for (const [origin, start] of origins) {
+      const choices = new Map(
+        [...counters].filter(
+          ([, shop]) =>
+            !(shop.x === origin.x && shop.z === origin.z) &&
+            shop.curb.distanceToSquared(origin.curb) <=
+              MAX_SHOPPING_DISTANCE ** 2
+        )
+      );
+      if (!choices.size) continue;
+      const trip = findDestination(start, choices, MAX_SHOPPING_DISTANCE);
+      if (!trip) continue;
+      const shop = trip.destination;
+      const path = new SidewalkWalk(
+        [origin.door, ...trip.points, queueEntrance(shop)],
+        paths.crossings,
+        CONFIG.LUNCH.WALK_MINUTES_PER_TILE
+      );
+      if (path.length <= MAX_SHOPPING_DISTANCE)
+        lunchRoutes.push({ origin, shop, path });
+    }
+    this.lunch.setNetwork(homes, lunchRoutes);
     const gates = new Map<Node, StreetDoor>();
     for (const school of schools) {
       const gate = paths.attach(school.curb, school.road);
@@ -531,7 +568,7 @@ export class Pedestrians extends THREE.Group {
           0
         );
         if (distance <= MAX_SHOPPING_DISTANCE)
-          walk = { points, stop, purpose: 'shopping' };
+          walk = { points, stop, shop: visit.destination, purpose: 'shopping' };
       }
     } else {
       const job = this.workplaces.get(destination);
@@ -557,8 +594,15 @@ export class Pedestrians extends THREE.Group {
     if (reset || this.minute !== minute) this.sinceTick = 0;
     this.minute = minute;
     this.schoolDay.updateResidents(city, minute, reset, this.transitHomeSince);
+    this.lunch.updateResidents(
+      city,
+      minute,
+      reset,
+      (id) =>
+        !this.schoolDay.has(id) && this.transitHomeSince?.(id) === undefined
+    );
     const outings = new Map<string, Walk>();
-    const seats = new Set<BenchStop>();
+    const seats = new Set(this.lunch.seats);
     // Sample occupied homes only. A house contributes at most one commute
     // and one lunch outing, and two neighbours never claim the same seat.
     for (const [home, start] of this.homes) {
@@ -582,6 +626,7 @@ export class Pedestrians extends THREE.Group {
       const shopper = residents.find(
         (person) =>
           !outings.has(person.id) &&
+          !this.lunch.has(person.id) &&
           person.age >= CONFIG.CITIZEN.MIN_WORKING_AGE
       );
       if (!shopper) continue;
@@ -595,7 +640,12 @@ export class Pedestrians extends THREE.Group {
         if (destination !== 'errand' && seats.size === this.shops.size)
           continue;
         const walk = this.route(origin.door, origin.node, destination);
-        if (!walk || (walk.stop && seats.has(walk.stop))) continue;
+        if (
+          !walk ||
+          (walk.stop && seats.has(walk.stop)) ||
+          (walk.shop?.stop && this.lunch.seats.has(walk.shop.stop))
+        )
+          continue;
         if (walk.stop) seats.add(walk.stop);
         outings.set(shopper.id, walk);
         break;
@@ -611,6 +661,7 @@ export class Pedestrians extends THREE.Group {
           reset,
           this.paths.crossings
         );
+        if (this.lunch.onBreak(walker.resident)) walker.visible = false;
         outings.delete(walker.resident);
       } else walker.unassign();
     }
@@ -622,6 +673,7 @@ export class Pedestrians extends THREE.Group {
         this.add(walker);
       }
       walker.assign(id, walk, minute, reset, this.paths.crossings);
+      if (this.lunch.onBreak(id)) walker.visible = false;
     }
   }
 
@@ -634,6 +686,8 @@ export class Pedestrians extends THREE.Group {
     if (transit !== undefined) return transit;
     const school = this.schoolDay.homeSince(person.id);
     if (school !== undefined) return school;
+    const lunch = this.lunch.homeSince(person.id);
+    if (lunch !== undefined) return lunch;
     const walker = this.walkers.find((w) => w.resident === person.id);
     if (walker && (walker.isCommute || !person.workplace))
       return walker.homeArrival;
@@ -657,8 +711,10 @@ export class Pedestrians extends THREE.Group {
     );
     const minute = this.streetMinute;
     this.schoolDay.advance(minute, this.requested, occupied, this.approaching);
+    this.lunch.advance(minute, this.requested, occupied, this.approaching);
     for (const walker of this.walkers) {
       walker.advance(dt, minute, this.requested, occupied, this.approaching);
+      if (this.lunch.onBreak(walker.resident)) walker.visible = false;
     }
     return this.requested;
   }

@@ -144,7 +144,8 @@ export class CityConnections extends THREE.Group {
       this.conversations,
       this.promenade,
       this.pedestrians,
-      this.pedestrians.schoolDay
+      this.pedestrians.schoolDay,
+      this.pedestrians.lunch
     );
   }
 

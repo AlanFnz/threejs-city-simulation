@@ -81,6 +81,15 @@ export interface Config {
     /** tiles per side */
     SIZE: number;
   };
+  LUNCH: {
+    FIRST_ARRIVAL: number;
+    ARRIVAL_SPACING: number;
+    SERVICE_MINUTES: number;
+    MEAL_MINUTES: number;
+    WALK_MINUTES_PER_TILE: number;
+    CUSTOMERS_PER_SHOP: number;
+    MAX_BUSY_SHOPS: number;
+  };
   SCHOOL_DAY: {
     START: number;
     DISMISSAL: number;
@@ -227,6 +236,15 @@ const CONFIG = {
   CITY: {
     MINUTES_PER_TICK: minutesPerTick,
     SIZE: 48,
+  },
+  LUNCH: {
+    FIRST_ARRIVAL: 12 * 60,
+    ARRIVAL_SPACING: 4,
+    SERVICE_MINUTES: 15,
+    MEAL_MINUTES: 44,
+    WALK_MINUTES_PER_TILE: 27,
+    CUSTOMERS_PER_SHOP: 5,
+    MAX_BUSY_SHOPS: 3,
   },
   SCHOOL_DAY: {
     START: 8 * 60,
