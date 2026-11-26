@@ -13,7 +13,11 @@ The field recordings are dedicated to the public domain under [CC0 1.0](https://
 | close.ogg | 13FPanska_Sychra_Petr | [Closing bus doors](https://freesound.org/people/13FPanska_Sychra_Petr/sounds/379374/) |
 | departure.ogg | pnwheeler | [Diesel bus pulling away, Oaxaca](https://freesound.org/people/pnwheeler/sounds/831721/) |
 | car.ogg | loganzsound | [Hyundai Elantra Sport Idle Exhaust Loop Close](https://freesound.org/people/loganzsound/sounds/874838/) |
+| diesel.ogg | soundjoao | [Motor Loop 2, diesel van](https://freesound.org/people/soundjoao/sounds/325810/) |
+| gateOpen.ogg, gateClose.ogg | douglasbruce@look.ca | [Transport truck roll up door open - close](https://freesound.org/people/douglasbruce%40look.ca/sounds/403715/) |
+| parcel.ogg | j1987 | [cardboardbox.wav](https://freesound.org/people/j1987/sounds/95561/) |
+| footLeft.ogg, footRight.ogg | Mihacappy | [cretestepping.wav](https://freesound.org/people/Mihacappy/sounds/817387/) |
 
 The tyre layer (`tyres.ogg`) is original filtered pink noise. Its level tracks wheel speed.
 
-Edits use excerpts from Freesound's high-quality MP3 previews. They are high-pass filtered and loudness matched, with crossfaded loop boundaries for ambient beds and the engine. Vehicle sources are mixed down to mono for camera-relative stereo placement. The game ships local Opus encodes. Interface tones, placement sounds and the optional electric-piano phrase are synthesized in the browser.
+Edits use excerpts from Freesound's high-quality MP3 previews. They are high-pass filtered; continuous layers are loudness matched, with crossfaded loop boundaries for ambient beds and the engine. Vehicle sources are mixed down to mono for camera-relative stereo placement. The game ships local Opus encodes. Interface tones, placement sounds and the optional electric-piano phrase are synthesized in the browser.

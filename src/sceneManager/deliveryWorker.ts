@@ -4,6 +4,8 @@ import { coloredShape } from './coast';
 
 import { ResidentFigure } from './residentFigure';
 
+export const DELIVERY_GAIT = 86;
+
 const block = new THREE.BoxGeometry();
 const parcel = mergeGeometries([
   coloredShape(block, 0xc38b53, 0, 0, 0, 0.4, 0.28, 0.26),
@@ -45,6 +47,6 @@ export class DeliveryWorker extends ResidentFigure {
       Math.atan2(b.x - a.x, b.z - a.z) + (carrying ? 0 : Math.PI);
     const moving =
       distance > 0.0001 && distance < first + curb.distanceTo(door) - 0.0001;
-    this.gait(distance * 86, moving, carrying);
+    this.gait(distance * DELIVERY_GAIT, moving, carrying);
   }
 }

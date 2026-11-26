@@ -4,7 +4,7 @@ import { VehicleGraph } from '../city/vehicle/vehicleGraph';
 import { VehicleGraphNode } from '../city/vehicle/vehicleGraphNode';
 import type { Crosswalk } from '../city/vehicle/crosswalk';
 import CONFIG from '../config';
-import { DeliveryWorker } from './deliveryWorker';
+import { DeliveryWorker, DELIVERY_GAIT } from './deliveryWorker';
 import {
   planDelivery,
   type DeliveryRoute,
@@ -15,6 +15,10 @@ import type { StreetDoor } from './pedestrians';
 function waypoint(point: THREE.Vector3): VehicleGraphNode {
   return new VehicleGraphNode(point.x, point.z);
 }
+
+export type DeliveryCue =
+  'gateOpen' | 'gateClose' | 'parcel' | 'footLeft' | 'footRight';
+type PlayDeliveryCue = (cue: DeliveryCue, position: THREE.Vector3) => void;
 
 const DELIVERY_WALK_SPEED = 0.18;
 const forward = new THREE.Vector3(1, 0, 0);
@@ -38,14 +42,22 @@ class DeliveryTruck extends Vehicle {
   constructor(
     graph: VehicleGraph,
     readonly route: DeliveryRoute,
-    mesh: THREE.Mesh
+    mesh: THREE.Mesh,
+    private playCue?: PlayDeliveryCue
   ) {
     const factoryStop = waypoint(route.factory.park);
     const shopStop = waypoint(route.shop.park);
     const anchors = new THREE.Group();
     anchors.add(factoryStop, shopStop);
     graph.add(anchors);
-    super(factoryStop, route.outbound[0], graph.assetManager, mesh, Infinity, 'truck');
+    super(
+      factoryStop,
+      route.outbound[0],
+      graph.assetManager,
+      mesh,
+      Infinity,
+      'truck'
+    );
     this.name = 'Delivery truck';
     this.shopStop = shopStop;
     this.itinerary = [
@@ -126,6 +138,8 @@ class DeliveryTruck extends Vehicle {
     const { heading, frontage } = this.route.shop;
     this.heading.copy(heading);
     this.quaternion.setFromUnitVectors(forward, heading);
+    const previous = this.unloading;
+    if (previous === 0) this.playCue?.('gateOpen', this.tailgate);
     this.unloading += dt;
     const opening = 0.65,
       handoff = 0.65;
@@ -151,6 +165,29 @@ class DeliveryTruck extends Vehicle {
         distance,
         carrying
       );
+    }
+    const before = previous - opening;
+    if (before < walkTime + handoff / 2 && t >= walkTime + handoff / 2)
+      this.playCue?.('parcel', frontage.door);
+    if (before < end + opening && t >= end + opening)
+      this.playCue?.('gateClose', this.tailgate);
+    if (
+      this.worker.visible &&
+      ((t >= 0 && t < walkTime) || t > walkTime + handoff)
+    ) {
+      // One pronounced footfall per gait cycle, on both legs of the walk.
+      const stride = (time: number) =>
+        Math.floor(
+          (Math.max(0, Math.min(time, walkTime, end - time)) *
+            DELIVERY_WALK_SPEED *
+            DELIVERY_GAIT) /
+            (2 * Math.PI)
+        );
+      if (stride(t) !== stride(before))
+        this.playCue?.(
+          stride(t) % 2 ? 'footLeft' : 'footRight',
+          this.worker.position
+        );
     }
     return t < end + opening;
   }
@@ -179,7 +216,10 @@ export class Deliveries {
   private planned = false;
   private delay = 0;
 
-  constructor(private graph: VehicleGraph) {}
+  constructor(
+    private graph: VehicleGraph,
+    private playCue?: PlayDeliveryCue
+  ) {}
 
   updateStops(stops: FreightStops, restore: boolean): void {
     this.stops = stops;
@@ -253,7 +293,7 @@ export class Deliveries {
       return;
     const mesh = this.graph.assetManager.createDeliveryTruckMesh();
     if (!mesh) return;
-    this.truck = new DeliveryTruck(this.graph, route, mesh);
+    this.truck = new DeliveryTruck(this.graph, route, mesh, this.playCue);
     this.graph.vehicles.add(this.truck);
     this.round++;
     this.planned = false;

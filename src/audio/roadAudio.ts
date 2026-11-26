@@ -109,10 +109,26 @@ export class RoadAudio {
     focus: { x: number; y: number },
     camera: OrthographicCamera,
     engine?: AudioBuffer,
-    tyres?: AudioBuffer
+    tyres?: AudioBuffer,
+    diesel?: AudioBuffer
   ) {
-    if (!engine || !tyres) return;
-    const nearest = nearestCars(traffic, focus, camera, this.voices);
+    if (!tyres) return;
+    const nearest = engine
+      ? nearestCars(traffic, focus, camera, this.voices)
+      : [];
+    const truck = traffic.find((vehicle) => vehicle.kind === 'truck');
+    if (truck && diesel) {
+      const right = camera.matrixWorld.elements;
+      const { gain, pan } = vehiclePerspective(
+        truck.position.x - focus.x,
+        truck.position.z - focus.y,
+        camera.zoom,
+        right[0],
+        right[2],
+        5
+      );
+      if (gain > 0.018) nearest.push({ car: truck, gain: gain * 1.25, pan });
+    }
     for (const [id, voice] of this.voices) {
       if (!nearest.some(({ car }) => car.id === id)) {
         voice.release();
@@ -125,7 +141,7 @@ export class RoadAudio {
         voice = new MotorVoice(
           this.ctx,
           this.output,
-          engine,
+          source.car.kind === 'truck' ? diesel! : engine!,
           tyres,
           source.car.id
         );

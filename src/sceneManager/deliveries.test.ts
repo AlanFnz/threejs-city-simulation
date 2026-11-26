@@ -4,7 +4,7 @@ import { City } from '../city';
 import { ROAD_TYPE } from '../city/building/constants';
 import { VehicleGraph } from '../city/vehicle/vehicleGraph';
 import type { IAssetManager } from '../assetManager';
-import { Deliveries } from './deliveries';
+import { Deliveries, type DeliveryCue } from './deliveries';
 import { DeliveryWorker } from './deliveryWorker';
 import { planDelivery } from './deliveryRoute';
 
@@ -30,13 +30,16 @@ function street() {
     door: new Vector3(x, 0.014, 4.74),
   });
   const stops = { factories: [frontage(2)], shops: [frontage(8)] };
-  const service = new Deliveries(graph);
+  const cues: { name: DeliveryCue; position: Vector3 }[] = [];
+  const service = new Deliveries(graph, (name, point) =>
+    cues.push({ name, position: point.clone() })
+  );
   service.updateStops(stops, false);
-  return { service, graph, stops };
+  return { service, graph, stops, cues };
 }
 
 it('drives a connected round trip beyond the ambient car lifetime and carries the parcel to the entrance', () => {
-  const { service, graph, stops } = street();
+  const { service, graph, stops, cues } = street();
   const route = planDelivery(graph, stops, 0)!;
   for (const leg of [route.outbound, route.inbound]) {
     for (let i = 1; i < leg.length; i++)
@@ -62,6 +65,18 @@ it('drives a connected round trip beyond the ambient car lifetime and carries th
     if (doorstep && truck.position.distanceTo(route.shop.park) > 0.6)
       leftShop = true;
   }
+  const names = cues.map((cue) => cue.name);
+  expect(names.filter((name) => !name.startsWith('foot'))).toEqual([
+    'gateOpen',
+    'parcel',
+    'gateClose',
+  ]);
+  const drop = names.indexOf('parcel');
+  expect(names.slice(1, drop)).toContain('footLeft');
+  expect(names.slice(drop + 1)).toContain('footRight');
+  expect(cues[drop].position.distanceTo(stops.shops[0].door)).toBeLessThan(
+    0.001
+  );
   expect(doorstep && leftShop).toBe(true);
   expect(truck.parent).toBeNull();
   expect(truck.position.distanceTo(route.factory.park)).toBeLessThan(0.001);

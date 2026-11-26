@@ -203,7 +203,9 @@ export class SceneManager implements ISceneManager {
 
     this.vehicleGraph = new VehicleGraph(city, this.assetManager);
     this.root.add(this.vehicleGraph);
-    this.deliveries = new Deliveries(this.vehicleGraph);
+    this.deliveries = new Deliveries(this.vehicleGraph, (cue, position) =>
+      this.sound.delivery(cue, position, this.cameraManager)
+    );
     this.busLine = new BusLine(this.vehicleGraph, this.busStops, this.cityMinute);
     this.connections.pedestrians.transitHomeSince = this.busLine.homeSince;
 

@@ -358,7 +358,10 @@ export class Game implements IGame {
       this.sceneManager.cameraManager.frameLots(puertoClaroGardenBlock(this.city.size), { minimumHeight: 6, azimuth: 22 });
     } else if (this.exampleView === 'repartos') {
       const route = this.sceneManager.getDeliveryPreviewLots();
-      this.sceneManager.cameraManager.frameLots(route.length ? route : data.tiles, { minimumHeight: 4, padding: 0.5, azimuth: 70 });
+      const shopDoor = route[route.length - 1];
+      if (this.query.get('focus') === 'descarga' && shopDoor)
+        this.sceneManager.cameraManager.frameLots([shopDoor], { minimumHeight: 1.6, padding: 0.08, azimuth: 70, elevation: 40 });
+      else this.sceneManager.cameraManager.frameLots(route.length ? route : data.tiles, { minimumHeight: 4, padding: 0.5, azimuth: 70 });
     } else {
       this.sceneManager.cameraManager.frameLots(site ? [site] : data.tiles);
     }

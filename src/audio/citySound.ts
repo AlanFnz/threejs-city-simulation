@@ -6,6 +6,13 @@ import { channels, soundSettings, type Channel } from './preferences';
 import { neighborhoodMix, vehiclePerspective } from './perspective';
 import type { Vehicle } from '../city/vehicle';
 import { RoadAudio } from './roadAudio';
+import type { DeliveryCue } from '../sceneManager/deliveries';
+import gateOpen from './recordings/gateOpen.ogg';
+import gateClose from './recordings/gateClose.ogg';
+import footLeft from './recordings/footLeft.ogg';
+import footRight from './recordings/footRight.ogg';
+import parcel from './recordings/parcel.ogg';
+import diesel from './recordings/diesel.ogg';
 import car from './recordings/car.ogg';
 import tyres from './recordings/tyres.ogg';
 import shore from './recordings/shore.ogg';
@@ -18,6 +25,12 @@ import doorClose from './recordings/close.ogg';
 import departure from './recordings/departure.ogg';
 
 const files = {
+  diesel,
+  gateOpen,
+  gateClose,
+  footLeft,
+  footRight,
+  parcel,
   car,
   tyres,
   shore,
@@ -52,6 +65,7 @@ class Mixer {
   private buffers = new Map<Clip, AudioBuffer>();
   private levels = new Map<Clip, GainNode>();
   private playingCues = new Set<AudioBufferSourceNode>();
+  private deliveryCues = new Set<AudioBufferSourceNode>();
   private previousBus?: number;
   private previousPhase?: string;
   private nextPhrase = 0;
@@ -127,12 +141,14 @@ class Mixer {
       const level = this.levels.get(bed);
       if (level) ease(level.gain, mix[bed] * (moving ? 1 : 0.36), t, 0.4);
     }
+    if (!moving) this.stopDeliveryCues();
     this.road.update(
       traffic,
       focus,
       camera,
       this.buffers.get('car'),
-      this.buffers.get('tyres')
+      this.buffers.get('tyres'),
+      this.buffers.get('diesel')
     );
     const perspective =
       bus &&
@@ -194,7 +210,56 @@ class Mixer {
 
   silenceTraffic() {
     this.road.silence();
+    this.stopDeliveryCues();
     this.resetBus();
+  }
+
+  private stopDeliveryCues() {
+    for (const cue of this.deliveryCues) cue.stop();
+    this.deliveryCues.clear();
+  }
+
+  delivery(
+    cue: DeliveryCue,
+    point: { x: number; z: number },
+    view: ICameraManager
+  ) {
+    const buffer = this.buffers.get(cue);
+    if (!buffer || this.context.state !== 'running') return;
+    const focus = view.getFocus(),
+      right = view.camera.matrixWorld.elements;
+    const { gain, pan } = vehiclePerspective(
+      point.x - focus.x,
+      point.z - focus.y,
+      view.camera.zoom,
+      right[0],
+      right[2],
+      3.2
+    );
+    if (gain < 0.018) return;
+    const ctx = this.context,
+      source = ctx.createBufferSource(),
+      level = ctx.createGain(),
+      stereo = ctx.createStereoPanner();
+    source.buffer = buffer;
+    const levels = {
+      gateOpen: 0.74,
+      gateClose: 0.64,
+      parcel: 0.68,
+      footLeft: 0.44,
+      footRight: 0.5,
+    };
+    level.gain.value = gain * levels[cue];
+    stereo.pan.value = pan;
+    source.connect(level).connect(stereo).connect(this.groups.get('effects')!);
+    this.deliveryCues.add(source);
+    source.onended = () => {
+      this.deliveryCues.delete(source);
+      source.disconnect();
+      level.disconnect();
+      stereo.disconnect();
+    };
+    source.start();
   }
 
   resetBus() {
@@ -307,6 +372,15 @@ export class CitySound {
         void mixer.context.suspend().catch(() => {});
     }, 180);
   };
+
+  delivery(
+    cue: DeliveryCue,
+    position: { x: number; z: number },
+    view: ICameraManager
+  ) {
+    if (!document.hidden && soundSettings.read().enabled)
+      this.mixer?.delivery(cue, position, view);
+  }
 
   private onClick = (event: MouseEvent) => {
     if (
