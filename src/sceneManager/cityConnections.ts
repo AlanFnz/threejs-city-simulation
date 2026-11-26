@@ -172,8 +172,13 @@ export class CityConnections extends THREE.Group {
 
   updatePaths(
     lots: Lots,
-    getGeometry: (key: ModelKey) => THREE.BufferGeometry
-  ): FreightStops {
+    getGeometry: (key: ModelKey) => THREE.BufferGeometry,
+    busLots: readonly { x: number; y: number }[]
+  ): FreightStops & {
+    transit: StreetDoor[];
+    walks: Map<StreetDoor, THREE.Vector3[]>;
+  } {
+    const transit: StreetDoor[] = [];
     const factories: StreetDoor[] = [];
     const gardenHomes: GardenHome[] = [];
     const vertices: number[] = [];
@@ -247,6 +252,9 @@ export class CityConnections extends THREE.Group {
           road: road.matrix,
           stop,
         };
+        // These public stops stay on the street while a building is renovated.
+        if (!lot.abandoned && busLots.some((l) => l.x === x && l.y === y))
+          transit.push(frontage);
         if (!lot.abandoned && !isConstructionSite(lot.modelKey)) {
           if (lot.buildingType === BUILDING_TYPE.RESIDENTIAL) {
             const shopCount = countFacingShops(lots, x, y, side);
@@ -297,9 +305,15 @@ export class CityConnections extends THREE.Group {
     );
     const homes = ([] as StreetDoor[]).concat(...homesByShopCount.reverse());
     this.pedestrians.setNetwork(paths, homes, workplaces, shops);
+    const first = transit.find(
+      (f) => f.x === busLots[0]?.x && f.z === busLots[0]?.y
+    );
+    const walks = first
+      ? this.pedestrians.walksToStop(first)
+      : new Map<StreetDoor, THREE.Vector3[]>();
     if (!vertices.length) {
       replaceGeometry(this.paths, null);
-      return { factories, shops };
+      return { transit, walks, factories, shops };
     }
     const geometry = new THREE.BufferGeometry();
     geometry.setAttribute(
@@ -308,7 +322,7 @@ export class CityConnections extends THREE.Group {
     );
     geometry.computeVertexNormals();
     replaceGeometry(this.paths, geometry);
-    return { factories, shops };
+    return { transit, walks, factories, shops };
   }
 
   updateWires(lots: Lots): void {

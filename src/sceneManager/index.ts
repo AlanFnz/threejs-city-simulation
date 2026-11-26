@@ -5,6 +5,7 @@ import { GroundShadowCamera } from './groundShadowCamera';
 import { STARTING_MINUTE } from '../game/simulationDay';
 import { PowerView, addWindowLighting } from './powerView';
 import { householdLights } from './householdLights';
+import { BusLine } from './busLine';
 import { Deliveries } from './deliveries';
 import { CityConnections } from './cityConnections';
 import { getBuildingFacing, isPowerNode } from '../assetManager/frontage';
@@ -81,6 +82,8 @@ interface BuildingSlotRecord {
 export interface ISceneManager {
   setLightingHour(hour: number, immediate: boolean): void;
   getDeliveryPreviewLots(): CameraFocus[];
+  getBusStop(): CameraFocus | undefined;
+  followBusPassenger(): void;
   start(): void;
   stop(): void;
   update(city: ICity, restoreClock?: boolean): void;
@@ -131,6 +134,8 @@ export class SceneManager implements ISceneManager {
    * within the same mouse-event handler, before any other raycast can run. */
   private lastPickedInstanceIndex: number | null = null;
   private deliveries!: Deliveries;
+  private busLine!: BusLine;
+  private passengerFocus?: CameraFocus;
   private vehicleGraph: VehicleGraph = null!;
   private root: THREE.Group = new THREE.Group();
   private previewMesh: THREE.Object3D | null = null;
@@ -143,7 +148,8 @@ export class SceneManager implements ISceneManager {
     onCameraFocusChanged: (focus: CameraFocus) => void = () => undefined,
     private activeTool: () => string | null = () => 'SELECT',
     private playbackSpeed: () => number = () => 1,
-    private cityMinute: () => number = () => STARTING_MINUTE
+    private cityMinute: () => number = () => STARTING_MINUTE,
+    private busStops: readonly CameraFocus[] = []
   ) {
     this.renderer = new THREE.WebGLRenderer({
       antialias: true,
@@ -192,6 +198,8 @@ export class SceneManager implements ISceneManager {
     this.vehicleGraph = new VehicleGraph(city, this.assetManager);
     this.root.add(this.vehicleGraph);
     this.deliveries = new Deliveries(this.vehicleGraph);
+    this.busLine = new BusLine(this.vehicleGraph, this.busStops, this.cityMinute);
+    this.connections.pedestrians.transitHomeSince = this.busLine.homeSince;
 
     this.buildingSlots = [];
     for (let x = 0; x < city.size; x++) {
@@ -632,10 +640,12 @@ export class SceneManager implements ISceneManager {
     }
 
     if (pathsChanged || restoreClock) {
-      const freight = this.connections.updatePaths(this.buildingSlots, key => this.buildingPools.get(key)!.mesh.geometry);
+      const freight = this.connections.updatePaths(this.buildingSlots, key => this.buildingPools.get(key)!.mesh.geometry, this.busStops);
       this.deliveries.updateStops(freight, restoreClock);
+      this.busLine.updateStops(freight.transit, freight.walks, restoreClock);
     }
     const people = this.connections.pedestrians;
+    this.busLine.updateResidents();
     people.updateResidents(city, this.cityMinute(), restoreClock || this.reduceMotion.matches);
     this.connections.updateNeighborhood(city, people.streetMinute);
     if (wiresChanged) this.connections.updateWires(this.buildingSlots);
@@ -663,6 +673,14 @@ export class SceneManager implements ISceneManager {
     if (terrainMatrixChanged && this.terrainMesh) {
       this.terrainMesh.instanceMatrix.needsUpdate = true;
     }
+  }
+
+  public followBusPassenger(): void {
+    this.passengerFocus = this.cameraManager.getFocus();
+  }
+
+  public getBusStop(): CameraFocus | undefined {
+    return this.busLine.origin;
   }
 
   public getDeliveryPreviewLots(): CameraFocus[] {
@@ -707,6 +725,21 @@ export class SceneManager implements ISceneManager {
       this.deliveries.dispatch(step, crossings, this.connections.pedestrians.approaching);
       this.vehicleGraph.updateVehicles(step, crossings, this.connections.pedestrians.approaching);
       trafficTime -= step;
+    }
+    if (this.passengerFocus) {
+      const focus = this.cameraManager.getFocus();
+      const target = this.busLine.passengerPosition;
+      // Panning or picking a place on the minimap releases the camera.
+      if (!target || focus.x !== this.passengerFocus.x || focus.y !== this.passengerFocus.y) this.passengerFocus = undefined;
+      else if (speed && !this.reduceMotion.matches) {
+        const blend = 1 - Math.exp(-6 * Math.min(deltaSeconds, .15));
+        const x = THREE.MathUtils.lerp(focus.x, target.x, blend);
+        const y = THREE.MathUtils.lerp(focus.y, target.z, blend);
+        if (Math.abs(x - focus.x) + Math.abs(y - focus.y) > .00001) {
+          this.cameraManager.trackPosition(x, y);
+          this.passengerFocus = { x, y };
+        }
+      }
     }
     this.connections.animateNeighborhood(this.connections.pedestrians.streetMinute, this.deliveries.receiving);
     this.sea.material.uniforms.time.value = this.reduceMotion.matches ? 0 : time / 1000;

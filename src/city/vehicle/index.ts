@@ -62,6 +62,9 @@ export class Vehicle extends THREE.Group {
     return 0.035;
   }
 
+  // Extra front and rear clearance relative to the standard car.
+  get overhang(): number { return 0; }
+
   private gapToCar(other: Vehicle): number {
     if (other === this || this.heading.dot(other.heading) < 0.9)
       return Infinity;
@@ -74,7 +77,7 @@ export class Vehicle extends THREE.Group {
       lateral > Math.max(this.laneClearance, other.laneClearance)
     )
       return Infinity;
-    return Math.max(0, ahead - CONFIG.VEHICLE.FOLLOWING_GAP);
+    return Math.max(0, ahead - CONFIG.VEHICLE.FOLLOWING_GAP - this.overhang - other.overhang);
   }
 
   update(
@@ -105,7 +108,7 @@ export class Vehicle extends THREE.Group {
     for (const crossing of crossings) {
       gap = Math.min(
         gap,
-        crossing.stoppingDistance(this.position, this.heading)
+        crossing.stoppingDistance(this.position, this.heading, this.overhang)
       );
     }
     for (const car of traffic) {

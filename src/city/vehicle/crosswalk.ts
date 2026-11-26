@@ -30,23 +30,24 @@ export class Crosswalk {
     return this.acrossX ? p.x : p.z;
   }
 
-  occupiedBy(p: GroundPoint): boolean {
+  occupiedBy(p: GroundPoint, overhang = 0): boolean {
     const side = this.acrossLane(p);
     return (
       side >= this.low &&
       side <= this.high &&
       Math.abs(this.alongLane(p) - this.center) <
-        CONFIG.VEHICLE.CROSSWALK_CLEARANCE
+        CONFIG.VEHICLE.CROSSWALK_CLEARANCE + overhang
     );
   }
 
   /** Cars already over the stop line must clear the stripes before a walker enters. */
-  stoppingDistance(p: GroundPoint, heading: GroundPoint): number {
+  stoppingDistance(p: GroundPoint, heading: GroundPoint, overhang = 0): number {
     const forward = this.alongLane(heading);
-    if (Math.abs(forward) < 0.01 || this.occupiedBy(p)) return Infinity;
+    if (Math.abs(forward) < 0.01 || this.occupiedBy(p, overhang))
+      return Infinity;
     const distance = (this.center - this.alongLane(p)) / forward;
     const side = this.acrossLane(p) + distance * this.acrossLane(heading);
     if (distance < 0 || side < this.low || side > this.high) return Infinity;
-    return Math.max(0, distance - CONFIG.VEHICLE.STOP_LINE_GAP);
+    return Math.max(0, distance - CONFIG.VEHICLE.STOP_LINE_GAP - overhang);
   }
 }

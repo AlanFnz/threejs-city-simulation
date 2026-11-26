@@ -18,7 +18,7 @@ import {
   deserialize,
   SaveGameV1,
 } from './saveGame';
-import { PUERTO_CLARO, puertoClaroGardenBlock, puertoClaroSave } from './saveGame/puertoClaro';
+import { PUERTO_CLARO, puertoClaroBusStops, puertoClaroGardenBlock, puertoClaroSave } from './saveGame/puertoClaro';
 import { createInspectorUiState } from './inspector';
 import { createGoalsUiState } from './goals';
 import {
@@ -77,7 +77,7 @@ export class Game implements IGame {
   private readonly exampleView = this.isExample ? this.query.get('view') : null;
   isPaused: boolean = false;
   private readonly saveKey = this.isExample
-    ? `${SAVE_KEY}/${PUERTO_CLARO}` + (['works','barrio','repartos','cuadra','distritos'].includes(this.exampleView ?? '') ? '/' + this.exampleView : '')
+    ? `${SAVE_KEY}/${PUERTO_CLARO}` + (['works','barrio','repartos','cuadra','distritos','colectivo'].includes(this.exampleView ?? '') ? '/' + this.exampleView : '')
     : SAVE_KEY;
   private minuteOfDay = STARTING_MINUTE;
   private lightingMode: LightingMode = 'Auto';
@@ -103,7 +103,8 @@ export class Game implements IGame {
     (focus) => this.updateCameraFocus(focus),
     () => this.activeToolId,
     () => this.isPaused ? 0 : this.simulationSpeed,
-    () => this.minuteOfDay
+    () => this.minuteOfDay,
+    this.isExample ? puertoClaroBusStops(this.city.size) : []
   );
   private unsubscribers: Unsubscribe[] = [];
   private tools: Record<string, Tool> = createTools();
@@ -330,7 +331,11 @@ export class Game implements IGame {
     this.selectTool(TOOLBAR_BUTTONS.SELECT.id);
     this.onGameStateReplaced();
     const site = this.exampleView === 'works' && data.tiles.find(tile => tile.constructionTicks !== undefined);
-    if (this.exampleView === 'distritos' && this.query.get('focus') === 'calle') {
+    const busStop = this.exampleView === 'colectivo' && this.sceneManager.getBusStop();
+    if (busStop) {
+      this.sceneManager.cameraManager.frameLots([busStop], { minimumHeight: 1.5, padding: 0.08, azimuth: 225, elevation: 48 });
+      if (this.query.get('focus') === 'viaje') this.sceneManager.followBusPassenger();
+    } else if (this.exampleView === 'distritos' && this.query.get('focus') === 'calle') {
       const [home] = puertoClaroGardenBlock(this.city.size);
       this.sceneManager.cameraManager.frameLots(
         [{ x: home.x + 2, y: home.y + 1 }],
@@ -353,6 +358,7 @@ export class Game implements IGame {
 
   private startExampleCity(): void {
     const example = puertoClaroSave(this.city.size);
+    if (this.exampleView === 'colectivo') example.minuteOfDay = 7 * 60 + 30;
     if (this.exampleView === 'cuadra') example.minuteOfDay = 7 * 60 + 25;
     this.restoreCity(example);
     this.saveGame();

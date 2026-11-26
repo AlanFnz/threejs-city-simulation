@@ -142,6 +142,17 @@ export function puertoClaroGardenBlock(size: number) {
   ];
 }
 
+// The municipal line calls at the western apartment block, the southern
+// shopping street and the freight district. Coordinates are relative to the old town.
+export function puertoClaroBusStops(size: number) {
+  const { west, north } = streetOrigin(size);
+  return [
+    { x: west - 2, y: north + 2 },
+    { x: west + 12, y: north + 14 },
+    { x: west + 30, y: north + 2 },
+  ];
+}
+
 export function puertoClaroSave(size: number): SaveGameV1 {
   const save = blankSave();
   save.cityName = 'Puerto Claro';
@@ -239,6 +250,23 @@ export function puertoClaroSave(size: number): SaveGameV1 {
     }
   }
   if (expanded) {
+    const [home, store, factory] = puertoClaroBusStops(size);
+    const household = save.tiles.find(
+      (t) => t.x === home.x && t.y === home.y
+    )?.residents;
+    if (household) {
+      for (const [i, workplace] of [factory, store].entries()) {
+        household[i].workplace = workplace;
+        household[i].state = CITIZEN_STATE.EMPLOYED;
+      }
+    }
+    const neighbor = save.tiles.find(
+      (t) => t.x === home.x - 1 && t.y === home.y
+    )?.residents?.[0];
+    if (neighbor) {
+      neighbor.workplace = factory;
+      neighbor.state = CITIZEN_STATE.EMPLOYED;
+    }
     staffNeighborhoods(save.tiles);
   }
   return save;

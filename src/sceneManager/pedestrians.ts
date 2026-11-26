@@ -427,6 +427,29 @@ export class Pedestrians extends THREE.Group {
     }
   }
 
+  walksToStop(stop: StreetDoor): Map<StreetDoor, THREE.Vector3[]> {
+    const walks = new Map([[stop, [stop.door, stop.curb]]]);
+    const landing = this.paths.attach(stop.curb, stop.road);
+    if (!landing) return walks;
+    for (const [home, node] of this.homes) {
+      if (Math.abs(home.x - stop.x) + Math.abs(home.z - stop.z) !== 1) continue;
+      const trip = findDestination(node, new Map([[landing, true]]), 2);
+      if (
+        !trip ||
+        trip.points.some(
+          (p, i) =>
+            i > 0 &&
+            this.paths.crossings.has(p) &&
+            this.paths.crossings.get(p) ===
+              this.paths.crossings.get(trip.points[i - 1])
+        )
+      )
+        continue;
+      walks.set(home, [home.door, ...trip.points, stop.curb]);
+    }
+    return walks;
+  }
+
   private route(
     home: StreetDoor,
     start: Node,
@@ -488,6 +511,7 @@ export class Pedestrians extends THREE.Group {
     return walk;
   }
 
+  transitHomeSince?: (id: string) => number | undefined;
 
   updateResidents(city: ICity, minute: number, restoreClock = false): void {
     const reset =
@@ -504,7 +528,10 @@ export class Pedestrians extends THREE.Group {
       if (outings.size >= MAX_WALKERS) break;
       const building = city.getTile(home.x, home.z)?.building;
       if (!building || !('residents' in building)) continue;
-      const residents = building.residents.all;
+      const residents = building.residents.all.filter(
+        (person) =>
+          this.transitHomeSince?.(person.id) === undefined
+      );
       for (const worker of residents) {
         const job = worker.workplace;
         if (!job) continue;
@@ -565,6 +592,8 @@ export class Pedestrians extends THREE.Group {
   }
 
   readonly homeSince = (person: Citizen): number => {
+    const transit = this.transitHomeSince?.(person.id);
+    if (transit !== undefined) return transit;
     const walker = this.walkers.find((w) => w.resident === person.id);
     if (walker && (walker.isCommute || !person.workplace))
       return walker.homeArrival;

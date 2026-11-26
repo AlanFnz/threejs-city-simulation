@@ -62,7 +62,7 @@ export class VehicleGraph extends THREE.Group {
   }
 
   readonly isCrossingOccupied = (crossing: Crosswalk): boolean =>
-    this.vehicles.children.some((car) => crossing.occupiedBy(car.position));
+    this.vehicles.children.some((car) => crossing.occupiedBy(car.position, (car as Vehicle).overhang));
 
   updateVehicles(
     dt: number,

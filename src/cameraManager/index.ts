@@ -32,6 +32,7 @@ export interface ICameraManager {
   camera: THREE.OrthographicCamera;
   getFocus(): CameraFocus;
   focusOnTile(x: number, y: number): void;
+  trackPosition(x: number, y: number): void;
   frameLots(lots: readonly CameraFocus[], options?: FramingOptions): void;
   update(deltaSeconds: number): void;
   onKeyDown(event: KeyboardEvent): void;
@@ -149,6 +150,14 @@ export class CameraManager implements ICameraManager {
     this.cameraOrigin.set(x, 0, y);
     this.updateCameraPosition();
     this.onFocusChanged(this.getFocus());
+  }
+
+  public trackPosition(x: number, y: number): void {
+    const previous = this.cameraOrigin;
+    const refreshMap = Math.round(x * 5) !== Math.round(previous.x * 5) || Math.round(y * 5) !== Math.round(previous.z * 5);
+    this.cameraOrigin.set(x, 0, y);
+    this.updateCameraPosition();
+    if (refreshMap) this.onFocusChanged(this.getFocus());
   }
 
   public getFocus(): CameraFocus {

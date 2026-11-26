@@ -81,6 +81,7 @@ export interface Config {
     /** tiles per side */
     SIZE: number;
   };
+  TRANSIT: { STOP_SECONDS: number; WALK_SPEED: number; VISIT_SECONDS: number };
   VEHICLE: {
     /** distance per millisecond */
     SPEED: number;
@@ -218,6 +219,7 @@ const CONFIG = {
     MINUTES_PER_TICK: minutesPerTick,
     SIZE: 48,
   },
+  TRANSIT: { STOP_SECONDS: 4, WALK_SPEED: 0.18, VISIT_SECONDS: 18 },
   VEHICLE: {
     SPEED: 0.0005,
     BRAKING: 0.9,
