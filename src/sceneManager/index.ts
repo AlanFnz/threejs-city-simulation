@@ -1,3 +1,4 @@
+import { CitySound } from '../audio/citySound';
 import CONFIG from '../config';
 import * as THREE from 'three';
 import { daylightAt } from './daylight';
@@ -80,6 +81,7 @@ interface BuildingSlotRecord {
 }
 
 export interface ISceneManager {
+  sound: CitySound;
   setLightingHour(hour: number, immediate: boolean): void;
   getDeliveryPreviewLots(): CameraFocus[];
   getBusStop(): CameraFocus | undefined;
@@ -100,6 +102,7 @@ export interface ISceneManager {
 }
 
 export class SceneManager implements ISceneManager {
+  readonly sound: CitySound;
   private renderer: THREE.WebGLRenderer;
   private scene: THREE.Scene;
   private gameWindow: HTMLElement;
@@ -156,6 +159,7 @@ export class SceneManager implements ISceneManager {
     this.renderer = new THREE.WebGLRenderer({
       antialias: true,
     });
+    this.sound = new CitySound();
     this.scene = new THREE.Scene();
     this.sea = createSea(city.size);
     this.woodland = new Woodland(city.size);
@@ -753,6 +757,7 @@ export class SceneManager implements ISceneManager {
     }
     this.connections.animateNeighborhood(this.connections.pedestrians.streetMinute, this.deliveries.receiving);
     this.sea.material.uniforms.time.value = this.reduceMotion.matches ? 0 : time / 1000;
+    this.sound.update(time, this.vehicleGraph.city, this.cameraManager, this.dusk.value, !!speed, this.busLine);
     this.renderer.render(this.scene, this.cameraManager.camera);
   }
 

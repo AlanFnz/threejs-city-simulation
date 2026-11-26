@@ -176,6 +176,10 @@ class CityBus extends Vehicle {
     this.itinerary = itinerary;
     this.next = (start + 2) % itinerary.length;
   }
+  get doorPhase() {
+    if (this.dwell === 0) return 'moving';
+    return this.dwell < CONFIG.TRANSIT.STOP_SECONDS - 0.35 ? 'open' : 'closing';
+  }
   private face(stop: Platform) {
     this.heading.copy(stop.bay.heading);
     this.quaternion.setFromUnitVectors(forward, this.heading);
@@ -263,6 +267,7 @@ export class BusLine {
   ) {
     graph.add(this.scene);
   }
+  get soundSource() { return this.bus?.parent ? this.bus : undefined; }
   get origin(): Lot | undefined {
     const point = this.bus?.platforms[0].bay.frontage.curb;
     return point && { x: point.x, y: point.z };

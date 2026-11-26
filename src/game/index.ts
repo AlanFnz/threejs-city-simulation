@@ -212,6 +212,7 @@ export class Game implements IGame {
     this.unsubscribers.forEach((unsubscribe) => unsubscribe());
     if (this.simulationInterval) clearInterval(this.simulationInterval);
     this.simulationInterval = null;
+    this.sceneManager.sound.dispose();
     this.ui.dispose();
   }
 
@@ -446,7 +447,10 @@ export class Game implements IGame {
     if (!this.milestoneTracker.isUnlocked(TOOLBAR_BUTTONS.BULLDOZE.id)) return;
     this.sceneManager.deactivateObject();
     const result = bulldozeTile(tile, this.gameContext);
-    if (result.status === 'applied') this.updateInfoOverlay();
+    if (result.status === 'applied') {
+      this.sceneManager.sound.feedback('effects');
+      this.updateInfoOverlay();
+    }
   }
 
   closeInspector(): void {
@@ -548,6 +552,7 @@ export class Game implements IGame {
       return;
     const handler = (isDrag && tool.onDrag) || tool.onTileClick;
     const result = handler.call(tool, tile, object, this.gameContext);
+    if (result.status === 'applied' && tool.id !== 'SELECT') this.sceneManager.sound.feedback('effects');
     if (!isDrag && result.status === 'rejected') {
       this.ui.showNotification(
         createToolRejectionNotification(result.reason, tool.id)

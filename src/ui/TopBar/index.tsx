@@ -9,8 +9,9 @@ import type { CensusUiState } from '../store';
 import type { UiNotification } from '../store';
 import { PopulationPanel } from './PopulationPanel';
 import { ActivityLog } from './ActivityLog';
+import { SoundControls } from './SoundControls';
 
-type OpenTopBarPanel = 'budget' | 'population' | 'menu' | null;
+type OpenTopBarPanel = 'sound' | 'budget' | 'population' | 'menu' | null;
 
 interface TopBarProps {
   isExample: boolean;
@@ -64,6 +65,8 @@ function TopBar({
   const clock = [Math.floor(minuteOfDay / 60), minuteOfDay % 60]
     .map(part => String(part).padStart(2, '0')).join(':');
   const [openPanel, setOpenPanel] = useState<OpenTopBarPanel>(null);
+  const soundContainer = useRef<HTMLDivElement>(null);
+  const soundButton = useRef<HTMLButtonElement>(null);
   const budgetContainer = useRef<HTMLDivElement>(null);
   const budgetButton = useRef<HTMLButtonElement>(null);
   const populationContainer = useRef<HTMLDivElement>(null);
@@ -74,13 +77,10 @@ function TopBar({
   useEffect(() => {
     if (!openPanel) return;
 
+    const containers = { budget: budgetContainer, population: populationContainer, menu: menuContainer, sound: soundContainer };
+    const buttons = { budget: budgetButton, population: populationButton, menu: menuButton, sound: soundButton };
     const onPointerDown = (event: PointerEvent) => {
-      const activeContainer =
-        openPanel === 'budget'
-          ? budgetContainer.current
-          : openPanel === 'population'
-            ? populationContainer.current
-            : menuContainer.current;
+      const activeContainer = containers[openPanel].current;
       if (!activeContainer?.contains(event.target as Node)) {
         setOpenPanel(null);
       }
@@ -88,12 +88,7 @@ function TopBar({
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key !== 'Escape') return;
       setOpenPanel(null);
-      (openPanel === 'budget'
-        ? budgetButton
-        : openPanel === 'population'
-          ? populationButton
-          : menuButton
-      ).current?.focus();
+      buttons[openPanel].current?.focus();
     };
 
     document.addEventListener('pointerdown', onPointerDown);
@@ -145,6 +140,9 @@ function TopBar({
         id="ui-topbar-left-items"
         className="ui-topbar-items ui-topbar-left-items"
       >
+        <div className="sound-controls" ref={soundContainer}>
+          <SoundControls button={soundButton} open={openPanel === 'sound'} toggle={() => setOpenPanel(openPanel === 'sound' ? null : 'sound')} />
+        </div>
         <label className="daylight-picker" title="Scene lighting">
           <span aria-hidden="true">◐</span>
           <select aria-label="Scene lighting" value={lightingMode}

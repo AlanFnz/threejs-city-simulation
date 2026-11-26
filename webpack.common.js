@@ -40,6 +40,13 @@ module.exports = {
         ],
       },
       {
+        test: /\.ogg$/i,
+        use: {
+          loader: 'file-loader',
+          options: { outputPath: 'assets/audio', name: '[name].[contenthash:8].[ext]' },
+        },
+      },
+      {
         // font files
         test: /\.(otf|ttf)$/i,
         type: 'asset/resource',
