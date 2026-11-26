@@ -13,6 +13,8 @@ import { models } from './models';
 import { ModelEntry, ModelKey, modelType } from './constants';
 import { DevelopmentState } from '../city/building/attributes/development';
 
+import { METERS_PER_TILE } from './worldScale';
+
 const DEG2RAD = Math.PI / 180.0;
 
 /** Building types with no zone leveling/styling - a single fixed model at
@@ -112,7 +114,7 @@ export class AssetManager implements IAssetManager {
 
         mesh.position.set(0, 0, 0);
         mesh.rotation.set(0, THREE.MathUtils.degToRad(rotation), 0);
-        mesh.scale.set(scale / 30, scale / 30, scale / 30);
+        mesh.scale.setScalar(scale / METERS_PER_TILE);
 
         this.loadedModels[name] = mesh as THREE.Mesh;
 

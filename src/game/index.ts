@@ -329,7 +329,13 @@ export class Game implements IGame {
     this.selectTool(TOOLBAR_BUTTONS.SELECT.id);
     this.onGameStateReplaced();
     const site = this.exampleView === 'works' && data.tiles.find(tile => tile.constructionTicks !== undefined);
-    if (this.exampleView === 'barrio') {
+    if (this.exampleView === 'distritos' && this.query.get('focus') === 'calle') {
+      const [home] = puertoClaroGardenBlock(this.city.size);
+      this.sceneManager.cameraManager.frameLots(
+        [{ x: home.x + 2, y: home.y + 1 }],
+        { minimumHeight: 1.6, padding: 0.1, azimuth: 125, elevation: 34 }
+      );
+    } else if (this.exampleView === 'barrio') {
       this.sceneManager.cameraManager.frameLots(puertoClaroGardenBlock(this.city.size), { minimumHeight: 6, azimuth: 22 });
     } else {
       this.sceneManager.cameraManager.frameLots(site ? [site] : data.tiles);

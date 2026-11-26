@@ -1,3 +1,4 @@
+import { METERS_PER_TILE } from '../assetManager/worldScale';
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { isConstructionSite, ModelKey } from '../assetManager/constants';
@@ -36,24 +37,23 @@ function lampGeometry(): THREE.BufferGeometry {
   ]);
   const glass = ring(0.029, 0.039, 0.237, 0.048, 0xffe29c);
   // A separate unlit material keeps the panes warm even on the shaded side.
-  return mergeGeometries([housing, glass], true);
+  return mergeGeometries([housing, glass], true).scale(0.29, 0.48, 0.29);
 }
 
 function benchGeometry(): THREE.BufferGeometry {
   const parts: THREE.BufferGeometry[] = [];
-  for (const x of [-0.063, 0.063]) {
-    parts.push(coloredShape(block, IRON, x, 0.021, 0, 0.013, 0.042, 0.065));
-    parts.push(coloredShape(block, IRON, x, 0.054, -0.031, 0.012, 0.09, 0.012));
+  for (const x of [-0.63, 0.63]) {
+    parts.push(coloredShape(block, IRON, x, 0.21, 0, 0.065, 0.42, 0.46));
+    parts.push(coloredShape(block, IRON, x, 0.46, -0.205, 0.055, 0.83, 0.055));
   }
-  for (const z of [-0.02, 0, 0.02]) {
-    parts.push(coloredShape(block, 0xbc804e, 0, 0.045, z, 0.182, 0.012, 0.016));
+  for (const z of [-0.16, 0, 0.16]) {
+    parts.push(coloredShape(block, 0xbc804e, 0, 0.429, z, 1.82, 0.042, 0.145));
   }
-  for (const y of [0.073, 0.095]) {
-    parts.push(
-      coloredShape(block, 0xa56a40, 0, y, -0.025, 0.182, 0.017, 0.013)
-    );
+  for (const y of [0.67, 0.84]) {
+    parts.push(coloredShape(block, 0xa56a40, 0, y, -0.19, 1.82, 0.115, 0.05));
   }
-  return mergeGeometries(parts);
+  const unit = 1 / METERS_PER_TILE;
+  return mergeGeometries(parts).scale(unit, unit, unit);
 }
 
 function signGeometry(): THREE.BufferGeometry {
@@ -93,7 +93,7 @@ function signGeometry(): THREE.BufferGeometry {
       )
     );
   }
-  return mergeGeometries(parts);
+  return mergeGeometries(parts).scale(0.43, 0.5, 0.43);
 }
 
 // Centers of the sidewalk bands in the unrotated road GLBs, in tile units.
@@ -142,7 +142,7 @@ export class StreetFurniture extends THREE.Group {
         }`,
     });
     this.pools = new THREE.InstancedMesh(
-      new THREE.PlaneGeometry(0.85, 0.85).rotateX(-Math.PI / 2),
+      new THREE.PlaneGeometry(0.5, 0.5).rotateX(-Math.PI / 2),
       poolMaterial,
       tiles * 2
     );
@@ -232,16 +232,16 @@ export class StreetFurniture extends THREE.Group {
     const pathX = door.x + (z - door.z) * slope;
     const side = pathX > 0 ? -1 : 1;
     const edge = pathX + side * halfWidth * Math.hypot(1, slope);
-    const x = edge + side * (0.115 + 0.045 * Math.abs(slope));
     const bench = type === BUILDING_TYPE.COMMERCIAL;
+    const x = edge + side * ((bench ? 0.045 : 0.115) + 0.045 * Math.abs(slope));
     this.transform.makeTranslation(x, bench ? start.y : 0, z).premultiply(lot);
     const batch = bench ? this.benches : this.signs;
     batch.setMatrixAt(batch.count++, this.transform);
 
     if (bench) {
       // Extend the pavement beside the walkway, right up to both bench feet.
-      const depth = 0.046;
-      const outer = x + side * 0.104;
+      const depth = 0.019;
+      const outer = x + side * 0.036;
       const inner = (dz: number) => edge + slope * dz - side * 0.002;
       const corners = [
         new THREE.Vector3(inner(-depth), start.y, z - depth),
@@ -256,9 +256,7 @@ export class StreetFurniture extends THREE.Group {
       }
       return {
         approach: new THREE.Vector3(pathX, start.y, z).applyMatrix4(lot),
-        seat: new THREE.Vector3(x, start.y + 0.002, z + 0.003).applyMatrix4(
-          lot
-        ),
+        seat: new THREE.Vector3(x, start.y, z).applyMatrix4(lot),
         yaw: Math.atan2(lot.elements[8], lot.elements[10]),
       };
     }

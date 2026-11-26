@@ -1,9 +1,8 @@
+import { ResidentFigure } from './residentFigure';
 import CONFIG from '../config';
 import { Crosswalk } from '../city/vehicle/crosswalk';
 import * as THREE from 'three';
 import { ModelKey } from '../assetManager/constants';
-import { coloredShape } from './coast';
-import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 
 type Node = { point: THREE.Vector3; links: Set<Node> };
 type Face = { triangle: THREE.Triangle; center: Node };
@@ -173,16 +172,9 @@ function findShop<T>(
   }
 }
 
-const block = new THREE.BoxGeometry(1, 1, 1);
-const skin = new THREE.SphereGeometry(0.018, 7, 5);
-const fabric = new THREE.MeshLambertMaterial({ vertexColors: true });
-const pants = new THREE.MeshLambertMaterial({ color: 0x334654 });
-const leg = new THREE.BoxGeometry(0.016, 0.048, 0.018).translate(0, -0.024, 0);
-
 const WALK_SPEED = 0.27;
 
-class Walker extends THREE.Group {
-  readonly legs = [new THREE.Mesh(leg, pants), new THREE.Mesh(leg, pants)];
+class Walker extends ResidentFigure {
   points: THREE.Vector3[] = [];
   distances: number[] = [];
   yaw = 0;
@@ -190,26 +182,10 @@ class Walker extends THREE.Group {
   private crossings: { crossing: Crosswalk; start: number; end: number }[] = [];
   routeId = '';
 
-  constructor(shirt: number, complexion: number) {
+  constructor(id: string) {
     super();
-    const body = new THREE.Mesh(
-      mergeGeometries([
-        coloredShape(block, shirt, 0, 0.074, 0, 0.047, 0.057, 0.03),
-        coloredShape(skin, complexion, 0, 0.12, 0),
-        coloredShape(block, 0x453832, 0, 0.133, -0.002, 0.03, 0.012, 0.028),
-      ]),
-      fabric
-    );
-    body.castShadow = true;
-    this.add(body, ...this.legs);
-    this.legs.forEach((part, i) =>
-      part.position.set(i ? 0.012 : -0.012, 0.05, 0)
-    );
+    this.dress(id);
     this.visible = false;
-    this.traverse((o) => {
-      o.userData.nonInteractive = true;
-      o.raycast = () => {};
-    });
   }
 
   setRoute(
@@ -321,21 +297,16 @@ class Walker extends THREE.Group {
     this.rotation.y = seated
       ? this.yaw
       : Math.atan2(b.x - a.x, b.z - a.z) + (returning ? Math.PI : 0);
-    this.legs.forEach((part, index) => {
-      part.rotation.x = seated
-        ? -1.4
-        : waiting
-          ? 0
-          : Math.sin(t * 12 + index * Math.PI) * 0.43;
-    });
+    if (seated) this.sit();
+    else this.gait(t * 11, !waiting);
   }
 }
 
 export class Pedestrians extends THREE.Group {
   private walkers = [
-    new Walker(0xce654b, 0xe9b88b),
-    new Walker(0xe5ae4f, 0x986a4a),
-    new Walker(0x59899d, 0xd19c75),
+    new Walker('walker-0'),
+    new Walker('walker-1'),
+    new Walker('walker-2'),
   ];
 
   constructor() {

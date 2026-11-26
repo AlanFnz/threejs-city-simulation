@@ -23,7 +23,9 @@ export interface CameraFocus {
 
 interface FramingOptions {
   minimumHeight?: number;
+  padding?: number;
   azimuth?: number;
+  elevation?: number;
 }
 
 export interface ICameraManager {
@@ -132,7 +134,9 @@ export class CameraManager implements ICameraManager {
     const span = Math.hypot(maxX - minX + 1, maxY - minY + 1);
     const aspect = (this.camera.right - this.camera.left) / CAMERA_SIZE;
     if (options.azimuth !== undefined) this.cameraAzimuth = options.azimuth;
-    const height = Math.max(options.minimumHeight ?? 10, span + 2, (span + 4) / aspect);
+    if (options.elevation !== undefined) this.cameraElevation = THREE.MathUtils.clamp(options.elevation, MIN_CAMERA_ELEVATION, MAX_CAMERA_ELEVATION);
+    const padding = options.padding ?? 2;
+    const height = Math.max(options.minimumHeight ?? 10, span + padding, (span + 2 * padding) / aspect);
     this.targetCameraRadius = this.cameraRadius = THREE.MathUtils.clamp(
       CAMERA_SIZE / height, this.minCameraRadius, MAX_CAMERA_RADIUS
     );
