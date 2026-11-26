@@ -4,6 +4,7 @@ import { daylightAt } from './daylight';
 import { GroundShadowCamera } from './groundShadowCamera';
 import { STARTING_MINUTE } from '../game/simulationDay';
 import { PowerView, addWindowLighting } from './powerView';
+import { householdLights } from './householdLights';
 import { Deliveries } from './deliveries';
 import { CityConnections } from './cityConnections';
 import { getBuildingFacing, isPowerNode } from '../assetManager/frontage';
@@ -636,18 +637,25 @@ export class SceneManager implements ISceneManager {
     }
     const people = this.connections.pedestrians;
     people.updateResidents(city, this.cityMinute(), restoreClock || this.reduceMotion.matches);
+    this.connections.updateNeighborhood(city, people.streetMinute);
     if (wiresChanged) this.connections.updateWires(this.buildingSlots);
 
     const supplyChanged = this.powerView.updateSupply(city);
-    if (supplyChanged || pathsChanged) {
-      this.connections.updateLights(this.powerView, this.streetlightsOn);
-      for (const pool of this.buildingPools.values()) {
-        const power = pool.mesh.geometry.getAttribute('windowPower');
-        if (!power) continue;
-        for (const [i,tile] of pool.tileAtSlot.entries()) {
-          const value = Number(!!tile?.powerAccess?.value && !this.buildingSlots[tile.x][tile.y]?.abandoned);
-          if (power.getX(i) === value) continue;
-          power.setX(i,value);
+    if (supplyChanged || pathsChanged) this.connections.updateLights(this.powerView, this.streetlightsOn);
+    for (const [modelKey, pool] of this.buildingPools) {
+      const residential = modelKey.startsWith('RESIDENTIAL-');
+      if (!residential && !pathsChanged && !supplyChanged && !restoreClock) continue;
+      const power = pool.mesh.geometry.getAttribute('windowPower');
+      if (!power) continue;
+      for (const [i, tile] of pool.tileAtSlot.entries()) {
+        let value = 0;
+        if (tile?.powerAccess?.value && !this.buildingSlots[tile.x][tile.y]?.abandoned) {
+          const building = tile.building;
+          value = residential && building && 'residents' in building
+            ? Math.fround(householdLights(building.residents.all, people.streetMinute, people.homeSince)) : 1;
+        }
+        if (power.getX(i) !== value) {
+          power.setX(i, value);
           power.needsUpdate = true;
         }
       }
@@ -700,6 +708,7 @@ export class SceneManager implements ISceneManager {
       this.vehicleGraph.updateVehicles(step, crossings, this.connections.pedestrians.approaching);
       trafficTime -= step;
     }
+    this.connections.animateNeighborhood(this.connections.pedestrians.streetMinute, this.deliveries.receiving);
     this.sea.material.uniforms.time.value = this.reduceMotion.matches ? 0 : time / 1000;
     this.renderer.render(this.scene, this.cameraManager.camera);
   }

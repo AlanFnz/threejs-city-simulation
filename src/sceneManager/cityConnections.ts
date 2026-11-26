@@ -1,5 +1,8 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
+import type { ICity } from '../city';
+import { ShopShutters } from './shopShutters';
+import { GardenConversations, type GardenHome } from './gardenConversations';
 import { FrontGardens } from './frontGardens';
 import { StreetFurniture } from './streetFurniture';
 import { isConstructionSite, ModelKey } from '../assetManager/constants';
@@ -122,18 +125,23 @@ export class CityConnections extends THREE.Group {
   private furniture: StreetFurniture;
   private gardens: FrontGardens;
   private promenade = new Promenade();
+  private shutters: ShopShutters;
+  private conversations = new GardenConversations();
 
   constructor(size: number, darkness: { value: number }) {
     super();
     this.paths.receiveShadow = true;
     this.wires.castShadow = true;
     this.gardens = new FrontGardens(size);
+    this.shutters = new ShopShutters(size);
     this.furniture = new StreetFurniture(size, darkness);
     this.add(
       this.paths,
       this.wires,
       this.furniture,
       this.gardens,
+      this.shutters,
+      this.conversations,
       this.promenade,
       this.pedestrians
     );
@@ -149,11 +157,25 @@ export class CityConnections extends THREE.Group {
     this.furniture.updateLights(power, dusk);
   }
 
+  updateNeighborhood(city: ICity, minute: number): void {
+    this.conversations.schedule(city, this.pedestrians.homeSince);
+    this.conversations.update(minute);
+  }
+
+  animateNeighborhood(
+    minute: number,
+    receiving?: { x: number; z: number; opening: number }
+  ): void {
+    this.shutters.update(minute, receiving);
+    this.conversations.update(minute);
+  }
+
   updatePaths(
     lots: Lots,
     getGeometry: (key: ModelKey) => THREE.BufferGeometry
   ): FreightStops {
     const factories: StreetDoor[] = [];
+    const gardenHomes: GardenHome[] = [];
     const vertices: number[] = [];
     const paths = new Footpaths();
     const homesByShopCount: StreetDoor[][] = [[], [], [], []],
@@ -231,6 +253,11 @@ export class CityConnections extends THREE.Group {
             homesByShopCount[shopCount].push(frontage);
             if (shopCount) {
               this.gardens.addHome(lot.matrix, start, end, halfWidth);
+              gardenHomes.push({
+                ...frontage,
+                matrix: lot.matrix,
+                facing: lot.facing,
+              });
             }
           }
           if (lot.buildingType === BUILDING_TYPE.INDUSTRIAL || stop)
@@ -259,6 +286,8 @@ export class CityConnections extends THREE.Group {
         }
       }
     }
+    this.shutters.rebuild(shops);
+    this.conversations.rebuild(gardenHomes);
     this.furniture.finishUpdate();
     this.gardens.finishUpdate();
     this.promenade.rebuild(

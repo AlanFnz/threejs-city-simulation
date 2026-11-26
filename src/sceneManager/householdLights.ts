@@ -1,3 +1,4 @@
+import { MathUtils } from 'three';
 import type { Citizen } from '../city/citizen';
 
 export function residentSpread(id: string): number {
@@ -19,4 +20,22 @@ export function estimatedHomecoming(person: Citizen): number {
   const blocks =
     Math.abs(job.x - person.residence.x) + Math.abs(job.y - person.residence.y);
   return shiftEnd(residentSpread(person.id)) + 15 + 15 * blocks;
+}
+
+export function householdLights(
+  residents: readonly Citizen[],
+  minute: number,
+  homeSince: (person: Citizen) => number
+): number {
+  if (!residents.length) return 0;
+  if (minute < 7 * 60) return 1 - MathUtils.smoothstep(minute, 5 * 60, 7 * 60);
+  if (minute < 16 * 60) return 0;
+  let lit = 0;
+  for (const person of residents) {
+    const evening = 16.5 * 60 + residentSpread(person.id) * 70;
+    const arrival = Math.max(evening, homeSince(person));
+    if (minute >= arrival)
+      lit += 0.35 + 0.65 * MathUtils.smoothstep(minute, arrival, arrival + 35);
+  }
+  return lit / residents.length;
 }

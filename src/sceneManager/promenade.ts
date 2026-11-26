@@ -155,7 +155,7 @@ function pave(surface: Surface, a: THREE.Vector3, b: THREE.Vector3): void {
 }
 
 // Measured on the baked shop models. Leave the low burger stand's existing canopy clear.
-const awnings: Partial<
+export const shopfrontFits: Partial<
   Record<ModelKey, readonly [number, number, number, number]>
 > = {
   // centre X, wall Z, mounting height, fabric width
@@ -171,7 +171,7 @@ const awnings: Partial<
 const dyes = [0xb55640, 0x39776d, 0xc08d39];
 
 function canopy(surface: Surface, shop: ShopFront): void {
-  const fit = awnings[shop.modelKey];
+  const fit = shopfrontFits[shop.modelKey];
   if (!fit) return;
   const [x, z, h, width] = fit;
   const trim = dyes[(shop.x + 2 * shop.z) % dyes.length];

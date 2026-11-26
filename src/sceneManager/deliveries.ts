@@ -80,6 +80,22 @@ class DeliveryTruck extends Vehicle {
       route.shop.frontage.curb.distanceTo(route.shop.frontage.door);
   }
 
+  get receiving() {
+    // The shopkeeper also lifts the shutter for a late delivery. Only the
+    // final approach and the pull-away belong to this stop.
+    const shopIndex = this.route.outbound.length;
+    if (this.nextIndex < shopIndex - 2 || this.nextIndex > shopIndex + 2)
+      return;
+    const distance = this.position.distanceTo(this.route.shop.park);
+    if (distance >= 0.55) return;
+    const { x, z } = this.route.shop.frontage;
+    return {
+      x,
+      z,
+      opening: 1 - THREE.MathUtils.smoothstep(distance, 0.08, 0.55),
+    };
+  }
+
   // The box body still occupies part of the lane when pulled over.
   protected get laneClearance(): number {
     return 0.072;
@@ -190,6 +206,10 @@ export class Deliveries {
       this.planned = true;
     }
     return this.ready;
+  }
+
+  get receiving() {
+    return this.truck?.parent ? this.truck.receiving : undefined;
   }
 
   previewLots(): { x: number; y: number }[] {

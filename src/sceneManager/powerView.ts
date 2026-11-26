@@ -128,6 +128,48 @@ export class PowerView extends THREE.InstancedMesh {
   }
 }
 
+// Give both triangles of a pane the same switch. Some GLBs split vertices
+// along UV seams, so join the glass triangles by their corner positions.
+function paneGroups(geometry: THREE.BufferGeometry): THREE.BufferAttribute {
+  const uv = geometry.getAttribute('uv'),
+    pos = geometry.getAttribute('position');
+  const groups = new Float32Array(pos.count).fill(-1);
+  const corners = new Map<string, number>();
+  const parent: number[] = [];
+  function root(n: number): number {
+    while (parent[n] !== n) {
+      parent[n] = parent[parent[n]];
+      n = parent[n];
+    }
+    return n;
+  }
+  const corner = (i: number) => {
+    const key = [pos.getX(i), pos.getY(i), pos.getZ(i)]
+      .map((n) => Math.round(n * 10000))
+      .join(',');
+    const existing = corners.get(key);
+    if (existing !== undefined) return existing;
+    const id = parent.length;
+    parent.push(id);
+    corners.set(key, id);
+    return id;
+  };
+  const index = geometry.index;
+  for (let t = 0; t < (index?.count ?? pos.count); t += 3) {
+    const vertices = [t, t + 1, t + 2].map((i) => (index ? index.getX(i) : i));
+    if (!vertices.every((i) => uv.getX(i) >= 0.875 && uv.getY(i) >= 0.875))
+      continue;
+    const ids = vertices.map(corner);
+    for (let i = 0; i < 3; i++) {
+      parent[root(ids[i])] = root(ids[0]);
+      groups[vertices[i]] = ids[i];
+    }
+  }
+  for (let i = 0; i < groups.length; i++)
+    if (groups[i] >= 0) groups[i] = root(groups[i]);
+  return new THREE.BufferAttribute(groups, 1);
+}
+
 // The final swatch in the shared model atlas is architectural glass.
 export function addWindowLighting(
   mesh: THREE.InstancedMesh,
@@ -137,18 +179,18 @@ export function addWindowLighting(
     'windowPower',
     new THREE.InstancedBufferAttribute(new Float32Array(mesh.count), 1)
   );
+  mesh.geometry.setAttribute('windowGroup', paneGroups(mesh.geometry));
   const material = mesh.material as THREE.MeshLambertMaterial;
   material.onBeforeCompile = (shader) => {
     shader.uniforms.dusk = dusk;
     shader.vertexShader =
-      'attribute float windowPower; varying float paneLight;\n' +
+      'attribute float windowPower; attribute float windowGroup; varying float paneLight;\n' +
       shader.vertexShader.replace(
         '#include <uv_vertex>',
         `#include <uv_vertex>
-      float glass = step(0.875, uv.x) * step(0.875, uv.y);
-      float floorBand = floor(position.y * 7.0 + 0.3);
-      float occupied = fract(sin(dot(instanceMatrix[3].xz, vec2(27.1, 61.7)) + floorBand * 8.3) * 1743.37);
-      paneLight = glass * windowPower * mix(0.4, 1.0, step(0.32, occupied));`
+      float room = fract(sin(dot(instanceMatrix[3].xz, vec2(27.1, 61.7)) + windowGroup * 0.73) * 1743.37);
+      float threshold = room * 0.85;
+      paneLight = step(0.0, windowGroup) * smoothstep(threshold, threshold + 0.12, windowPower) * mix(0.55, 1.0, room);`
       );
     shader.fragmentShader =
       'uniform float dusk; varying float paneLight;\n' +

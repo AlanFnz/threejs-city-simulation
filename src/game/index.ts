@@ -77,7 +77,7 @@ export class Game implements IGame {
   private readonly exampleView = this.isExample ? this.query.get('view') : null;
   isPaused: boolean = false;
   private readonly saveKey = this.isExample
-    ? `${SAVE_KEY}/${PUERTO_CLARO}` + (['works','barrio','repartos','distritos'].includes(this.exampleView ?? '') ? '/' + this.exampleView : '')
+    ? `${SAVE_KEY}/${PUERTO_CLARO}` + (['works','barrio','repartos','cuadra','distritos'].includes(this.exampleView ?? '') ? '/' + this.exampleView : '')
     : SAVE_KEY;
   private minuteOfDay = STARTING_MINUTE;
   private lightingMode: LightingMode = 'Auto';
@@ -336,6 +336,11 @@ export class Game implements IGame {
         [{ x: home.x + 2, y: home.y + 1 }],
         { minimumHeight: 1.6, padding: 0.1, azimuth: 125, elevation: 34 }
       );
+    } else if (this.exampleView === 'cuadra') {
+      const [garden] = puertoClaroGardenBlock(this.city.size);
+      this.sceneManager.cameraManager.frameLots([garden, { x: garden.x + 1, y: garden.y + 2 }], {
+        minimumHeight: 3.4, padding: 0.05, azimuth: 150, elevation: 36
+      });
     } else if (this.exampleView === 'barrio') {
       this.sceneManager.cameraManager.frameLots(puertoClaroGardenBlock(this.city.size), { minimumHeight: 6, azimuth: 22 });
     } else if (this.exampleView === 'repartos') {
@@ -347,7 +352,9 @@ export class Game implements IGame {
   }
 
   private startExampleCity(): void {
-    this.restoreCity(puertoClaroSave(this.city.size));
+    const example = puertoClaroSave(this.city.size);
+    if (this.exampleView === 'cuadra') example.minuteOfDay = 7 * 60 + 25;
+    this.restoreCity(example);
     this.saveGame();
   }
 
