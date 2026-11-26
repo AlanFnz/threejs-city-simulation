@@ -16,11 +16,12 @@ export class Vehicle extends THREE.Group {
 
   constructor(
     private origin: VehicleGraphNode,
-    private destination: VehicleGraphNode,
-    assetManager: IAssetManager
+    protected destination: VehicleGraphNode,
+    assetManager: IAssetManager,
+    mesh = assetManager.createRandomVehicleMesh(),
+    private readonly lifetime: number = CONFIG.VEHICLE.MAX_LIFETIME
   ) {
     super();
-    const mesh = assetManager.createRandomVehicleMesh();
     if (mesh) {
       this.add(mesh);
       mesh.traverse((object) => {
@@ -45,6 +46,22 @@ export class Vehicle extends THREE.Group {
     this.quaternion.setFromUnitVectors(FORWARD, this.heading);
   }
 
+  protected get arrived(): boolean {
+    return this.remaining <= 1e-8;
+  }
+
+  protected get stoppingAtDestination(): boolean {
+    return false;
+  }
+
+  protected nextNode(): VehicleGraphNode | null {
+    return this.destination.getRandomNextNode();
+  }
+
+  protected get laneClearance(): number {
+    return 0.035;
+  }
+
   private gapToCar(other: Vehicle): number {
     if (other === this || this.heading.dot(other.heading) < 0.9)
       return Infinity;
@@ -52,7 +69,11 @@ export class Vehicle extends THREE.Group {
     const dz = other.position.z - this.position.z;
     const ahead = dx * this.heading.x + dz * this.heading.z;
     const lateral = Math.abs(dx * this.heading.z - dz * this.heading.x);
-    if (ahead <= 0 || lateral > 0.035) return Infinity;
+    if (
+      ahead <= 0 ||
+      lateral > Math.max(this.laneClearance, other.laneClearance)
+    )
+      return Infinity;
     return Math.max(0, ahead - CONFIG.VEHICLE.FOLLOWING_GAP);
   }
 
@@ -64,13 +85,13 @@ export class Vehicle extends THREE.Group {
     if (
       !this.origin.parent ||
       !this.destination.parent ||
-      this.movingAge >= CONFIG.VEHICLE.MAX_LIFETIME
+      this.movingAge >= this.lifetime
     ) {
       this.dispose();
       return;
     }
-    if (this.remaining <= 1e-8) {
-      const next = this.destination.getRandomNextNode();
+    if (this.arrived) {
+      const next = this.nextNode();
       if (!next) {
         this.dispose();
         return;
@@ -80,7 +101,7 @@ export class Vehicle extends THREE.Group {
       this.startSegment();
     }
 
-    let gap = Infinity;
+    let gap = this.stoppingAtDestination ? this.remaining : Infinity;
     for (const crossing of crossings) {
       gap = Math.min(
         gap,
@@ -109,10 +130,10 @@ export class Vehicle extends THREE.Group {
   }
 
   private updateOpacity(): void {
+    if (!Number.isFinite(this.lifetime)) return;
     const fade = CONFIG.VEHICLE.FADE_TIME;
     const opacity = THREE.MathUtils.clamp(
-      Math.min(this.movingAge, CONFIG.VEHICLE.MAX_LIFETIME - this.movingAge) /
-        fade,
+      Math.min(this.movingAge, this.lifetime - this.movingAge) / fade,
       0,
       1
     );

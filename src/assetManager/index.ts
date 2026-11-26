@@ -43,6 +43,7 @@ export interface IAssetManager {
   ): THREE.InstancedMesh | null;
   resolveBuildingInstance(tile: ITile, facing?: number | null): ResolvedBuildingInstance | null;
   createRandomVehicleMesh(): THREE.Mesh | null;
+  createDeliveryTruckMesh(): THREE.Mesh | null;
   createPreviewMesh(
     tile: ITile,
     buildingType: BuildingType,
@@ -327,6 +328,10 @@ export class AssetManager implements IAssetManager {
     matrix.setPosition(tile.x, 0, tile.y);
 
     return { modelKey, matrix, abandoned: false };
+  }
+
+  createDeliveryTruckMesh(): THREE.Mesh | null {
+    return this.cloneMesh(ModelKey.CAR_TRUCK);
   }
 
   createRandomVehicleMesh(): THREE.Mesh | null {

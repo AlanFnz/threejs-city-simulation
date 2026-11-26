@@ -4,6 +4,7 @@ import { daylightAt } from './daylight';
 import { GroundShadowCamera } from './groundShadowCamera';
 import { STARTING_MINUTE } from '../game/simulationDay';
 import { PowerView, addWindowLighting } from './powerView';
+import { Deliveries } from './deliveries';
 import { CityConnections } from './cityConnections';
 import { getBuildingFacing, isPowerNode } from '../assetManager/frontage';
 import { Woodland } from './woodland';
@@ -78,6 +79,7 @@ interface BuildingSlotRecord {
 
 export interface ISceneManager {
   setLightingHour(hour: number, immediate: boolean): void;
+  getDeliveryPreviewLots(): CameraFocus[];
   start(): void;
   stop(): void;
   update(city: ICity, restoreClock?: boolean): void;
@@ -127,6 +129,7 @@ export class SceneManager implements ISceneManager {
    * synchronously by the setHighlightedMesh/setActiveObject call that follows
    * within the same mouse-event handler, before any other raycast can run. */
   private lastPickedInstanceIndex: number | null = null;
+  private deliveries!: Deliveries;
   private vehicleGraph: VehicleGraph = null!;
   private root: THREE.Group = new THREE.Group();
   private previewMesh: THREE.Object3D | null = null;
@@ -187,6 +190,7 @@ export class SceneManager implements ISceneManager {
 
     this.vehicleGraph = new VehicleGraph(city, this.assetManager);
     this.root.add(this.vehicleGraph);
+    this.deliveries = new Deliveries(this.vehicleGraph);
 
     this.buildingSlots = [];
     for (let x = 0; x < city.size; x++) {
@@ -627,7 +631,8 @@ export class SceneManager implements ISceneManager {
     }
 
     if (pathsChanged || restoreClock) {
-      this.connections.updatePaths(this.buildingSlots, key => this.buildingPools.get(key)!.mesh.geometry);
+      const freight = this.connections.updatePaths(this.buildingSlots, key => this.buildingPools.get(key)!.mesh.geometry);
+      this.deliveries.updateStops(freight, restoreClock);
     }
     const people = this.connections.pedestrians;
     people.updateResidents(city, this.cityMinute(), restoreClock || this.reduceMotion.matches);
@@ -650,6 +655,10 @@ export class SceneManager implements ISceneManager {
     if (terrainMatrixChanged && this.terrainMesh) {
       this.terrainMesh.instanceMatrix.needsUpdate = true;
     }
+  }
+
+  public getDeliveryPreviewLots(): CameraFocus[] {
+    return this.deliveries.previewLots();
   }
 
   public start(): void {
@@ -687,6 +696,7 @@ export class SceneManager implements ISceneManager {
     while (trafficTime > 0) {
       const step = Math.min(trafficTime, 0.05);
       const crossings = this.connections.pedestrians.advance(step, this.vehicleGraph.isCrossingOccupied, speed);
+      this.deliveries.dispatch(step, crossings, this.connections.pedestrians.approaching);
       this.vehicleGraph.updateVehicles(step, crossings, this.connections.pedestrians.approaching);
       trafficTime -= step;
     }

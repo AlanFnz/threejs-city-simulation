@@ -77,7 +77,7 @@ export class Game implements IGame {
   private readonly exampleView = this.isExample ? this.query.get('view') : null;
   isPaused: boolean = false;
   private readonly saveKey = this.isExample
-    ? `${SAVE_KEY}/${PUERTO_CLARO}` + (['works','barrio','distritos'].includes(this.exampleView ?? '') ? '/' + this.exampleView : '')
+    ? `${SAVE_KEY}/${PUERTO_CLARO}` + (['works','barrio','repartos','distritos'].includes(this.exampleView ?? '') ? '/' + this.exampleView : '')
     : SAVE_KEY;
   private minuteOfDay = STARTING_MINUTE;
   private lightingMode: LightingMode = 'Auto';
@@ -338,6 +338,9 @@ export class Game implements IGame {
       );
     } else if (this.exampleView === 'barrio') {
       this.sceneManager.cameraManager.frameLots(puertoClaroGardenBlock(this.city.size), { minimumHeight: 6, azimuth: 22 });
+    } else if (this.exampleView === 'repartos') {
+      const route = this.sceneManager.getDeliveryPreviewLots();
+      this.sceneManager.cameraManager.frameLots(route.length ? route : data.tiles, { minimumHeight: 4, padding: 0.5, azimuth: 70 });
     } else {
       this.sceneManager.cameraManager.frameLots(site ? [site] : data.tiles);
     }

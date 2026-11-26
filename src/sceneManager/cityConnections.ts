@@ -9,6 +9,7 @@ import { BUILDING_TYPE, type BuildingType } from '../city/building/constants';
 
 import { Footpaths, Pedestrians, type StreetDoor } from './pedestrians';
 import { Promenade, type ShopFront } from './promenade';
+import type { FreightStops } from './deliveryRoute';
 import type { PowerView } from './powerView';
 
 interface ConnectionLot {
@@ -151,7 +152,8 @@ export class CityConnections extends THREE.Group {
   updatePaths(
     lots: Lots,
     getGeometry: (key: ModelKey) => THREE.BufferGeometry
-  ): void {
+  ): FreightStops {
+    const factories: StreetDoor[] = [];
     const vertices: number[] = [];
     const paths = new Footpaths();
     const homesByShopCount: StreetDoor[][] = [[], [], [], []],
@@ -233,6 +235,8 @@ export class CityConnections extends THREE.Group {
           }
           if (lot.buildingType === BUILDING_TYPE.INDUSTRIAL || stop)
             workplaces.push(frontage);
+          if (lot.buildingType === BUILDING_TYPE.INDUSTRIAL)
+            factories.push(frontage);
           if (stop)
             shops.push({
               ...frontage,
@@ -266,7 +270,7 @@ export class CityConnections extends THREE.Group {
     this.pedestrians.setNetwork(paths, homes, workplaces, shops);
     if (!vertices.length) {
       replaceGeometry(this.paths, null);
-      return;
+      return { factories, shops };
     }
     const geometry = new THREE.BufferGeometry();
     geometry.setAttribute(
@@ -275,6 +279,7 @@ export class CityConnections extends THREE.Group {
     );
     geometry.computeVertexNormals();
     replaceGeometry(this.paths, geometry);
+    return { factories, shops };
   }
 
   updateWires(lots: Lots): void {
