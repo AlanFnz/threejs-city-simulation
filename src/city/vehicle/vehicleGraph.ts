@@ -204,7 +204,11 @@ export class VehicleGraph extends THREE.Group {
 
     let origin = this.approachingLane(approaching);
     if (!origin) {
-      if (random() >= maxVehicles / population) return;
+      const spawnChance = Math.max(
+        maxVehicles / population,
+        maxVehicles / CONFIG.VEHICLE.MAX_VEHICLE_COUNT
+      );
+      if (random() >= spawnChance) return;
       origin = this.getStartingTile()?.getRandomNode() ?? null;
     }
     const destination = origin?.getRandomNextNode();

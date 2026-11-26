@@ -29,7 +29,7 @@ describe('saveGame - serialize/deserialize', () => {
     const example = puertoClaroSave(city.size);
     deserialize(example, city, tracker);
 
-    expect(city.population).toBe(78);
+    expect(city.population).toBe(306);
     expect(city.netIncome).toBeGreaterThan(0);
     for (const saved of example.tiles) {
       const tile = city.getTile(saved.x, saved.y)!;
@@ -40,6 +40,8 @@ describe('saveGame - serialize/deserialize', () => {
       }
     }
     const roads = example.tiles.filter(tile => tile.buildingType === BUILDING_TYPE.ROAD);
+    expect(roads).toHaveLength(241);
+    expect(new Set(example.tiles.map(tile => tile.x + ',' + tile.y)).size).toBe(example.tiles.length);
     const start = city.getTile(roads[0].x, roads[0].y)!;
     const connected = new Set([start]);
     for (const tile of connected) {

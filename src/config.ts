@@ -229,7 +229,7 @@ const CONFIG = {
     CROSSWALK_TRAFFIC_LEAD: 1.8, // seconds before a walker reaches the curb
     FADE_TIME: 1000,
     MAX_LIFETIME: 10000,
-    MAX_VEHICLE_COUNT: 10,
+    MAX_VEHICLE_COUNT: 24,
     SPAWN_INTERVAL: 1000,
   },
   DEBUG: {

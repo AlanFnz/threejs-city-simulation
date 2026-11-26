@@ -77,7 +77,7 @@ export class Game implements IGame {
   private readonly isExample = this.query.get('city') === PUERTO_CLARO;
   private readonly exampleView = this.isExample ? this.query.get('view') : null;
   private readonly saveKey = this.isExample
-    ? `${SAVE_KEY}/${PUERTO_CLARO}` + (this.exampleView === 'works' || this.exampleView === 'barrio' ? '/' + this.exampleView : '')
+    ? `${SAVE_KEY}/${PUERTO_CLARO}` + (['works','barrio','distritos'].includes(this.exampleView ?? '') ? '/' + this.exampleView : '')
     : SAVE_KEY;
   private minuteOfDay = STARTING_MINUTE;
   private lightingMode: LightingMode = 'Auto';
