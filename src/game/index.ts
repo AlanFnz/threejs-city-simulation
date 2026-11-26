@@ -69,13 +69,13 @@ export class Game implements IGame {
   cityName: string = DEFAULT_CITY_NAME;
   simulationDay: number = STARTING_SIMULATION_DAY;
   activeToolId: string | null = TOOLBAR_BUTTONS.SELECT.id;
-  isPaused: boolean = false;
   simulationSpeed: SimulationSpeed = 1;
   focusedObject: ITile | null = null;
   lastMove: number = Date.now();
   private readonly query = new URLSearchParams(window.location.search);
   private readonly isExample = this.query.get('city') === PUERTO_CLARO;
   private readonly exampleView = this.isExample ? this.query.get('view') : null;
+  isPaused: boolean = false;
   private readonly saveKey = this.isExample
     ? `${SAVE_KEY}/${PUERTO_CLARO}` + (['works','barrio','distritos'].includes(this.exampleView ?? '') ? '/' + this.exampleView : '')
     : SAVE_KEY;
@@ -102,7 +102,8 @@ export class Game implements IGame {
     },
     (focus) => this.updateCameraFocus(focus),
     () => this.activeToolId,
-    () => this.isPaused ? 0 : this.simulationSpeed
+    () => this.isPaused ? 0 : this.simulationSpeed,
+    () => this.minuteOfDay
   );
   private unsubscribers: Unsubscribe[] = [];
   private tools: Record<string, Tool> = createTools();
@@ -380,7 +381,7 @@ export class Game implements IGame {
     this.updateMoneyDisplay();
     this.updateGoalsPanel();
     this.refreshUnlockedToolButtons();
-    this.sceneManager.update(this.city);
+    this.sceneManager.update(this.city, true);
   }
 
   private refreshUnlockedToolButtons(): void {

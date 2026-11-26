@@ -80,7 +80,7 @@ export interface ISceneManager {
   setLightingHour(hour: number, immediate: boolean): void;
   start(): void;
   stop(): void;
-  update(city: ICity): void;
+  update(city: ICity, restoreClock?: boolean): void;
   cameraManager: ICameraManager;
   assetManager: IAssetManager;
   getSelectedObject(event: MouseEvent): THREE.Object3D | null;
@@ -138,7 +138,8 @@ export class SceneManager implements ISceneManager {
     onLoad: () => void,
     onCameraFocusChanged: (focus: CameraFocus) => void = () => undefined,
     private activeTool: () => string | null = () => 'SELECT',
-    private playbackSpeed: () => number = () => 1
+    private playbackSpeed: () => number = () => 1,
+    private cityMinute: () => number = () => STARTING_MINUTE
   ) {
     this.renderer = new THREE.WebGLRenderer({
       antialias: true,
@@ -519,7 +520,7 @@ export class SceneManager implements ISceneManager {
     return this.buildingPoolByMesh.get(mesh)?.tileAtSlot[index] ?? null;
   }
 
-  update(city: ICity): void {
+  update(city: ICity, restoreClock = false): void {
     this.woodland.update(city);
     let terrainMatrixChanged = false;
     let pathsChanged = false;
@@ -625,9 +626,11 @@ export class SceneManager implements ISceneManager {
       }
     }
 
-    if (pathsChanged) {
+    if (pathsChanged || restoreClock) {
       this.connections.updatePaths(this.buildingSlots, key => this.buildingPools.get(key)!.mesh.geometry);
     }
+    const people = this.connections.pedestrians;
+    people.updateResidents(city, this.cityMinute(), restoreClock || this.reduceMotion.matches);
     if (wiresChanged) this.connections.updateWires(this.buildingSlots);
 
     const supplyChanged = this.powerView.updateSupply(city);
@@ -683,7 +686,7 @@ export class SceneManager implements ISceneManager {
     let trafficTime = this.reduceMotion.matches ? 0 : Math.min(deltaSeconds, 0.15) * speed;
     while (trafficTime > 0) {
       const step = Math.min(trafficTime, 0.05);
-      const crossings = this.connections.pedestrians.advance(step, this.vehicleGraph.isCrossingOccupied);
+      const crossings = this.connections.pedestrians.advance(step, this.vehicleGraph.isCrossingOccupied, speed);
       this.vehicleGraph.updateVehicles(step, crossings, this.connections.pedestrians.approaching);
       trafficTime -= step;
     }
