@@ -1,3 +1,4 @@
+import type { SidewalkSource } from '../audio/sidewalkAudio';
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import CONFIG from '../config';
@@ -137,6 +138,12 @@ class Shopkeeper extends ResidentFigure {
     this.forearms[0].rotation.x = -0.52 - 0.43 * Math.sin(minute * 0.48);
   }
 }
+
+const lunchVoices: Partial<Record<Phase, number>> = {
+  queued: 0.48,
+  ordering: 0.9,
+  eating: 0.26,
+};
 
 const clamp = (v: number) => THREE.MathUtils.clamp(v, 0, 1);
 const key = (f: { x: number; z: number }) => f.x + ',' + f.z;
@@ -302,7 +309,8 @@ class LunchCounter extends THREE.Group {
     reset: boolean,
     requested?: Set<Crosswalk>,
     occupied?: (c: Crosswalk) => boolean,
-    approaching?: Set<Crosswalk>
+    approaching?: Set<Crosswalk>,
+    onHandoff?: (at: THREE.Vector3) => void
   ) {
     // Just before midnight the interpolated street clock can reach 1440.
     if (now < this.clock - 60) reset = true;
@@ -390,6 +398,7 @@ class LunchCounter extends THREE.Group {
         this.clerk.visible = true;
         this.clerk.serve(now, c.orderEnd, c.lunchOnBench);
       } else if (now < c.orderEnd + LEAVE) {
+        if (!reset && c.phase === 'ordering') onHandoff?.(this.head);
         const leg = c.lunchOnBench ? this.benchWalk : this.exit;
         leg.place(c, leg.length * clamp((now - c.orderEnd) / LEAVE), false, 0);
         c.pose(c.lunchOnBench ? 'toBench' : 'takeaway', now, true);
@@ -437,6 +446,7 @@ export class RetailLunch extends THREE.Group {
   private footfall = new Map<StreetDoor, number>();
   private people = new Map<string, LunchCounter>();
   private staff = new Map<string, LunchCounter>();
+  onHandoff?: (at: THREE.Vector3) => void;
   readonly seats = new Set<BenchStop>();
   setNetwork(homes: StreetDoor[], routes: LunchRoute[]) {
     this.homes = homes;
@@ -552,8 +562,18 @@ export class RetailLunch extends THREE.Group {
     approaching: Set<Crosswalk>
   ) {
     for (const c of this.counters.values())
-      c.update(minute, false, requested, occupied, approaching);
+      c.update(minute, false, requested, occupied, approaching, this.onHandoff);
   }
+  *soundSources(): Iterable<SidewalkSource> {
+    for (const counter of this.counters.values()) {
+      for (const customer of counter.customers) {
+        const strength = lunchVoices[customer.phase];
+        if (strength)
+          yield { clip: 'lunch', point: customer.position, strength };
+      }
+    }
+  }
+
   preview(near?: { x: number; y: number }) {
     const counters = [...this.counters.values()];
     if (near) {

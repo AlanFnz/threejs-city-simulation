@@ -6,7 +6,8 @@ import { Citizen } from '../city/citizen';
 import { CITIZEN_STATE } from '../city/citizen/constants';
 import { householdLights } from './householdLights';
 import { GardenConversations } from './gardenConversations';
-import { shutterOpening } from './shopShutters';
+import { ModelKey } from '../assetManager/constants';
+import { ShopShutters, shutterOpening } from './shopShutters';
 
 it('opens adjacent shops at distinct times, then rolls the shutters back down', () => {
   const sample = (x: number, m: number) => shutterOpening(x, 19, m);
@@ -63,7 +64,10 @@ it('waits for both residents before their garden visit and for each arrival befo
 
     second = 19 * 60;
     talk.schedule(city, since);
+    talk.update(second + 10);
+    expect([...talk.soundSources()]).toHaveLength(0);
     talk.update(second + 30);
+    expect([...talk.soundSources()]).toHaveLength(1);
     const [a, b] = talk.children;
     expect(a.visible && b.visible).toBe(true);
     expect(a.position.distanceTo(b.position)).toBeCloseTo(0.048);
@@ -73,10 +77,36 @@ it('waits for both residents before their garden visit and for each arrival befo
     expect(householdLights(residents, second + 40, since)).toBe(1);
     expect(householdLights([], second + 40, since)).toBe(0);
     talk.update(23 * 60);
+    expect([...talk.soundSources()]).toHaveLength(0);
     expect(talk.children.some((p) => p.visible)).toBe(false);
     talk.rebuild(homes.slice(1));
     expect(talk.children).toHaveLength(0);
   } finally {
     city.dispose();
   }
+});
+
+it('sounds a shutter only while it moves, including an after-hours delivery', () => {
+  const shutters = new ShopShutters(2);
+  const shop = {
+    x: 0,
+    z: 0,
+    door: new Vector3(),
+    curb: new Vector3(),
+    road: new Matrix4(),
+    facing: 0,
+    matrix: new Matrix4(),
+    modelKey: ModelKey.COMMERCIAL_A1,
+  };
+  shutters.rebuild([shop]);
+  shutters.update(23 * 60);
+  expect([...shutters.soundSources()]).toHaveLength(0);
+  shutters.update(23 * 60, { x: 0, z: 0, opening: 0.5 });
+  expect([...shutters.soundSources()]).toHaveLength(1);
+  shutters.update(23 * 60, { x: 0, z: 0, opening: 0.5 });
+  expect([...shutters.soundSources()]).toHaveLength(0);
+  shutters.update(23 * 60);
+  expect([...shutters.soundSources()]).toHaveLength(1);
+  shutters.rebuild([]);
+  expect([...shutters.soundSources()]).toHaveLength(0);
 });

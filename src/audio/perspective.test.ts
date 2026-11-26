@@ -1,3 +1,5 @@
+import { OrthographicCamera } from 'three';
+import { sidewalkMix } from './sidewalkAudio';
 import { expect, it } from 'vitest';
 import { City } from '../city';
 import { ResidentialZone } from '../city/building/zones/residentialZone';
@@ -31,4 +33,28 @@ it('pans a nearby bus with the camera and attenuates at altitude or outside its 
   expect(vehiclePerspective(1, 0, 4, -1, 0).pan).toBe(-right.pan);
   expect(vehiclePerspective(1, 0, 0.2, 1, 0).gain).toBeLessThan(right.gain);
   expect(vehiclePerspective(11, 0, 4, 1, 0).gain).toBe(0);
+});
+
+it('keeps nearby voices in stereo and limits the volume of a crowded school gate', () => {
+  const camera = new OrthographicCamera();
+  camera.zoom = 3;
+  const focus = { x: 3, y: 5 };
+  const child = {
+    clip: 'school',
+    point: { x: 3.5, z: 5 },
+    strength: 0.8,
+  } as const;
+  const one = sidewalkMix([child], focus, camera).get('school')!;
+  const group = sidewalkMix(Array(20).fill(child), focus, camera).get(
+    'school'
+  )!;
+  expect(one.pan).toBeGreaterThan(0);
+  expect(group.gain).toBeGreaterThan(one.gain);
+  expect(group.gain).toBeLessThan(1);
+  camera.rotateY(Math.PI);
+  camera.updateMatrixWorld();
+  expect(sidewalkMix([child], focus, camera).get('school')!.pan).toBeCloseTo(
+    -one.pan
+  );
+  expect(sidewalkMix([child], { x: 0, y: 0 }, camera).size).toBe(0);
 });

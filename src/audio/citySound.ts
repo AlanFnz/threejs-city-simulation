@@ -13,6 +13,12 @@ import footLeft from './recordings/footLeft.ogg';
 import footRight from './recordings/footRight.ogg';
 import parcel from './recordings/parcel.ogg';
 import diesel from './recordings/diesel.ogg';
+import { SidewalkAudio, type SidewalkSource } from './sidewalkAudio';
+import school from './recordings/school.ogg';
+import lunch from './recordings/lunch.ogg';
+import wrapping from './recordings/wrapping.ogg';
+import garden from './recordings/garden.ogg';
+import shutter from './recordings/shutter.ogg';
 import car from './recordings/car.ogg';
 import tyres from './recordings/tyres.ogg';
 import shore from './recordings/shore.ogg';
@@ -25,6 +31,11 @@ import doorClose from './recordings/close.ogg';
 import departure from './recordings/departure.ogg';
 
 const files = {
+  wrapping,
+  school,
+  lunch,
+  garden,
+  shutter,
   diesel,
   gateOpen,
   gateClose,
@@ -59,13 +70,14 @@ class Mixer {
   readonly master = this.context.createGain();
   readonly groups = new Map<Channel, GainNode>();
   private road: RoadAudio;
+  private sidewalk: SidewalkAudio;
   private filter = this.context.createBiquadFilter();
   private busPan = this.context.createStereoPanner();
   private busVolume = this.context.createGain();
   private buffers = new Map<Clip, AudioBuffer>();
   private levels = new Map<Clip, GainNode>();
   private playingCues = new Set<AudioBufferSourceNode>();
-  private deliveryCues = new Set<AudioBufferSourceNode>();
+  private streetCues = new Set<AudioBufferSourceNode>();
   private previousBus?: number;
   private previousPhase?: string;
   private nextPhrase = 0;
@@ -82,6 +94,11 @@ class Mixer {
       gain.connect(this.master);
       this.groups.set(name, gain);
     }
+    this.sidewalk = new SidewalkAudio(
+      ctx,
+      this.groups.get('ambience')!,
+      this.groups.get('effects')!
+    );
     this.road = new RoadAudio(ctx, this.groups.get('vehicles')!);
     this.filter.type = 'lowpass';
     this.filter.Q.value = 0.5;
@@ -132,7 +149,8 @@ class Mixer {
     dark: number,
     moving: boolean,
     bus: BusLine['soundSource'],
-    traffic: readonly Vehicle[]
+    traffic: readonly Vehicle[],
+    pedestrians: Iterable<SidewalkSource>
   ) {
     const t = this.context.currentTime;
     const mix = neighborhoodMix(city, focus.x, focus.y, camera.zoom, dark);
@@ -141,7 +159,8 @@ class Mixer {
       const level = this.levels.get(bed);
       if (level) ease(level.gain, mix[bed] * (moving ? 1 : 0.36), t, 0.4);
     }
-    if (!moving) this.stopDeliveryCues();
+    if (!moving) this.stopStreetCues();
+    this.sidewalk.update(pedestrians, focus, camera, this.buffers);
     this.road.update(
       traffic,
       focus,
@@ -209,18 +228,19 @@ class Mixer {
   }
 
   silenceTraffic() {
+    this.sidewalk.silence();
     this.road.silence();
-    this.stopDeliveryCues();
+    this.stopStreetCues();
     this.resetBus();
   }
 
-  private stopDeliveryCues() {
-    for (const cue of this.deliveryCues) cue.stop();
-    this.deliveryCues.clear();
+  private stopStreetCues() {
+    for (const cue of this.streetCues) cue.stop();
+    this.streetCues.clear();
   }
 
-  delivery(
-    cue: DeliveryCue,
+  streetEffect(
+    cue: DeliveryCue | 'wrapping',
     point: { x: number; z: number },
     view: ICameraManager
   ) {
@@ -243,6 +263,7 @@ class Mixer {
       stereo = ctx.createStereoPanner();
     source.buffer = buffer;
     const levels = {
+      wrapping: 0.46,
       gateOpen: 0.74,
       gateClose: 0.64,
       parcel: 0.68,
@@ -252,9 +273,9 @@ class Mixer {
     level.gain.value = gain * levels[cue];
     stereo.pan.value = pan;
     source.connect(level).connect(stereo).connect(this.groups.get('effects')!);
-    this.deliveryCues.add(source);
+    this.streetCues.add(source);
     source.onended = () => {
-      this.deliveryCues.delete(source);
+      this.streetCues.delete(source);
       source.disconnect();
       level.disconnect();
       stereo.disconnect();
@@ -373,13 +394,13 @@ export class CitySound {
     }, 180);
   };
 
-  delivery(
-    cue: DeliveryCue,
+  streetEffect(
+    cue: DeliveryCue | 'wrapping',
     position: { x: number; z: number },
     view: ICameraManager
   ) {
     if (!document.hidden && soundSettings.read().enabled)
-      this.mixer?.delivery(cue, position, view);
+      this.mixer?.streetEffect(cue, position, view);
   }
 
   private onClick = (event: MouseEvent) => {
@@ -402,7 +423,8 @@ export class CitySound {
     dark: number,
     moving: boolean,
     line: BusLine,
-    traffic: readonly Vehicle[]
+    traffic: readonly Vehicle[],
+    neighborhood?: { sidewalkSources(): Iterable<SidewalkSource> }
   ) {
     if (
       this.disposed ||
@@ -420,7 +442,8 @@ export class CitySound {
       dark,
       moving,
       line.soundSource,
-      moving ? traffic : []
+      moving ? traffic : [],
+      (moving && neighborhood?.sidewalkSources()) || []
     );
   }
 

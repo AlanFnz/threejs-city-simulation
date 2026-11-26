@@ -73,10 +73,12 @@ it('walks the household across a clear crossing, waits outside class and reunite
     day.updateResidents(city, 948, true);
     expect(guardian.visible).toBe(true);
     expect(first.visible).toBe(false);
+    expect([...day.soundSources()]).toHaveLength(0);
     const gate = guardian.position.clone();
     day.advance(965, requests, () => false, approach);
     expect(guardian.position).toEqual(gate);
     expect(first.visible && second.visible).toBe(true);
+    expect([...day.soundSources()]).toHaveLength(2);
     day.updateResidents(city, 992, true);
     expect(first.position.distanceTo(guardian.position)).toBeLessThan(0.07);
     day.updateResidents(city, 1100, true);

@@ -164,6 +164,18 @@ export class CityConnections extends THREE.Group {
     this.conversations.update(minute);
   }
 
+  sidewalkSpot(view: 'jardines' | 'persianas', minute: number) {
+    if (view === 'persianas') return this.shutters.preview(minute);
+    return this.conversations.preview(minute);
+  }
+
+  *sidewalkSources() {
+    yield* this.shutters.soundSources();
+    yield* this.conversations.soundSources();
+    yield* this.pedestrians.schoolDay.soundSources();
+    yield* this.pedestrians.lunch.soundSources();
+  }
+
   animateNeighborhood(
     minute: number,
     receiving?: { x: number; z: number; opening: number }

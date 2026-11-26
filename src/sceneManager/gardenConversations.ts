@@ -1,3 +1,4 @@
+import type { SidewalkSource } from '../audio/sidewalkAudio';
 import * as THREE from 'three';
 import CONFIG from '../config';
 import type { ICity } from '../city';
@@ -80,6 +81,7 @@ interface Visit {
   routes: GardenPath[];
   guests: Neighbor[];
   start: number;
+  speaker?: Neighbor;
 }
 
 export class GardenConversations extends THREE.Group {
@@ -145,6 +147,8 @@ export class GardenConversations extends THREE.Group {
   update(minute: number): void {
     for (const visit of this.visits) {
       const t = minute - visit.start;
+      visit.speaker = undefined;
+      let atGate = 0;
       for (const [i, guest] of visit.guests.entries()) {
         const elapsed = t - i * 6;
         guest.visible = elapsed >= 0 && elapsed <= 105 && visit.start < 21 * 60;
@@ -154,6 +158,7 @@ export class GardenConversations extends THREE.Group {
           0,
           1
         );
+        if (progress === 1) atGate++;
         guest.pose(
           visit.routes[i],
           progress,
@@ -163,6 +168,32 @@ export class GardenConversations extends THREE.Group {
           Math.floor(t / 12) % 2 === i
         );
       }
+      if (atGate === 2) visit.speaker = visit.guests[Math.floor(t / 12) % 2];
     }
+  }
+
+  preview(minute: number) {
+    const visits = this.visits.filter((visit) => Number.isFinite(visit.start));
+    const visit =
+      visits.find((visit) => visit.speaker) ??
+      visits.sort(
+        (a, b) =>
+          Math.abs(a.start + 25 - minute) - Math.abs(b.start + 25 - minute)
+      )[0];
+    if (!visit) return;
+    const { x, z } = visit.routes[0].end;
+    const { door, curb } = visit.homes[0];
+    return {
+      x,
+      y: z,
+      azimuth:
+        (Math.atan2(curb.x - door.x, curb.z - door.z) * 180) / Math.PI + 24,
+    };
+  }
+
+  *soundSources(): Iterable<SidewalkSource> {
+    for (const visit of this.visits)
+      if (visit.speaker)
+        yield { clip: 'garden', point: visit.speaker.position, strength: 1 };
   }
 }

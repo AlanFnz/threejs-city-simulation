@@ -1,3 +1,4 @@
+import type { SidewalkSource } from '../audio/sidewalkAudio';
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { coloredShape } from './coast';
@@ -35,6 +36,8 @@ export class ShopShutters extends THREE.Group {
     z: number;
     mount: THREE.Matrix4;
     last: number;
+    moving: boolean;
+    position: THREE.Vector3;
   }[] = [];
   private local = new THREE.Matrix4();
 
@@ -61,7 +64,14 @@ export class ShopShutters extends THREE.Group {
         .makeScale(width, top - 0.026, 1)
         .setPosition(x, 0.015, z + 0.012)
         .premultiply(shop.matrix);
-      return { x: shop.x, z: shop.z, mount, last: -1 };
+      return {
+        x: shop.x,
+        z: shop.z,
+        mount,
+        last: -1,
+        moving: false,
+        position: new THREE.Vector3().setFromMatrixPosition(mount),
+      };
     });
     this.frames.count = stores.length;
     this.slats.count = stores.length * blades;
@@ -71,6 +81,30 @@ export class ShopShutters extends THREE.Group {
     this.frames.computeBoundingSphere();
     // A closed frame encloses its curtain at every position.
     this.slats.boundingSphere = this.frames.boundingSphere!.clone();
+  }
+
+  preview(minute: number) {
+    // Frame a shutter early in its travel so it is still moving on resume.
+    const shop = this.shops.find(({ x, z }) => {
+      const opening = shutterOpening(x, z, minute);
+      return opening > 0 && opening < 0.35;
+    });
+    if (!shop) return;
+    const { x, z } = shop.position;
+    return {
+      x,
+      y: z,
+      azimuth:
+        (Math.atan2(shop.mount.elements[8], shop.mount.elements[10]) * 180) /
+          Math.PI +
+        22,
+    };
+  }
+
+  *soundSources(): Iterable<SidewalkSource> {
+    for (const shop of this.shops)
+      if (shop.moving)
+        yield { clip: 'shutter', point: shop.position, strength: 1 };
   }
 
   update(
@@ -83,6 +117,7 @@ export class ShopShutters extends THREE.Group {
           ? receiving.opening
           : 0;
       const open = Math.max(delivery, shutterOpening(shop.x, shop.z, minute));
+      shop.moving = shop.last >= 0 && open !== shop.last;
       if (open === shop.last) continue;
       shop.last = open;
       for (let row = 0; row < blades; row++) {

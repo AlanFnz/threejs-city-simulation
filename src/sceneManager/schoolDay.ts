@@ -1,3 +1,4 @@
+import type { SidewalkSource } from '../audio/sidewalkAudio';
 import { SidewalkWalk } from './sidewalkWalk';
 import * as THREE from 'three';
 import CONFIG from '../config';
@@ -242,6 +243,20 @@ class SchoolFamily extends THREE.Group {
     this.time = next;
     this.draw();
   }
+  *soundSources(): Iterable<SidewalkSource> {
+    if (!this.visible) return;
+    for (const child of this.pupils) {
+      if (!child.visible) continue;
+      const proximity = 1 - child.position.distanceTo(this.school.door) / 0.75;
+      if (proximity > 0)
+        yield {
+          clip: 'school',
+          point: child.position,
+          strength: proximity * 0.75,
+        };
+    }
+  }
+
   private draw() {
     const t = this.time;
     this.guardian.visible = false;
@@ -412,6 +427,9 @@ export class SchoolDay extends THREE.Group {
   ) {
     for (const family of this.families.values())
       family.advance(minute, requested, occupied, approaching);
+  }
+  *soundSources(): Iterable<SidewalkSource> {
+    for (const family of this.families.values()) yield* family.soundSources();
   }
   get preview() {
     const school = this.families.values().next().value?.school as

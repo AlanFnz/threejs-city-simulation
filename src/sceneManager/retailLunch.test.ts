@@ -90,6 +90,8 @@ it('serves in arrival order, reserves one bench and keeps crossing delays throug
     const served: number[] = [],
       eaten = new Set<number>(),
       bags = new Set<number>();
+    const handoffs: Vector3[] = [];
+    l.onHandoff = (point) => handoffs.push(point.clone());
     let line = false,
       asked = false;
     for (let m = 650; m < 970; m += 0.5) {
@@ -129,15 +131,23 @@ it('serves in arrival order, reserves one bench and keeps crossing delays throug
     }
     expect(asked && line).toBe(true);
     expect(served).toEqual([1, 2, 0]);
+    expect(handoffs).toHaveLength(3);
+    expect(handoffs.every((p) => p.distanceTo(head) < 0.001)).toBe(true);
     expect([...eaten]).toEqual([0]);
     expect([...bags].sort()).toEqual([1, 2]);
     expect(buyers.every((p) => !p.visible)).toBe(true);
     l.updateResidents(city, 760, true, () => true);
     expect(there(buyers[0], seat)).toBe(true);
+    expect(
+      [...l.soundSources()].some(
+        (source) => source.point === buyers[0].position
+      )
+    ).toBe(true);
     city.getTile(shopX, z)!.building = null;
     l.updateResidents(city, 760, false, () => true);
     expect(l.children.length).toBe(0);
     expect(l.seats.size).toBe(0);
+    expect([...l.soundSources()]).toHaveLength(0);
   } finally {
     city.dispose();
   }

@@ -86,6 +86,7 @@ export interface ISceneManager {
   getDeliveryPreviewLots(): CameraFocus[];
   getBusStop(): CameraFocus | undefined;
   getLunchCounter(): (CameraFocus & {azimuth:number}) | undefined;
+  getSidewalkSpot(view: 'jardines' | 'persianas', minute: number): (CameraFocus & {azimuth:number}) | undefined;
   getSchoolGate(): (CameraFocus & {azimuth:number}) | undefined;
   followBusPassenger(): void;
   start(): void;
@@ -165,6 +166,8 @@ export class SceneManager implements ISceneManager {
     this.woodland = new Woodland(city.size);
     this.powerView = new PowerView(city.size);
     this.connections = new CityConnections(city.size, this.dusk);
+    this.connections.pedestrians.lunch.onHandoff = point =>
+      this.sound.streetEffect('wrapping', point, this.cameraManager);
     this.scene.add(this.sea, this.woodland, createCoast(city.size, this.dusk), this.connections, this.powerView);
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     this.gameWindow = document.getElementById('render-target') as HTMLElement;
@@ -204,7 +207,7 @@ export class SceneManager implements ISceneManager {
     this.vehicleGraph = new VehicleGraph(city, this.assetManager);
     this.root.add(this.vehicleGraph);
     this.deliveries = new Deliveries(this.vehicleGraph, (cue, position) =>
-      this.sound.delivery(cue, position, this.cameraManager)
+      this.sound.streetEffect(cue, position, this.cameraManager)
     );
     this.busLine = new BusLine(this.vehicleGraph, this.busStops, this.cityMinute);
     this.connections.pedestrians.transitHomeSince = this.busLine.homeSince;
@@ -691,6 +694,10 @@ export class SceneManager implements ISceneManager {
     return this.connections.pedestrians.lunch.preview(this.busStops[1]);
   }
 
+  public getSidewalkSpot(view: 'jardines' | 'persianas', minute: number) {
+    return this.connections.sidewalkSpot(view, minute);
+  }
+
   public getSchoolGate() {
     return this.connections.pedestrians.schoolDay.preview;
   }
@@ -759,7 +766,7 @@ export class SceneManager implements ISceneManager {
     }
     this.connections.animateNeighborhood(this.connections.pedestrians.streetMinute, this.deliveries.receiving);
     this.sea.material.uniforms.time.value = this.reduceMotion.matches ? 0 : time / 1000;
-    this.sound.update(time, this.vehicleGraph.city, this.cameraManager, this.dusk.value, !!speed, this.busLine, this.reduceMotion.matches ? [] : this.vehicleGraph.traffic);
+    this.sound.update(time, this.vehicleGraph.city, this.cameraManager, this.dusk.value, !!speed, this.busLine, this.reduceMotion.matches ? [] : this.vehicleGraph.traffic, this.reduceMotion.matches ? undefined : this.connections);
     this.renderer.render(this.scene, this.cameraManager.camera);
   }
 

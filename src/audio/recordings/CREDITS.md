@@ -17,6 +17,11 @@ The field recordings are dedicated to the public domain under [CC0 1.0](https://
 | gateOpen.ogg, gateClose.ogg | douglasbruce@look.ca | [Transport truck roll up door open - close](https://freesound.org/people/douglasbruce%40look.ca/sounds/403715/) |
 | parcel.ogg | j1987 | [cardboardbox.wav](https://freesound.org/people/j1987/sounds/95561/) |
 | footLeft.ogg, footRight.ogg | Mihacappy | [cretestepping.wav](https://freesound.org/people/Mihacappy/sounds/817387/) |
+| school.ogg | mycompasstv | [School children playing in Oaxaca](https://freesound.org/people/mycompasstv/sounds/213350/) |
+| lunch.ogg | Splifffy | [Outdoor cafe in university](https://freesound.org/people/Splifffy/sounds/260945/) |
+| garden.ogg | SpliceSound | [Indoor adult murmur, couple](https://freesound.org/people/SpliceSound/sounds/260124/) |
+| shutter.ogg | nicola_ariutti | [Electric roller shutter](https://freesound.org/people/nicola_ariutti/sounds/335364/) |
+| wrapping.ogg | vhschool2019 | [Paper Bag Crinkle](https://freesound.org/people/vhschool2019/sounds/716928/) |
 
 The tyre layer (`tyres.ogg`) is original filtered pink noise. Its level tracks wheel speed.
 
