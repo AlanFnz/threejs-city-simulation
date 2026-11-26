@@ -1,7 +1,7 @@
 import { expect, it } from 'vitest';
 import { City } from '../city';
 import { ResidentialZone } from '../city/building/zones/residentialZone';
-import { busPerspective, neighborhoodMix } from './perspective';
+import { vehiclePerspective, neighborhoodMix } from './perspective';
 
 it.each([48, 64])(
   'places the shore at the edge of a %i-tile map and blends the occupied block into night',
@@ -27,8 +27,8 @@ it.each([48, 64])(
 );
 
 it('pans a nearby bus with the camera and attenuates at altitude or outside its street', () => {
-  const right = busPerspective(1, 0, 4, 1, 0);
-  expect(busPerspective(1, 0, 4, -1, 0).pan).toBe(-right.pan);
-  expect(busPerspective(1, 0, 0.2, 1, 0).gain).toBeLessThan(right.gain);
-  expect(busPerspective(11, 0, 4, 1, 0).gain).toBe(0);
+  const right = vehiclePerspective(1, 0, 4, 1, 0);
+  expect(vehiclePerspective(1, 0, 4, -1, 0).pan).toBe(-right.pan);
+  expect(vehiclePerspective(1, 0, 0.2, 1, 0).gain).toBeLessThan(right.gain);
+  expect(vehiclePerspective(11, 0, 4, 1, 0).gain).toBe(0);
 });

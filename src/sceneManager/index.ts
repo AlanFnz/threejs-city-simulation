@@ -757,7 +757,7 @@ export class SceneManager implements ISceneManager {
     }
     this.connections.animateNeighborhood(this.connections.pedestrians.streetMinute, this.deliveries.receiving);
     this.sea.material.uniforms.time.value = this.reduceMotion.matches ? 0 : time / 1000;
-    this.sound.update(time, this.vehicleGraph.city, this.cameraManager, this.dusk.value, !!speed, this.busLine);
+    this.sound.update(time, this.vehicleGraph.city, this.cameraManager, this.dusk.value, !!speed, this.busLine, this.reduceMotion.matches ? [] : this.vehicleGraph.traffic);
     this.renderer.render(this.scene, this.cameraManager.camera);
   }
 

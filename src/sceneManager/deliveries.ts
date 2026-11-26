@@ -45,7 +45,7 @@ class DeliveryTruck extends Vehicle {
     const anchors = new THREE.Group();
     anchors.add(factoryStop, shopStop);
     graph.add(anchors);
-    super(factoryStop, route.outbound[0], graph.assetManager, mesh, Infinity);
+    super(factoryStop, route.outbound[0], graph.assetManager, mesh, Infinity, 'truck');
     this.name = 'Delivery truck';
     this.shopStop = shopStop;
     this.itinerary = [

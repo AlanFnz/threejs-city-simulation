@@ -46,6 +46,10 @@ export class VehicleGraph extends THREE.Group {
     if (CONFIG.DEBUG.SHOW_VEHICLE_GRAPH) this.helper.update(this);
   }
 
+  get traffic(): readonly Vehicle[] {
+    return this.vehicles.children as Vehicle[];
+  }
+
   private calculateMaxVehicles(population: number): number {
     return Math.min(
       Math.floor((population / 4) * 2),

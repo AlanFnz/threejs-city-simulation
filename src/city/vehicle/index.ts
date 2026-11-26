@@ -19,7 +19,8 @@ export class Vehicle extends THREE.Group {
     protected destination: VehicleGraphNode,
     assetManager: IAssetManager,
     mesh = assetManager.createRandomVehicleMesh(),
-    private readonly lifetime: number = CONFIG.VEHICLE.MAX_LIFETIME
+    private readonly lifetime: number = CONFIG.VEHICLE.MAX_LIFETIME,
+    readonly kind: 'car' | 'bus' | 'truck' = 'car'
   ) {
     super();
     if (mesh) {
@@ -35,6 +36,10 @@ export class Vehicle extends THREE.Group {
     }
     this.startSegment();
     this.updateOpacity();
+  }
+
+  get speedFraction(): number {
+    return this.speed / (CONFIG.VEHICLE.SPEED * 1000);
   }
 
   private startSegment(): void {

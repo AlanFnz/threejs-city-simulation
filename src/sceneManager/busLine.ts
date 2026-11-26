@@ -168,7 +168,8 @@ class CityBus extends Vehicle {
       itinerary[start + 1],
       graph.assetManager,
       model,
-      Infinity
+      Infinity,
+      'bus'
     );
     this.model = model;
     this.model.openDoors(0);

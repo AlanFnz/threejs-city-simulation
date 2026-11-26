@@ -46,17 +46,18 @@ export function neighborhoodMix(
   };
 }
 
-export function busPerspective(
+export function vehiclePerspective(
   dx: number,
   dz: number,
   zoom: number,
   rightX: number,
-  rightZ: number
+  rightZ: number,
+  range = 10
 ) {
   const distance = Math.hypot(dx, dz);
   const detail = clamp(zoom / 2);
   return {
-    gain: (0.08 + 0.92 * detail) * clamp(1 - distance / 10) ** 2,
+    gain: (0.08 + 0.92 * detail) * clamp(1 - distance / range) ** 2,
     pan: Math.max(
       -0.85,
       Math.min(0.85, (dx * rightX + dz * rightZ) / (1.4 + distance))

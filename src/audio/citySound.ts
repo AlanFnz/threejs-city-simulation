@@ -3,7 +3,11 @@ import type { ICameraManager } from '../cameraManager';
 import type { OrthographicCamera } from 'three';
 import type { BusLine } from '../sceneManager/busLine';
 import { channels, soundSettings, type Channel } from './preferences';
-import { neighborhoodMix, busPerspective } from './perspective';
+import { neighborhoodMix, vehiclePerspective } from './perspective';
+import type { Vehicle } from '../city/vehicle';
+import { RoadAudio } from './roadAudio';
+import car from './recordings/car.ogg';
+import tyres from './recordings/tyres.ogg';
 import shore from './recordings/shore.ogg';
 import leaves from './recordings/leaves.ogg';
 import street from './recordings/street.ogg';
@@ -14,6 +18,8 @@ import doorClose from './recordings/close.ogg';
 import departure from './recordings/departure.ogg';
 
 const files = {
+  car,
+  tyres,
   shore,
   leaves,
   street,
@@ -39,6 +45,7 @@ class Mixer {
   readonly context = new AudioContext();
   readonly master = this.context.createGain();
   readonly groups = new Map<Channel, GainNode>();
+  private road: RoadAudio;
   private filter = this.context.createBiquadFilter();
   private busPan = this.context.createStereoPanner();
   private busVolume = this.context.createGain();
@@ -61,6 +68,7 @@ class Mixer {
       gain.connect(this.master);
       this.groups.set(name, gain);
     }
+    this.road = new RoadAudio(ctx, this.groups.get('vehicles')!);
     this.filter.type = 'lowpass';
     this.filter.Q.value = 0.5;
     this.filter.connect(this.groups.get('ambience')!);
@@ -79,8 +87,7 @@ class Mixer {
       );
       if (this.requests.signal.aborted) return;
       this.buffers.set(name, buffer);
-      if (name === 'door' || name === 'doorClose' || name === 'departure')
-        return;
+      if (name !== 'engine' && !beds.some((bed) => bed === name)) return;
       const source = this.context.createBufferSource();
       source.buffer = buffer;
       source.loop = true;
@@ -110,7 +117,8 @@ class Mixer {
     camera: OrthographicCamera,
     dark: number,
     moving: boolean,
-    bus: BusLine['soundSource']
+    bus: BusLine['soundSource'],
+    traffic: readonly Vehicle[]
   ) {
     const t = this.context.currentTime;
     const mix = neighborhoodMix(city, focus.x, focus.y, camera.zoom, dark);
@@ -119,9 +127,16 @@ class Mixer {
       const level = this.levels.get(bed);
       if (level) ease(level.gain, mix[bed] * (moving ? 1 : 0.36), t, 0.4);
     }
+    this.road.update(
+      traffic,
+      focus,
+      camera,
+      this.buffers.get('car'),
+      this.buffers.get('tyres')
+    );
     const perspective =
       bus &&
-      busPerspective(
+      vehiclePerspective(
         bus.position.x - focus.x,
         bus.position.z - focus.y,
         camera.zoom,
@@ -175,6 +190,11 @@ class Mixer {
       );
       this.nextPhrase = t + 23;
     }
+  }
+
+  silenceTraffic() {
+    this.road.silence();
+    this.resetBus();
   }
 
   resetBus() {
@@ -280,7 +300,7 @@ export class CitySound {
     }
     const mixer = this.mixer;
     if (!mixer) return;
-    mixer.resetBus();
+    mixer.silenceTraffic();
     mixer.settings(false);
     this.suspendTimer = window.setTimeout(() => {
       if (document.hidden || !soundSettings.read().enabled)
@@ -307,7 +327,8 @@ export class CitySound {
     view: ICameraManager,
     dark: number,
     moving: boolean,
-    line: BusLine
+    line: BusLine,
+    traffic: readonly Vehicle[]
   ) {
     if (
       this.disposed ||
@@ -324,7 +345,8 @@ export class CitySound {
       view.camera,
       dark,
       moving,
-      line.soundSource
+      line.soundSource,
+      moving ? traffic : []
     );
   }
 
