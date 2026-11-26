@@ -220,7 +220,16 @@ export function puertoClaroSave(size: number): SaveGameV1 {
               { length: 2 ** tile.developmentLevel },
               (_, i) => {
                 const id = residents++;
-                const age = [34, 37, 9, 67, 24, 45, 13, 20][i];
+                const age = [
+                  34,
+                  37,
+                  [7, 9, 11, 13][households % 4],
+                  67,
+                  24,
+                  45,
+                  13,
+                  20,
+                ][i];
                 // The first adult in each garden house starts with a local shift.
                 const employer =
                   row === 2 && i === 0 ? [10, 11, 11, 13][col - 10] : undefined;

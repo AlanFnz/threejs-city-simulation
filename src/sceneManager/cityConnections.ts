@@ -143,7 +143,8 @@ export class CityConnections extends THREE.Group {
       this.shutters,
       this.conversations,
       this.promenade,
-      this.pedestrians
+      this.pedestrians,
+      this.pedestrians.schoolDay
     );
   }
 
@@ -179,6 +180,7 @@ export class CityConnections extends THREE.Group {
     walks: Map<StreetDoor, THREE.Vector3[]>;
   } {
     const transit: StreetDoor[] = [];
+    const schools: StreetDoor[] = [];
     const factories: StreetDoor[] = [];
     const gardenHomes: GardenHome[] = [];
     const vertices: number[] = [];
@@ -256,6 +258,7 @@ export class CityConnections extends THREE.Group {
         if (!lot.abandoned && busLots.some((l) => l.x === x && l.y === y))
           transit.push(frontage);
         if (!lot.abandoned && !isConstructionSite(lot.modelKey)) {
+          if (lot.buildingType === BUILDING_TYPE.SCHOOL) schools.push(frontage);
           if (lot.buildingType === BUILDING_TYPE.RESIDENTIAL) {
             const shopCount = countFacingShops(lots, x, y, side);
             homesByShopCount[shopCount].push(frontage);
@@ -304,7 +307,7 @@ export class CityConnections extends THREE.Group {
       (a, b, points) => paths.connectShops(a, b, points)
     );
     const homes = ([] as StreetDoor[]).concat(...homesByShopCount.reverse());
-    this.pedestrians.setNetwork(paths, homes, workplaces, shops);
+    this.pedestrians.setNetwork(paths, homes, workplaces, shops, schools);
     const first = transit.find(
       (f) => f.x === busLots[0]?.x && f.z === busLots[0]?.y
     );

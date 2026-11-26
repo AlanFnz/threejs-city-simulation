@@ -81,6 +81,15 @@ export interface Config {
     /** tiles per side */
     SIZE: number;
   };
+  SCHOOL_DAY: {
+    START: number;
+    DISMISSAL: number;
+    MIN_AGE: number;
+    FAMILIES_PER_SCHOOL: number;
+    MINUTES_PER_TILE: number;
+    HANDOFF_MINUTES: number;
+    PICKUP_LEAD_MINUTES: number;
+  };
   TRANSIT: { STOP_SECONDS: number; WALK_SPEED: number; VISIT_SECONDS: number };
   VEHICLE: {
     /** distance per millisecond */
@@ -218,6 +227,15 @@ const CONFIG = {
   CITY: {
     MINUTES_PER_TICK: minutesPerTick,
     SIZE: 48,
+  },
+  SCHOOL_DAY: {
+    START: 8 * 60,
+    DISMISSAL: 16 * 60,
+    MIN_AGE: 5,
+    FAMILIES_PER_SCHOOL: 5,
+    MINUTES_PER_TILE: 17,
+    HANDOFF_MINUTES: 18,
+    PICKUP_LEAD_MINUTES: 22,
   },
   TRANSIT: { STOP_SECONDS: 4, WALK_SPEED: 0.18, VISIT_SECONDS: 18 },
   VEHICLE: {

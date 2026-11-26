@@ -9,6 +9,7 @@ import CONFIG from '../config';
 import { Crosswalk } from '../city/vehicle/crosswalk';
 import * as THREE from 'three';
 import { ModelKey } from '../assetManager/constants';
+import { SchoolDay } from './schoolDay';
 import { ResidentFigure } from './residentFigure';
 
 type Node = { point: THREE.Vector3; links: Set<Node> };
@@ -381,6 +382,7 @@ class Walker extends ResidentFigure {
 const MAX_WALKERS = 32;
 
 export class Pedestrians extends THREE.Group {
+  readonly schoolDay = new SchoolDay();
 
   private walkers: Walker[] = [];
   private paths = new Footpaths();
@@ -395,7 +397,8 @@ export class Pedestrians extends THREE.Group {
     paths: Footpaths,
     homes: StreetDoor[],
     workplaces: StreetDoor[],
-    shops: StreetDoor[]
+    shops: StreetDoor[],
+    schools: StreetDoor[] = []
   ): void {
     this.paths = paths;
     this.routes.clear();
@@ -425,6 +428,39 @@ export class Pedestrians extends THREE.Group {
       const node = paths.shopDestination(shop);
       if (node && shop.stop) this.shops.set(node, shop);
     }
+    const gates = new Map<Node, StreetDoor>();
+    for (const school of schools) {
+      const gate = paths.attach(school.curb, school.road);
+      if (gate) gates.set(gate, school);
+    }
+    const routes = [];
+    const radius = CONFIG.CIVIC_SERVICES.SCHOOL.SEARCH_DISTANCE;
+    for (const [home, node] of this.homes) {
+      const nearby = new Map(
+        [...gates].filter(
+          ([, s]) => Math.abs(s.x - home.x) + Math.abs(s.z - home.z) <= radius
+        )
+      );
+      if (!nearby.size) continue;
+      const trip = findDestination(node, nearby, radius + 1);
+      if (trip)
+        routes.push({
+          home,
+          school: trip.destination,
+          points: [home.door, ...trip.points, trip.destination.curb],
+        });
+    }
+    this.schoolDay.setRoutes(routes, paths.crossings, (school, x, y) => {
+      const job = this.workplaces.get(x + ',' + y);
+      const gate = paths.attach(school.curb, school.road);
+      if (!gate || !job) return;
+      const trip = findDestination(
+        gate,
+        new Map([[job.node, job.door]]),
+        radius + 1
+      );
+      if (trip) return [school.curb, ...trip.points, job.door.door];
+    });
   }
 
   walksToStop(stop: StreetDoor): Map<StreetDoor, THREE.Vector3[]> {
@@ -520,6 +556,7 @@ export class Pedestrians extends THREE.Group {
       minute - this.minute > CONFIG.CITY.MINUTES_PER_TICK;
     if (reset || this.minute !== minute) this.sinceTick = 0;
     this.minute = minute;
+    this.schoolDay.updateResidents(city, minute, reset, this.transitHomeSince);
     const outings = new Map<string, Walk>();
     const seats = new Set<BenchStop>();
     // Sample occupied homes only. A house contributes at most one commute
@@ -530,7 +567,8 @@ export class Pedestrians extends THREE.Group {
       if (!building || !('residents' in building)) continue;
       const residents = building.residents.all.filter(
         (person) =>
-          this.transitHomeSince?.(person.id) === undefined
+          this.transitHomeSince?.(person.id) === undefined &&
+          !this.schoolDay.has(person.id)
       );
       for (const worker of residents) {
         const job = worker.workplace;
@@ -594,6 +632,8 @@ export class Pedestrians extends THREE.Group {
   readonly homeSince = (person: Citizen): number => {
     const transit = this.transitHomeSince?.(person.id);
     if (transit !== undefined) return transit;
+    const school = this.schoolDay.homeSince(person.id);
+    if (school !== undefined) return school;
     const walker = this.walkers.find((w) => w.resident === person.id);
     if (walker && (walker.isCommute || !person.workplace))
       return walker.homeArrival;
@@ -616,6 +656,7 @@ export class Pedestrians extends THREE.Group {
       Math.min(stepsPerSecond, this.sinceTick + dt)
     );
     const minute = this.streetMinute;
+    this.schoolDay.advance(minute, this.requested, occupied, this.approaching);
     for (const walker of this.walkers) {
       walker.advance(dt, minute, this.requested, occupied, this.approaching);
     }

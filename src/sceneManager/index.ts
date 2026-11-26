@@ -83,6 +83,7 @@ export interface ISceneManager {
   setLightingHour(hour: number, immediate: boolean): void;
   getDeliveryPreviewLots(): CameraFocus[];
   getBusStop(): CameraFocus | undefined;
+  getSchoolGate(): (CameraFocus & {azimuth:number}) | undefined;
   followBusPassenger(): void;
   start(): void;
   stop(): void;
@@ -677,6 +678,10 @@ export class SceneManager implements ISceneManager {
 
   public followBusPassenger(): void {
     this.passengerFocus = this.cameraManager.getFocus();
+  }
+
+  public getSchoolGate() {
+    return this.connections.pedestrians.schoolDay.preview;
   }
 
   public getBusStop(): CameraFocus | undefined {

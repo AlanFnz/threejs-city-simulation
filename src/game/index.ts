@@ -75,9 +75,10 @@ export class Game implements IGame {
   private readonly query = new URLSearchParams(window.location.search);
   private readonly isExample = this.query.get('city') === PUERTO_CLARO;
   private readonly exampleView = this.isExample ? this.query.get('view') : null;
-  isPaused: boolean = false;
+  private readonly schoolPreview = this.exampleView === 'escuela' || this.exampleView === 'salida-escuela';
+  isPaused = this.schoolPreview;
   private readonly saveKey = this.isExample
-    ? `${SAVE_KEY}/${PUERTO_CLARO}` + (['works','barrio','repartos','cuadra','distritos','colectivo'].includes(this.exampleView ?? '') ? '/' + this.exampleView : '')
+    ? `${SAVE_KEY}/${PUERTO_CLARO}` + (['works','barrio','repartos','cuadra','distritos','colectivo','escuela','salida-escuela'].includes(this.exampleView ?? '') ? '/' + this.exampleView : '')
     : SAVE_KEY;
   private minuteOfDay = STARTING_MINUTE;
   private lightingMode: LightingMode = 'Auto';
@@ -332,7 +333,10 @@ export class Game implements IGame {
     this.onGameStateReplaced();
     const site = this.exampleView === 'works' && data.tiles.find(tile => tile.constructionTicks !== undefined);
     const busStop = this.exampleView === 'colectivo' && this.sceneManager.getBusStop();
-    if (busStop) {
+    const school = this.schoolPreview && this.sceneManager.getSchoolGate();
+    if (school) {
+      this.sceneManager.cameraManager.frameLots([school], { minimumHeight: 1.55, padding: .05, azimuth: school.azimuth, elevation: 36 });
+    } else if (busStop) {
       this.sceneManager.cameraManager.frameLots([busStop], { minimumHeight: 1.5, padding: 0.08, azimuth: 225, elevation: 48 });
       if (this.query.get('focus') === 'viaje') this.sceneManager.followBusPassenger();
     } else if (this.exampleView === 'distritos' && this.query.get('focus') === 'calle') {
@@ -358,6 +362,8 @@ export class Game implements IGame {
 
   private startExampleCity(): void {
     const example = puertoClaroSave(this.city.size);
+    if (this.exampleView === 'escuela') example.minuteOfDay = CONFIG.SCHOOL_DAY.START - 15;
+    if (this.exampleView === 'salida-escuela') example.minuteOfDay = CONFIG.SCHOOL_DAY.DISMISSAL - 12;
     if (this.exampleView === 'colectivo') example.minuteOfDay = 7 * 60 + 30;
     if (this.exampleView === 'cuadra') example.minuteOfDay = 7 * 60 + 25;
     this.restoreCity(example);
