@@ -21,6 +21,10 @@ it.each([48, 64])(
       expect(occupied.street).toBeGreaterThan(empty.street);
       expect(mix(mid, 1).night).toBeGreaterThan(occupied.night);
       expect(mix(mid, 1).street).toBeLessThan(occupied.street);
+      expect(mix(mid, 0, 1).street).toBeGreaterThan(0);
+      expect(mix(mid, 0, 1).street).toBeLessThan(occupied.street);
+      expect(mix(mid, 0, 0.5).street).toBe(0);
+      expect(mix(mid, 0, 0.2).leaves).toBeGreaterThan(0);
       expect(mix(mid, 0, 0.2).cutoff).toBeLessThan(occupied.cutoff);
     } finally {
       city.dispose();
@@ -31,7 +35,7 @@ it.each([48, 64])(
 it('pans a nearby bus with the camera and attenuates at altitude or outside its street', () => {
   const right = vehiclePerspective(1, 0, 4, 1, 0);
   expect(vehiclePerspective(1, 0, 4, -1, 0).pan).toBe(-right.pan);
-  expect(vehiclePerspective(1, 0, 0.2, 1, 0).gain).toBeLessThan(right.gain);
+  expect(vehiclePerspective(0, 0, 0.5, 1, 0).gain).toBe(0);
   expect(vehiclePerspective(11, 0, 4, 1, 0).gain).toBe(0);
 });
 

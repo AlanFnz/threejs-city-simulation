@@ -22,6 +22,8 @@ it('keeps three nearby cars, excludes transit and freight, and fades to the over
   const close = near();
   expect(close.map((source) => source.car.id)).toEqual([3, 4, 2]);
   expect(close[0].pan).toBeGreaterThan(0);
-  camera.zoom = 0.2;
+  camera.zoom = 1;
   expect(near()[0].gain).toBeLessThan(close[0].gain / 3);
+  camera.zoom = 0.2;
+  expect(near()).toHaveLength(0);
 });
